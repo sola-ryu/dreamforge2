@@ -58,8 +58,14 @@
   }
 </script>
 
+<svelte:head>
+  <title>{$page.data?.entityType
+    ? ENTITY_PLURAL[$page.data.entityType as EntityType]
+    : 'Entities'} — {$page.data?.projectName || 'Project'} — DreamForge</title>
+</svelte:head>
+
 <div class="mx-auto max-w-4xl p-6">
-  <div class="mb-6 flex items-center justify-between">
+  <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <h1 class="text-2xl font-bold">
         {$page.data?.entityType ? ENTITY_PLURAL[$page.data.entityType as EntityType] : 'Entities'}
@@ -285,11 +291,12 @@
         </a>
         <div class="absolute right-2 top-1/2 -translate-y-1/2">
           <button
-            class="rounded p-1.5 opacity-0 group-hover:opacity-100 hover:bg-secondary"
+            class="rounded p-1.5 max-sm:opacity-100 opacity-0 group-hover:opacity-100 hover:bg-secondary"
             onclick={(e) => {
               e.preventDefault();
               showMenu = showMenu === entity.id ? null : entity.id;
             }}
+            aria-label="More actions"
           >
             <MoreHorizontal class="h-4 w-4" />
           </button>

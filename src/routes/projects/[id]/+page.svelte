@@ -37,6 +37,10 @@
   ];
 </script>
 
+<svelte:head>
+  <title>{$page.data?.project?.name || 'Project'} — DreamForge</title>
+</svelte:head>
+
 <div class="mx-auto max-w-4xl p-6">
   <h1 class="mb-2 text-2xl font-bold">{$page.data?.project?.name || 'Project'}</h1>
   {#if $page.data?.project?.description}

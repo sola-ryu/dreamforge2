@@ -34,6 +34,12 @@
   }
 </script>
 
+<svelte:head>
+  <title>Import CSV — {$page.data?.entityType
+    ? ENTITY_PLURAL[$page.data.entityType as EntityType]
+    : 'Entities'} — {$page.data?.projectName || 'Project'} — DreamForge</title>
+</svelte:head>
+
 <div class="mx-auto max-w-4xl p-6">
   <div class="mb-6">
     <a

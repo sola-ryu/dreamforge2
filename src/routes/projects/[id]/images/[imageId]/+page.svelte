@@ -25,6 +25,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>{$page.data?.image?.originalName || 'Image'} — {$page.data?.project?.name || 'Project'} — DreamForge</title>
+</svelte:head>
+
 <div class="mx-auto max-w-4xl p-6">
   <div class="mb-6">
     <a
@@ -37,7 +41,7 @@
 
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-bold">{$page.data?.image?.originalName || 'Image'}</h1>
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2">
         {#if editing}
           <button
             form="edit-form"
@@ -82,7 +86,7 @@
     />
   </div>
 
-  <div class="mb-6 grid grid-cols-2 gap-4">
+  <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
     <form
       id="edit-form"
       method="POST"
@@ -218,12 +222,13 @@
               }}
             >
               <input type="hidden" name="entityId" value={entity.id} />
-              <button
-                type="submit"
-                class="rounded p-0.5 text-muted-foreground hover:text-destructive"
-              >
-                <Unlink class="h-3 w-3" />
-              </button>
+                <button
+                  type="submit"
+                  class="rounded p-0.5 text-muted-foreground hover:text-destructive"
+                  aria-label="Unlink entity"
+                >
+                  <Unlink class="h-3 w-3" />
+                </button>
             </form>
           </div>
         {/each}

@@ -14,6 +14,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>Trash — {$page.data?.project?.name || 'Project'} — DreamForge</title>
+</svelte:head>
+
 <div class="mx-auto max-w-4xl p-6">
   <div class="mb-6">
     <a

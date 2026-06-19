@@ -71,6 +71,12 @@
   }
 </script>
 
+<svelte:head>
+  <title>{$page.data?.entity?.name || 'Entity'} — {$page.data?.entityType
+    ? ENTITY_LABELS[$page.data.entityType as EntityType]
+    : ''} — {$page.data?.project?.name || 'Project'} — DreamForge</title>
+</svelte:head>
+
 <div class="mx-auto max-w-4xl p-6">
   <div class="mb-6">
     <a
@@ -83,7 +89,7 @@
         : ''}
     </a>
 
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       {#if editing}
         <input
           type="text"
@@ -163,7 +169,7 @@
     <input type="hidden" name="status" bind:value={status} />
 
     <div class="rounded-lg border border-border bg-card p-4">
-      <div class="mb-4 flex items-center gap-3">
+      <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
         <div class="flex items-center gap-2">
           <label for="status-select" class="text-sm font-medium">Status:</label>
           <select
@@ -290,7 +296,7 @@
                       body: new URLSearchParams({ imageId: img.id })
                     }).then(() => invalidateAll())}
                   class="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground opacity-0 group-hover:opacity-100"
-                  title="Unlink image"
+                  aria-label="Unlink image"
                 >
                   <Unlink class="h-3 w-3" />
                 </button>
@@ -412,7 +418,7 @@
             {/each}
           </select>
         </div>
-        <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2">
           <button
             type="submit"
             class="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:opacity-90"

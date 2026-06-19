@@ -3,6 +3,10 @@
   import { goto } from '$app/navigation';
 </script>
 
+<svelte:head>
+  <title>DreamForge</title>
+</svelte:head>
+
 <div class="flex min-h-screen items-center justify-center">
   {#if $page.data?.user}
     <div class="text-center">

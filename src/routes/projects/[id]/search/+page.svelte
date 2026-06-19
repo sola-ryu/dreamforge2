@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
   import { FileText, Search as SearchIcon } from 'lucide-svelte';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import { cn, formatDate } from '$lib/utils';
@@ -13,7 +14,7 @@
     const url = new URL(window.location.href);
     if (query) url.searchParams.set('q', query);
     else url.searchParams.delete('q');
-    window.location.href = url.toString();
+    goto(url.toString());
   }
 
   function onInput() {
@@ -21,6 +22,10 @@
     timer = setTimeout(doSearch, 500);
   }
 </script>
+
+<svelte:head>
+  <title>Search — {$page.data?.projectName || 'Project'} — DreamForge</title>
+</svelte:head>
 
 <div class="mx-auto max-w-4xl p-6">
   <div class="mb-6">

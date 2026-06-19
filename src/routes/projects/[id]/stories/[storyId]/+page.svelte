@@ -132,9 +132,13 @@
   }
 </script>
 
+<svelte:head>
+  <title>{$page.data?.story?.title || 'Story'} — {$page.data?.projectName || 'Project'} — DreamForge</title>
+</svelte:head>
+
 <div class="flex h-[calc(100vh-4rem)]">
   <!-- Left panel: chapter/scene tree -->
-  <div class="w-80 flex-shrink-0 overflow-y-auto border-r border-border bg-card p-4">
+  <div class="w-72 flex-shrink-0 overflow-y-auto border-r border-border bg-card p-4 sm:w-80">
     <div class="mb-4">
       <a
         href="/projects/{$page.params.id}/stories"
@@ -145,8 +149,8 @@
       </a>
       <div class="mt-2 flex items-center justify-between">
         <h2 class="text-lg font-semibold">{$page.data?.story?.title || 'Story'}</h2>
-        <div class="flex items-center gap-1">
-          <a
+          <div class="flex flex-wrap items-center gap-1">
+            <a
             href="/projects/{$page.params.id}/stories/{$page.params.storyId}/export"
             target="_blank"
             class="flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs hover:bg-secondary"
@@ -263,7 +267,7 @@
                   <FileText class="h-3 w-3 text-muted-foreground" />
                   <span class="flex-1 truncate">{scene.title || `Scene ${j + 1}`}</span>
                   <div
-                    class="opacity-0 group-hover:opacity-100"
+                    class="max-sm:opacity-100 opacity-0 group-hover:opacity-100"
                     onclick={(e) => e.stopPropagation()}
                     onkeypress={(e) => {
                       if (e.key === 'Enter') e.stopPropagation();
@@ -274,7 +278,7 @@
                     <form method="POST" action="?/deleteScene">
                       <input type="hidden" name="chapterId" value={chapter.id} />
                       <input type="hidden" name="sceneId" value={scene.id} />
-                      <button type="submit" class="rounded p-0.5 hover:bg-secondary"
+                      <button type="submit" class="rounded p-0.5 hover:bg-secondary" aria-label="Delete scene"
                         ><Trash2 class="h-3 w-3 text-destructive" /></button
                       >
                     </form>
@@ -345,6 +349,7 @@
             <button
               class="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-secondary"
               title="Convert to Note"
+              aria-label="Convert to Note"
               onclick={async () => {
                 const f = new FormData();
                 f.set('chapterId', activeChapterId);

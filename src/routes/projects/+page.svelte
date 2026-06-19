@@ -9,6 +9,10 @@
   let description = $state('');
 </script>
 
+<svelte:head>
+  <title>Projects — DreamForge</title>
+</svelte:head>
+
 <div class="mx-auto max-w-4xl p-6">
   <div class="mb-6 flex items-center justify-between">
     <h1 class="text-2xl font-bold">Projects</h1>
@@ -112,7 +116,7 @@
         <div class="flex items-center gap-2">
           <form method="POST" action="?/togglePin">
             <input type="hidden" name="projectId" value={project.id} />
-            <button type="submit" class="rounded p-2 hover:bg-secondary">
+            <button type="submit" aria-label={project.pinned ? 'Unpin project' : 'Pin project'} class="rounded p-2 hover:bg-secondary">
               {#if project.pinned}
                 <PinOff class="h-4 w-4" />
               {:else}
@@ -120,7 +124,7 @@
               {/if}
             </button>
           </form>
-          <a href="/projects/{project.id}" class="rounded p-2 hover:bg-secondary">
+          <a href="/projects/{project.id}" class="rounded p-2 hover:bg-secondary" aria-label="Open project">
             <ExternalLink class="h-4 w-4" />
           </a>
         </div>

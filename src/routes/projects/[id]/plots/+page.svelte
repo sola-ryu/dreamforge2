@@ -10,6 +10,10 @@
   let selectedTemplate = $state('freeform');
 </script>
 
+<svelte:head>
+  <title>Plotlines — {$page.data?.projectName || 'Project'} — DreamForge</title>
+</svelte:head>
+
 <div class="mx-auto max-w-4xl p-6">
   <div class="mb-6 flex items-center justify-between">
     <div>
@@ -131,6 +135,7 @@
               type="submit"
               class="rounded p-1.5 hover:bg-secondary"
               onclick={(e) => e.stopPropagation()}
+              aria-label="Delete plotline"
             >
               <Trash2 class="h-4 w-4 text-destructive" />
             </button>

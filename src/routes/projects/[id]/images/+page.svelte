@@ -22,6 +22,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>Images — {$page.data?.project?.name || 'Project'} — DreamForge</title>
+</svelte:head>
+
 <div class="mx-auto max-w-5xl p-6">
   <div class="mb-6">
     <a

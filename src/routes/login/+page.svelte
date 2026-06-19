@@ -1,10 +1,15 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
+  import { goto } from '$app/navigation';
 
   let email = $state('');
   let password = $state('');
   let error = $state('');
 </script>
+
+<svelte:head>
+  <title>Log In — DreamForge</title>
+</svelte:head>
 
 <div class="flex min-h-screen items-center justify-center">
   <div class="w-full max-w-sm space-y-6">
@@ -21,7 +26,7 @@
           if (result.type === 'failure') {
             error = (result.data as { error?: string })?.error || 'Login failed';
           } else if (result.type === 'redirect') {
-            window.location.href = result.location;
+            goto(result.location);
           }
         };
       }}

@@ -57,6 +57,10 @@
   );
 </script>
 
+<svelte:head>
+  <title>Settings — {$page.data?.project?.name || 'Project'} — DreamForge</title>
+</svelte:head>
+
 <div class="mx-auto max-w-4xl p-6">
   <div class="mb-6">
     <a
@@ -74,7 +78,7 @@
 
   <div class="mb-6">
     <label for="entity-type-select" class="mb-2 block text-sm font-medium">Entity Type</label>
-    <div class="flex gap-2">
+    <div class="flex flex-wrap gap-2">
       {#each entityTypes as et}
         <button
           class="rounded-lg border px-3 py-1.5 text-sm {selectedType === et
@@ -115,7 +119,7 @@
             </div>
             <form method="POST" action="?/deleteField" use:enhance>
               <input type="hidden" name="fieldId" value={field.id} />
-              <button type="submit" class="rounded p-1 text-destructive hover:bg-destructive/10">
+              <button type="submit" class="rounded p-1 text-destructive hover:bg-destructive/10" aria-label="Delete field">
                 <Trash2 class="h-4 w-4" />
               </button>
             </form>

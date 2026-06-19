@@ -130,6 +130,10 @@
   onMount(buildGraph);
 </script>
 
+<svelte:head>
+  <title>Relations — {$page.data?.projectName || 'Project'} — DreamForge</title>
+</svelte:head>
+
 <div class="mx-auto max-w-6xl p-6">
   <div class="mb-6 flex items-center justify-between">
     <div>
@@ -158,7 +162,7 @@
         }}
         class="space-y-3"
       >
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label for="sourceId" class="block text-sm font-medium">Source Entity</label>
             <select
@@ -190,7 +194,7 @@
             </select>
           </div>
         </div>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label for="relationType" class="block text-sm font-medium">Relation Type</label>
             <select
@@ -259,7 +263,7 @@
         </div>
         <form method="POST" action="?/delete">
           <input type="hidden" name="relId" value={rel.id} />
-          <button type="submit" class="rounded p-1 hover:bg-secondary"
+          <button type="submit" class="rounded p-1 hover:bg-secondary" aria-label="Delete relation"
             ><Trash2 class="h-4 w-4 text-destructive" /></button
           >
         </form>

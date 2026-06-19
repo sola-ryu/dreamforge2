@@ -8,6 +8,10 @@
   let description = $state('');
 </script>
 
+<svelte:head>
+  <title>Stories — {$page.data?.projectName || 'Project'} — DreamForge</title>
+</svelte:head>
+
 <div class="mx-auto max-w-4xl p-6">
   <div class="mb-6 flex items-center justify-between">
     <div>
@@ -95,10 +99,10 @@
             {/if}
           </div>
         </a>
-        <div class="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100">
+        <div class="absolute right-2 top-1/2 -translate-y-1/2 max-sm:opacity-100 opacity-0 group-hover:opacity-100">
           <form method="POST" action="?/delete">
             <input type="hidden" name="storyId" value={story.id} />
-            <button type="submit" class="rounded p-1.5 hover:bg-secondary">
+            <button type="submit" class="rounded p-1.5 hover:bg-secondary" aria-label="Delete story">
               <Trash2 class="h-4 w-4 text-destructive" />
             </button>
           </form>
