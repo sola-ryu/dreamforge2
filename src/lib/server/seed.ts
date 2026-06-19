@@ -4,7 +4,6 @@ import { migrate } from './migrate';
 import { users } from './schema';
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { env } from '$env/dynamic/private';
 import { generateId } from '$lib/utils';
 
 const drizzleDb = drizzle(db);
@@ -12,8 +11,8 @@ const drizzleDb = drizzle(db);
 export async function seed() {
   migrate();
 
-  const adminEmail = env.ADMIN_EMAIL;
-  const adminPassword = env.ADMIN_PASSWORD;
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
 
   if (!adminEmail || !adminPassword) {
     return;
