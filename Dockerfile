@@ -1,8 +1,9 @@
 # Stage 1: Build
 FROM node:22-alpine AS builder
 WORKDIR /app
+RUN apk add --no-cache python3 make g++
 COPY package.json package-lock.json ./
-RUN npm ci --ignore-scripts
+RUN npm ci
 COPY . .
 RUN npx svelte-kit sync && npm run build
 
@@ -16,6 +17,7 @@ ENV PORT=3000
 
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts
+COPY --from=builder /app/node_modules/better-sqlite3/build ./node_modules/better-sqlite3/build
 COPY --from=builder /app/build ./build
 
 EXPOSE 3000
