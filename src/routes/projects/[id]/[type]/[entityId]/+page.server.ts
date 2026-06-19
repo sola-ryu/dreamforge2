@@ -6,7 +6,12 @@ import { noteToScene } from '$lib/server/conversion';
 import { listStories, listChapters } from '$lib/server/stories';
 import { getCustomFieldDefs } from '$lib/server/customFields';
 import { softDeleteEntity, restoreEntity } from '$lib/server/trash';
-import { getImagesForEntity, listProjectImages, linkEntityToImage, unlinkEntityFromImage } from '$lib/server/images';
+import {
+  getImagesForEntity,
+  listProjectImages,
+  linkEntityToImage,
+  unlinkEntityFromImage
+} from '$lib/server/images';
 import { mergeFields } from '$lib/entityFields';
 import { ENTITY_FIELDS } from '$lib/entityFields';
 import db from '$lib/server/db';
@@ -71,14 +76,21 @@ export const actions = {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
     const entityType = routeToEntityType(params.type);
     if (!entityType) return fail(400, { error: 'Invalid entity type' });
-    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    const project = drizzleDb
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
+      .get();
     if (!project) return fail(404, { error: 'Project not found' });
 
     const form = await request.formData();
     const data: Record<string, unknown> = {};
     for (const [key, value] of form.entries()) {
       if (key === 'tags') {
-        data[key] = (value as string).split(',').map((s) => s.trim()).filter(Boolean);
+        data[key] = (value as string)
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
       } else {
         data[key] = value;
       }
@@ -91,7 +103,11 @@ export const actions = {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
     const entityType = routeToEntityType(params.type);
     if (!entityType) return fail(400, { error: 'Invalid entity type' });
-    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    const project = drizzleDb
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
+      .get();
     if (!project) return fail(404, { error: 'Project not found' });
     const trashItem = softDeleteEntity(params.id, project.dataPath, entityType, params.entityId);
     if (!trashItem) return fail(500, { error: 'Failed to delete entity' });
@@ -102,15 +118,26 @@ export const actions = {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
     const entityType = routeToEntityType(params.type);
     if (entityType !== 'note') return fail(400, { error: 'Only notes can be converted' });
-    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    const project = drizzleDb
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
+      .get();
     if (!project) return fail(404, { error: 'Project not found' });
 
     const form = await request.formData();
     const storyId = form.get('storyId') as string;
-    const chapterId = form.get('chapterId') as string || null;
+    const chapterId = (form.get('chapterId') as string) || null;
     const newChapterTitle = form.get('newChapterTitle') as string;
 
-    const scene = noteToScene(params.id, project.dataPath, params.entityId, storyId, chapterId, newChapterTitle);
+    const scene = noteToScene(
+      params.id,
+      project.dataPath,
+      params.entityId,
+      storyId,
+      chapterId,
+      newChapterTitle
+    );
     if (!scene) return fail(500, { error: 'Conversion failed' });
     return { success: true, sceneId: scene.id };
   },
@@ -127,7 +154,11 @@ export const actions = {
 
   restore: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    const project = drizzleDb
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
+      .get();
     if (!project) return fail(404, { error: 'Project not found' });
     const form = await request.formData();
     const trashId = form.get('trashId') as string;
@@ -141,7 +172,11 @@ export const actions = {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
     const entityType = routeToEntityType(params.type);
     if (!entityType) return fail(400, { error: 'Invalid entity type' });
-    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    const project = drizzleDb
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
+      .get();
     if (!project) return fail(404, { error: 'Project not found' });
     const form = await request.formData();
     const imageId = form.get('imageId') as string;
@@ -154,7 +189,11 @@ export const actions = {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
     const entityType = routeToEntityType(params.type);
     if (!entityType) return fail(400, { error: 'Invalid entity type' });
-    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    const project = drizzleDb
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
+      .get();
     if (!project) return fail(404, { error: 'Project not found' });
     const form = await request.formData();
     const imageId = form.get('imageId') as string;

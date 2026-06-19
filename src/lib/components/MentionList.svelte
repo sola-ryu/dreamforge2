@@ -8,7 +8,11 @@
     sublabel?: string;
   }
 
-  let { items = [], selectedIndex = 0, onSelect }: {
+  let {
+    items = [],
+    selectedIndex = 0,
+    onSelect
+  }: {
     items: MentionItem[];
     selectedIndex: number;
     onSelect: (item: MentionItem) => void;
@@ -31,7 +35,9 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if items.length > 0}
-  <div class="absolute z-50 mt-1 max-h-48 w-64 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
+  <div
+    class="absolute z-50 mt-1 max-h-48 w-64 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg"
+  >
     {#each items as item, i}
       <button
         class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm"

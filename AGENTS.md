@@ -7,17 +7,17 @@ Markdown-first: all content stored as Markdown files on disk; SQLite is a query 
 
 ## Tech Stack
 
-| Layer | Choice |
-|-------|--------|
-| Framework | SvelteKit 2 + Svelte 5 (runes mode) |
-| Language | TypeScript (strict) |
-| Styling | Tailwind CSS v3 + shadcn-svelte HSL theme vars |
-| Database | SQLite via better-sqlite3 + Drizzle ORM |
-| Editor | Tiptap 3 / ProseMirror via svelte-tiptap |
-| Auth | Custom (scrypt hashing, session-based, httpOnly cookies) |
-| Package manager | npm (NOT pnpm or bun) |
-| Deployment | Docker (multi-stage) + docker-compose |
-| Adapter | @sveltejs/adapter-node |
+| Layer           | Choice                                                   |
+| --------------- | -------------------------------------------------------- |
+| Framework       | SvelteKit 2 + Svelte 5 (runes mode)                      |
+| Language        | TypeScript (strict)                                      |
+| Styling         | Tailwind CSS v3 + shadcn-svelte HSL theme vars           |
+| Database        | SQLite via better-sqlite3 + Drizzle ORM                  |
+| Editor          | Tiptap 3 / ProseMirror via svelte-tiptap                 |
+| Auth            | Custom (scrypt hashing, session-based, httpOnly cookies) |
+| Package manager | npm (NOT pnpm or bun)                                    |
+| Deployment      | Docker (multi-stage) + docker-compose                    |
+| Adapter         | @sveltejs/adapter-node                                   |
 
 ## Project Structure
 
@@ -61,6 +61,7 @@ Entity fields are declared declaratively in `src/lib/entityFields.ts` — routes
 ## Key Conventions
 
 ### Code style
+
 - **No comments** in code unless absolutely necessary for understanding a non-obvious edge case
 - Use Svelte 5 runes (`$state`, `$derived`, `$effect`) instead of Svelte 4 stores
 - Prefer `let` over `const` for reactive Svelte variables
@@ -70,6 +71,7 @@ Entity fields are declared declaratively in `src/lib/entityFields.ts` — routes
 - Do not add explanatory code summary after edits
 
 ### Server code
+
 - Server-only logic lives in `src/lib/server/` — never import into `+page.svelte` or `+layout.svelte`
 - Route loaders use `+page.server.ts` and `+layout.server.ts`
 - Database calls go through Drizzle ORM; raw SQL is rare
@@ -77,11 +79,13 @@ Entity fields are declared declaratively in `src/lib/entityFields.ts` — routes
 - Images are base64-encoded to avoid serving from disk
 
 ### Components
+
 - Editor component (`Editor.svelte`) uses svelte-tiptap wrapper — do NOT use Tiptap's Vue-only or React-only APIs
 - Sidebar component handles projects list, search, export, theme toggle, and bookmarks
 - Theme toggle uses CSS class on `<html>`: `light` / `dark` / `monochrome`
 
 ### Testing
+
 - Framework: vitest v4
 - Test files co-located in `__tests__/` directories next to the code they test
 - Test files matching pattern: `src/**/*.test.ts`
@@ -93,6 +97,7 @@ Entity fields are declared declaratively in `src/lib/entityFields.ts` — routes
   - `npx vitest run src/lib/server/__tests__/markdown.test.ts` — single file
 
 ### Build & Check
+
 - `npm run build` — full production build (svelte-kit sync + vite build)
 - `npm run check` — type-check + svelte-check (run after any type change)
 - `npm run lint` — prettier + eslint

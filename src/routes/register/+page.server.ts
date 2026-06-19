@@ -43,22 +43,28 @@ export const actions = {
     const passwordHash = await hash(password);
     const userId = generateId();
 
-    drizzleDb.insert(users).values({
-      id: userId,
-      email,
-      username,
-      passwordHash,
-      createdAt: new Date().toISOString()
-    }).run();
+    drizzleDb
+      .insert(users)
+      .values({
+        id: userId,
+        email,
+        username,
+        passwordHash,
+        createdAt: new Date().toISOString()
+      })
+      .run();
 
     const sessionId = generateId();
     const expiresAt = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30;
 
-    drizzleDb.insert(sessions).values({
-      id: sessionId,
-      userId,
-      expiresAt
-    }).run();
+    drizzleDb
+      .insert(sessions)
+      .values({
+        id: sessionId,
+        userId,
+        expiresAt
+      })
+      .run();
 
     cookies.set('dreamforge-session', sessionId, {
       path: '/',

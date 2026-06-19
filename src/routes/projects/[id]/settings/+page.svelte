@@ -26,7 +26,13 @@
   ];
 
   const entityTypes: EntityType[] = [
-    'character', 'organization', 'location', 'culture', 'species', 'item', 'note'
+    'character',
+    'organization',
+    'location',
+    'culture',
+    'species',
+    'item',
+    'note'
   ];
 
   function resetForm() {
@@ -40,12 +46,15 @@
 
   function deriveKey(e: Event) {
     const input = e.target as HTMLInputElement;
-    newKey = input.value.toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_|_$/g, '');
+    newKey = input.value
+      .toLowerCase()
+      .replace(/[^a-z0-9_]+/g, '_')
+      .replace(/^_|_$/g, '');
   }
 
-  let typeFields = $derived(($page.data?.customFields || []).filter(
-    (f: any) => f.entityType === selectedType
-  ));
+  let typeFields = $derived(
+    ($page.data?.customFields || []).filter((f: any) => f.entityType === selectedType)
+  );
 </script>
 
 <div class="mx-auto max-w-4xl p-6">
@@ -58,7 +67,9 @@
       Back to {$page.data?.project?.name || 'Project'}
     </a>
     <h1 class="text-2xl font-bold">Project Settings</h1>
-    <p class="text-sm text-muted-foreground">Customize entity fields for {$page.data?.project?.name || 'this project'}</p>
+    <p class="text-sm text-muted-foreground">
+      Customize entity fields for {$page.data?.project?.name || 'this project'}
+    </p>
   </div>
 
   <div class="mb-6">
@@ -84,7 +95,9 @@
     </h2>
 
     {#if typeFields.length === 0}
-      <p class="mb-4 text-sm text-muted-foreground">No custom fields defined for this entity type.</p>
+      <p class="mb-4 text-sm text-muted-foreground">
+        No custom fields defined for this entity type.
+      </p>
     {:else}
       <div class="mb-4 space-y-2">
         {#each typeFields as field}
@@ -95,7 +108,9 @@
                 ({field.key} — {field.fieldType}{#if field.required}, required{/if})
               </span>
               {#if field.placeholder}
-                <span class="ml-2 text-xs text-muted-foreground">placeholder: "{field.placeholder}"</span>
+                <span class="ml-2 text-xs text-muted-foreground"
+                  >placeholder: "{field.placeholder}"</span
+                >
               {/if}
             </div>
             <form method="POST" action="?/deleteField" use:enhance>
@@ -155,7 +170,9 @@
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label for="field-type" class="block text-xs text-muted-foreground mb-1">Field Type</label>
+            <label for="field-type" class="block text-xs text-muted-foreground mb-1"
+              >Field Type</label
+            >
             <select
               id="field-type"
               name="fieldType"
@@ -168,7 +185,9 @@
             </select>
           </div>
           <div>
-            <label for="field-placeholder" class="block text-xs text-muted-foreground mb-1">Placeholder</label>
+            <label for="field-placeholder" class="block text-xs text-muted-foreground mb-1"
+              >Placeholder</label
+            >
             <input
               id="field-placeholder"
               name="placeholder"
@@ -182,7 +201,9 @@
 
         {#if newFieldType === 'entityRef'}
           <div>
-            <label for="ref-entity-type" class="block text-xs text-muted-foreground mb-1">Referenced Entity Type</label>
+            <label for="ref-entity-type" class="block text-xs text-muted-foreground mb-1"
+              >Referenced Entity Type</label
+            >
             <select
               id="ref-entity-type"
               name="refEntityType"

@@ -4,6 +4,7 @@
   import { goto } from '$app/navigation';
   import { ENTITY_PLURAL } from '$lib/entityFields';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
+  import type { EntityType } from '$lib/types';
   import { ArrowLeft, Upload, Download } from 'lucide-svelte';
 
   let csvHeaders = $state<string[]>([]);
@@ -40,12 +41,17 @@
       class="mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
     >
       <ArrowLeft class="h-4 w-4" />
-      Back to {($page.data?.entityType ? ENTITY_PLURAL[$page.data.entityType] : 'Entities')}
+      Back to {$page.data?.entityType
+        ? ENTITY_PLURAL[$page.data.entityType as EntityType]
+        : 'Entities'}
     </a>
     <h1 class="text-2xl font-bold">Import CSV</h1>
     <p class="text-sm text-muted-foreground">
-      Upload a CSV file to create or update {$page.data?.entityType ? ENTITY_PLURAL[$page.data.entityType].toLowerCase() : 'entities'}.
-      Rows are matched by ID first, then by name. <a href="" class="underline" onclick={(e) => { e.preventDefault(); downloadCsv(); }}>Download a CSV template</a>.
+      Upload a CSV file to create or update {$page.data?.entityType
+        ? ENTITY_PLURAL[$page.data.entityType as EntityType].toLowerCase()
+        : 'entities'}. Rows are matched by ID first, then by name.
+      <button class="underline cursor-pointer" onclick={downloadCsv}>Download a CSV template</button
+      >.
     </p>
   </div>
 
@@ -92,7 +98,9 @@
   {:else if csvHeaders.length > 0}
     <div class="mb-6 rounded-lg border border-border bg-card p-4">
       <h2 class="mb-4 text-lg font-semibold">Map Columns</h2>
-      <p class="mb-4 text-xs text-muted-foreground">Map CSV columns to entity fields. Leave blank to skip a column.</p>
+      <p class="mb-4 text-xs text-muted-foreground">
+        Map CSV columns to entity fields. Leave blank to skip a column.
+      </p>
 
       <form
         method="POST"
@@ -115,10 +123,17 @@
           <table class="w-full text-sm">
             <thead>
               <tr class="border-b border-border">
-                <th class="px-2 py-1 text-left text-xs text-muted-foreground font-medium">CSV Column</th>
-                <th class="px-2 py-1 text-left text-xs text-muted-foreground font-medium">Map to Field</th>
+                <th class="px-2 py-1 text-left text-xs text-muted-foreground font-medium"
+                  >CSV Column</th
+                >
+                <th class="px-2 py-1 text-left text-xs text-muted-foreground font-medium"
+                  >Map to Field</th
+                >
                 {#each preview[0] ? Object.keys(preview[0]) : [] as col}
-                  <th class="px-2 py-1 text-xs text-muted-foreground font-medium max-w-[120px] truncate">{col}</th>
+                  <th
+                    class="px-2 py-1 text-xs text-muted-foreground font-medium max-w-[120px] truncate"
+                    >{col}</th
+                  >
                 {/each}
               </tr>
             </thead>
@@ -135,13 +150,15 @@
                       }}
                     >
                       <option value="">— Skip —</option>
-                      {#each ($page.data?.targetFields || []) as field}
+                      {#each $page.data?.targetFields || [] as field}
                         <option value={field.key}>{field.label}</option>
                       {/each}
                     </select>
                   </td>
                   {#each preview[0] ? Object.keys(preview[0]) : [] as col}
-                    <td class="px-2 py-1.5 text-xs max-w-[120px] truncate">{preview[i]?.[col] || ''}</td>
+                    <td class="px-2 py-1.5 text-xs max-w-[120px] truncate"
+                      >{preview[i]?.[col] || ''}</td
+                    >
                   {/each}
                 </tr>
               {/each}
@@ -149,7 +166,9 @@
           </table>
         </div>
 
-        <p class="text-xs text-muted-foreground">Showing {preview.length} of {JSON.parse(rawData || '[]').length} rows.</p>
+        <p class="text-xs text-muted-foreground">
+          Showing {preview.length} of {JSON.parse(rawData || '[]').length} rows.
+        </p>
 
         <div class="flex gap-2">
           <button
@@ -208,7 +227,11 @@
           return async ({ result }) => {
             uploading = false;
             if (result.type === 'success') {
-              const d = result.data as { csvHeaders: string[]; preview: Record<string, string>[]; data: string };
+              const d = result.data as {
+                csvHeaders: string[];
+                preview: Record<string, string>[];
+                data: string;
+              };
               csvHeaders = d.csvHeaders;
               preview = d.preview;
               rawData = d.data;
@@ -219,7 +242,9 @@
         }}
         class="space-y-4"
       >
-        <div class="flex items-center justify-center border-2 border-dashed border-border rounded-lg p-8">
+        <div
+          class="flex items-center justify-center border-2 border-dashed border-border rounded-lg p-8"
+        >
           <label class="flex cursor-pointer flex-col items-center gap-2">
             <Upload class="h-8 w-8 text-muted-foreground" />
             <span class="text-sm text-muted-foreground">Click to upload a CSV file</span>
@@ -229,7 +254,9 @@
               accept=".csv"
               required
               class="hidden"
-              onchange={() => { uploading = true; }}
+              onchange={() => {
+                uploading = true;
+              }}
             />
           </label>
         </div>

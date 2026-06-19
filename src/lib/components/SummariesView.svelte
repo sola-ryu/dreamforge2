@@ -16,7 +16,12 @@
     scenes: SceneSummary[];
   }
 
-  let { chapters = [], plotlines = [], onReorder, onUpdateSummary }: {
+  let {
+    chapters = [],
+    plotlines = [],
+    onReorder,
+    onUpdateSummary
+  }: {
     chapters: ChapterSummary[];
     plotlines?: { title: string; beats: { title: string; sceneId: string | null }[] }[];
     onReorder?: (chapterId: string, sceneIds: string[]) => void;
@@ -58,7 +63,9 @@
 
   function getScenePlotThreads(sceneId: string) {
     return plotlines.flatMap((pl) =>
-      pl.beats.filter((b) => b.sceneId === sceneId).map((b) => ({ thread: pl.title, beat: b.title }))
+      pl.beats
+        .filter((b) => b.sceneId === sceneId)
+        .map((b) => ({ thread: pl.title, beat: b.title }))
     );
   }
 
@@ -79,6 +86,7 @@
           <div
             class="flex items-start gap-3 px-4 py-3"
             draggable="true"
+            role="listitem"
             ondragstart={(e) => handleDragStart(e, scene.id, chapter.id)}
             ondragover={handleDragOver}
             ondrop={(e) => handleSceneDrop(e, chapter.id, scene.id)}
@@ -97,13 +105,21 @@
                   rows="2"
                   placeholder="Add a synopsis..."
                   value=""
-                  onchange={(e) => onUpdateSummary?.(chapter.id, scene.id, 'summary', (e.target as HTMLTextAreaElement).value)}
+                  onchange={(e) =>
+                    onUpdateSummary?.(
+                      chapter.id,
+                      scene.id,
+                      'summary',
+                      (e.target as HTMLTextAreaElement).value
+                    )}
                 ></textarea>
               {/if}
               {#if scene.plotThreads.length > 0}
                 <div class="mt-1 flex flex-wrap gap-1">
                   {#each scene.plotThreads as pt}
-                    <span class="inline-flex items-center gap-0.5 rounded bg-secondary px-1.5 py-0.5 text-xs text-muted-foreground">
+                    <span
+                      class="inline-flex items-center gap-0.5 rounded bg-secondary px-1.5 py-0.5 text-xs text-muted-foreground"
+                    >
                       {#if pt.type === 'setup'}
                         <Circle class="h-2.5 w-2.5" />
                       {:else if pt.type === 'payoff'}

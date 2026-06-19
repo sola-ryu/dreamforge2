@@ -1,8 +1,17 @@
 import { fail, redirect } from '@sveltejs/kit';
 import {
-  getStoryMeta, listChapters, createChapter, deleteChapter,
-  listScenes, createScene, updateScene, deleteScene,
-  reorderChapters, reorderScenes, updateStory, deleteStory
+  getStoryMeta,
+  listChapters,
+  createChapter,
+  deleteChapter,
+  listScenes,
+  createScene,
+  updateScene,
+  deleteScene,
+  reorderChapters,
+  reorderScenes,
+  updateStory,
+  deleteStory
 } from '$lib/server/stories';
 import { searchEntities } from '$lib/server/entities';
 import { sceneToNote } from '$lib/server/conversion';
@@ -47,7 +56,11 @@ export const load = async ({ params, locals }) => {
 export const actions = {
   updateStory: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    const project = drizzleDb
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
+      .get();
     if (!project) return fail(404, { error: 'Project not found' });
     const form = await request.formData();
     updateStory(project.dataPath, params.storyId, {
@@ -59,7 +72,11 @@ export const actions = {
 
   createChapter: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    const project = drizzleDb
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
+      .get();
     if (!project) return fail(404, { error: 'Project not found' });
     const form = await request.formData();
     const title = form.get('title') as string;
@@ -70,7 +87,11 @@ export const actions = {
 
   deleteChapter: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    const project = drizzleDb
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
+      .get();
     if (!project) return fail(404, { error: 'Project not found' });
     const form = await request.formData();
     deleteChapter(project.dataPath, params.storyId, form.get('chapterId') as string);
@@ -79,7 +100,11 @@ export const actions = {
 
   createScene: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    const project = drizzleDb
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
+      .get();
     if (!project) return fail(404, { error: 'Project not found' });
     const form = await request.formData();
     const chapterId = form.get('chapterId') as string;
@@ -89,14 +114,22 @@ export const actions = {
 
   updateScene: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    const project = drizzleDb
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
+      .get();
     if (!project) return fail(404, { error: 'Project not found' });
     const form = await request.formData();
     const chapterId = form.get('chapterId') as string;
     const sceneId = form.get('sceneId') as string;
     const data: Record<string, unknown> = {};
     for (const [key, value] of form.entries()) {
-      if (key === 'participants') data[key] = (value as string).split(',').map(s => s.trim()).filter(Boolean);
+      if (key === 'participants')
+        data[key] = (value as string)
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
       else if (key !== 'chapterId' && key !== 'sceneId') data[key] = value;
     }
     updateScene(project.dataPath, params.storyId, chapterId, sceneId, data as any);
@@ -105,16 +138,29 @@ export const actions = {
 
   deleteScene: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    const project = drizzleDb
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
+      .get();
     if (!project) return fail(404, { error: 'Project not found' });
     const form = await request.formData();
-    deleteScene(project.dataPath, params.storyId, form.get('chapterId') as string, form.get('sceneId') as string);
+    deleteScene(
+      project.dataPath,
+      params.storyId,
+      form.get('chapterId') as string,
+      form.get('sceneId') as string
+    );
     return { success: true };
   },
 
   reorderChapters: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    const project = drizzleDb
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
+      .get();
     if (!project) return fail(404, { error: 'Project not found' });
     const form = await request.formData();
     const chapterIds = JSON.parse(form.get('chapterIds') as string);
@@ -124,7 +170,11 @@ export const actions = {
 
   convertToNote: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    const project = drizzleDb
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
+      .get();
     if (!project) return fail(404, { error: 'Project not found' });
     const form = await request.formData();
     const chapterId = form.get('chapterId') as string;
@@ -136,7 +186,11 @@ export const actions = {
 
   reorderScenes: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    const project = drizzleDb
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
+      .get();
     if (!project) return fail(404, { error: 'Project not found' });
     const form = await request.formData();
     const chapterId = form.get('chapterId') as string;

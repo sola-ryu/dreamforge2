@@ -8,7 +8,12 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 const drizzleDb = drizzle(db);
 
 export const load: LayoutServerLoad = async ({ locals, url }) => {
-  const bookmarks: Array<{ id: string; entityId: string; entityName?: string; entityType?: string }> = [];
+  const bookmarks: Array<{
+    id: string;
+    entityId: string;
+    entityName?: string;
+    entityType?: string;
+  }> = [];
   let projectId = '';
 
   // Extract project ID from URL: /projects/[id]/...

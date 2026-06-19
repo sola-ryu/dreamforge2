@@ -29,9 +29,9 @@ export function noteToScene(
   updateScene(projectPath, storyId, targetChapterId, scene.id, {
     body: note.body,
     title: note.name,
-    narrator: note.frontmatter?.narrator as string | null || null,
-    time: note.frontmatter?.time as string | null || null,
-    place: note.frontmatter?.place as string | null || null
+    narrator: (note.frontmatter?.narrator as string | null) || null,
+    time: (note.frontmatter?.time as string | null) || null,
+    place: (note.frontmatter?.place as string | null) || null
   });
 
   updateEntity(projectId, projectPath, 'note', noteId, {

@@ -5,6 +5,7 @@
   import { ENTITY_LABELS } from '$lib/entityFields';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import { formatDate } from '$lib/utils';
+  import type { EntityType } from '$lib/types';
   import { ArrowLeft, Trash2, RotateCcw, AlertTriangle } from 'lucide-svelte';
 
   function goToEntity(item: any) {
@@ -61,8 +62,10 @@
                 >
                   {item.name}
                 </button>
-                <span class="shrink-0 rounded bg-secondary px-1.5 py-0.5 text-xs text-muted-foreground">
-                  {ENTITY_LABELS[item.entityType] || item.entityType}
+                <span
+                  class="shrink-0 rounded bg-secondary px-1.5 py-0.5 text-xs text-muted-foreground"
+                >
+                  {ENTITY_LABELS[item.entityType as EntityType] || item.entityType}
                 </span>
               </div>
               <p class="mt-1 text-xs text-muted-foreground">
@@ -78,13 +81,17 @@
               {/if}
             </div>
             <div class="flex shrink-0 items-center gap-2 ml-4">
-              <form method="POST" action="?/restore" use:enhance={() => {
-                return async ({ result }) => {
-                  if (result.type === 'success') {
-                    goto(window.location.href);
-                  }
-                };
-              }}>
+              <form
+                method="POST"
+                action="?/restore"
+                use:enhance={() => {
+                  return async ({ result }) => {
+                    if (result.type === 'success') {
+                      goto(window.location.href);
+                    }
+                  };
+                }}
+              >
                 <input type="hidden" name="trashId" value={item.id} />
                 <button
                   type="submit"
@@ -94,13 +101,17 @@
                   Restore
                 </button>
               </form>
-              <form method="POST" action="?/permanentDelete" use:enhance={() => {
-                return async ({ result }) => {
-                  if (result.type === 'success') {
-                    goto(window.location.href);
-                  }
-                };
-              }}>
+              <form
+                method="POST"
+                action="?/permanentDelete"
+                use:enhance={() => {
+                  return async ({ result }) => {
+                    if (result.type === 'success') {
+                      goto(window.location.href);
+                    }
+                  };
+                }}
+              >
                 <input type="hidden" name="trashId" value={item.id} />
                 <button
                   type="submit"

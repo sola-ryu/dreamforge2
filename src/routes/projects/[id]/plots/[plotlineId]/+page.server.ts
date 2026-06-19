@@ -64,14 +64,12 @@ export const actions = {
 
     const form = await request.formData();
     const beatTitle = form.get('beatTitle') as string;
-    const sceneId = form.get('sceneId') as string || null;
+    const sceneId = (form.get('sceneId') as string) || null;
 
     const plotline = getPlotline(project.dataPath, params.plotlineId);
     if (!plotline) return fail(404, { error: 'Plotline not found' });
 
-    const beats = plotline.beats.map((b) =>
-      b.title === beatTitle ? { ...b, sceneId } : b
-    );
+    const beats = plotline.beats.map((b) => (b.title === beatTitle ? { ...b, sceneId } : b));
 
     updatePlotline(project.dataPath, params.plotlineId, { beats });
     return { success: true };

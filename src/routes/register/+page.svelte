@@ -20,7 +20,7 @@
       use:enhance={() => {
         return async ({ result }) => {
           if (result.type === 'failure') {
-            error = result.data?.error || 'Registration failed';
+            error = (result.data as { error?: string })?.error || 'Registration failed';
           } else if (result.type === 'redirect') {
             window.location.href = result.location;
           }
@@ -29,7 +29,9 @@
       class="space-y-4"
     >
       {#if error}
-        <div class="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+        <div
+          class="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive"
+        >
           {error}
         </div>
       {/if}

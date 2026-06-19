@@ -19,7 +19,12 @@
 
   const zen = getZenMode();
 
-  let { content = '', placeholder = 'Start writing...', entities = [], onUpdate }: {
+  let {
+    content = '',
+    placeholder = 'Start writing...',
+    entities = [],
+    onUpdate
+  }: {
     content?: string;
     placeholder?: string;
     entities?: { id: string; type: string; name: string; status?: string }[];
@@ -34,7 +39,13 @@
   let editorLang = $state(localStorage.getItem('editor:lang') || 'en');
   let textColor = $state('#000000');
   let hlColor = $state('#ffff00');
-  let hoverMention = $state<{ id: string; type: string; label: string; x: number; y: number } | null>(null);
+  let hoverMention = $state<{
+    id: string;
+    type: string;
+    label: string;
+    x: number;
+    y: number;
+  } | null>(null);
 
   function toggleSpellcheck() {
     spellcheckEnabled = !spellcheckEnabled;
@@ -63,7 +74,9 @@
         hoverMention = null;
       }
     });
-    view.dom.addEventListener('mouseleave', () => { hoverMention = null; });
+    view.dom.addEventListener('mouseleave', () => {
+      hoverMention = null;
+    });
   }
 
   function positionDropdown(dom: HTMLElement, rect: DOMRect) {
@@ -78,9 +91,10 @@
       HTMLAttributes: { class: 'mention-node' },
       suggestion: {
         items: ({ query }: { query: string }) => {
-          return entities.filter((e) =>
-            e.name.toLowerCase().includes(query.toLowerCase())
-          ).slice(0, 8).map((e) => ({ id: e.id, type: e.type, label: e.name }));
+          return entities
+            .filter((e) => e.name.toLowerCase().includes(query.toLowerCase()))
+            .slice(0, 8)
+            .map((e) => ({ id: e.id, type: e.type, label: e.name }));
         },
         render: () => {
           let dom: HTMLDivElement;
@@ -91,14 +105,21 @@
               document.body.appendChild(dom);
               if (props.clientRect) positionDropdown(dom, props.clientRect());
               const update = () => {
-                dom.innerHTML = props.items.map((item: any, i: number) =>
-                  `<button class="${i === props.selectedIndex ? 'bg-accent' : ''} flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-accent" data-index="${i}">${item.label}<span class="ml-auto text-xs text-muted-foreground">${item.type}</span></button>`
-                ).join('');
+                dom.innerHTML = props.items
+                  .map(
+                    (item: any, i: number) =>
+                      `<button class="${i === props.selectedIndex ? 'bg-accent' : ''} flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-accent" data-index="${i}">${item.label}<span class="ml-auto text-xs text-muted-foreground">${item.type}</span></button>`
+                  )
+                  .join('');
                 dom.querySelectorAll('button').forEach((btn) => {
                   btn.addEventListener('mousedown', (e) => {
                     e.preventDefault();
                     const idx = parseInt(btn.dataset.index || '0', 10);
-                    props.command({ id: props.items[idx].id, type: props.items[idx].type, label: props.items[idx].label });
+                    props.command({
+                      id: props.items[idx].id,
+                      type: props.items[idx].type,
+                      label: props.items[idx].label
+                    });
                   });
                 });
               };
@@ -106,18 +127,27 @@
             },
             onUpdate: (props: any) => {
               if (props.clientRect) positionDropdown(dom, props.clientRect());
-              dom.innerHTML = props.items.map((item: any, i: number) =>
-                `<button class="${i === props.selectedIndex ? 'bg-accent' : ''} flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-accent" data-index="${i}">${item.label}<span class="ml-auto text-xs text-muted-foreground">${item.type}</span></button>`
-              ).join('');
+              dom.innerHTML = props.items
+                .map(
+                  (item: any, i: number) =>
+                    `<button class="${i === props.selectedIndex ? 'bg-accent' : ''} flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-accent" data-index="${i}">${item.label}<span class="ml-auto text-xs text-muted-foreground">${item.type}</span></button>`
+                )
+                .join('');
               dom.querySelectorAll('button').forEach((btn) => {
                 btn.addEventListener('mousedown', (e) => {
                   e.preventDefault();
                   const idx = parseInt(btn.dataset.index || '0', 10);
-                  props.command({ id: props.items[idx].id, type: props.items[idx].type, label: props.items[idx].label });
+                  props.command({
+                    id: props.items[idx].id,
+                    type: props.items[idx].type,
+                    label: props.items[idx].label
+                  });
                 });
               });
             },
-            onExit: () => { if (dom) dom.remove(); }
+            onExit: () => {
+              if (dom) dom.remove();
+            }
           };
         }
       }
@@ -157,42 +187,90 @@
     };
   });
 
-  function exec(command: string, value?: string) {
+  function exec(command: string, value: string = '') {
     switch (command) {
-      case 'bold': editor.chain().focus().toggleBold().run(); break;
-      case 'italic': editor.chain().focus().toggleItalic().run(); break;
-      case 'underline': editor.chain().focus().toggleUnderline().run(); break;
-      case 'strike': editor.chain().focus().toggleStrike().run(); break;
-      case 'h1': editor.chain().focus().toggleHeading({ level: 1 }).run(); break;
-      case 'h2': editor.chain().focus().toggleHeading({ level: 2 }).run(); break;
-      case 'h3': editor.chain().focus().toggleHeading({ level: 3 }).run(); break;
-      case 'bullet': editor.chain().focus().toggleBulletList().run(); break;
-      case 'ordered': editor.chain().focus().toggleOrderedList().run(); break;
-      case 'blockquote': editor.chain().focus().toggleBlockquote().run(); break;
-      case 'code': editor.chain().focus().toggleCodeBlock().run(); break;
+      case 'bold':
+        editor.chain().focus().toggleBold().run();
+        break;
+      case 'italic':
+        editor.chain().focus().toggleItalic().run();
+        break;
+      case 'underline':
+        editor.chain().focus().toggleUnderline().run();
+        break;
+      case 'strike':
+        editor.chain().focus().toggleStrike().run();
+        break;
+      case 'h1':
+        editor.chain().focus().toggleHeading({ level: 1 }).run();
+        break;
+      case 'h2':
+        editor.chain().focus().toggleHeading({ level: 2 }).run();
+        break;
+      case 'h3':
+        editor.chain().focus().toggleHeading({ level: 3 }).run();
+        break;
+      case 'bullet':
+        editor.chain().focus().toggleBulletList().run();
+        break;
+      case 'ordered':
+        editor.chain().focus().toggleOrderedList().run();
+        break;
+      case 'blockquote':
+        editor.chain().focus().toggleBlockquote().run();
+        break;
+      case 'code':
+        editor.chain().focus().toggleCodeBlock().run();
+        break;
       case 'link': {
         const url = prompt('Enter URL:');
         if (url) editor.chain().focus().setLink({ href: url }).run();
         break;
       }
-      case 'table': editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(); break;
+      case 'table':
+        editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+        break;
       case 'image': {
         const url = prompt('Enter image URL:');
         if (url) editor.chain().focus().setImage({ src: url }).run();
         break;
       }
-      case 'highlight': editor.chain().focus().toggleHighlight().run(); break;
-      case 'highlightColor': editor.chain().focus().toggleHighlight({ color: value }).run(); break;
-      case 'textColor': editor.chain().focus().setColor(value).run(); break;
-      case 'tableRowBefore': editor.chain().focus().addRowBefore().run(); break;
-      case 'tableRowAfter': editor.chain().focus().addRowAfter().run(); break;
-      case 'tableRowDelete': editor.chain().focus().deleteRow().run(); break;
-      case 'tableColBefore': editor.chain().focus().addColumnBefore().run(); break;
-      case 'tableColAfter': editor.chain().focus().addColumnAfter().run(); break;
-      case 'tableColDelete': editor.chain().focus().deleteColumn().run(); break;
-      case 'left': editor.chain().focus().setTextAlign('left').run(); break;
-      case 'center': editor.chain().focus().setTextAlign('center').run(); break;
-      case 'right': editor.chain().focus().setTextAlign('right').run(); break;
+      case 'highlight':
+        editor.chain().focus().toggleHighlight().run();
+        break;
+      case 'highlightColor':
+        editor.chain().focus().toggleHighlight({ color: value }).run();
+        break;
+      case 'textColor':
+        editor.chain().focus().setColor(value).run();
+        break;
+      case 'tableRowBefore':
+        editor.chain().focus().addRowBefore().run();
+        break;
+      case 'tableRowAfter':
+        editor.chain().focus().addRowAfter().run();
+        break;
+      case 'tableRowDelete':
+        editor.chain().focus().deleteRow().run();
+        break;
+      case 'tableColBefore':
+        editor.chain().focus().addColumnBefore().run();
+        break;
+      case 'tableColAfter':
+        editor.chain().focus().addColumnAfter().run();
+        break;
+      case 'tableColDelete':
+        editor.chain().focus().deleteColumn().run();
+        break;
+      case 'left':
+        editor.chain().focus().setTextAlign('left').run();
+        break;
+      case 'center':
+        editor.chain().focus().setTextAlign('center').run();
+        break;
+      case 'right':
+        editor.chain().focus().setTextAlign('right').run();
+        break;
     }
   }
 
@@ -212,46 +290,139 @@
 <div class="editor-wrapper rounded-lg border border-border bg-background">
   {#if mounted}
     <div class="flex flex-wrap gap-0.5 border-b border-border bg-muted/50 px-2 py-1.5">
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('bold')} title="Bold"><strong>B</strong></button>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('italic')} title="Italic"><em>I</em></button>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('underline')} title="Underline"><u>U</u></button>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('strike')} title="Strike"><s>S</s></button>
+      <button
+        class="rounded px-2 py-1 text-xs hover:bg-secondary"
+        onclick={() => exec('bold')}
+        title="Bold"><strong>B</strong></button
+      >
+      <button
+        class="rounded px-2 py-1 text-xs hover:bg-secondary"
+        onclick={() => exec('italic')}
+        title="Italic"><em>I</em></button
+      >
+      <button
+        class="rounded px-2 py-1 text-xs hover:bg-secondary"
+        onclick={() => exec('underline')}
+        title="Underline"><u>U</u></button
+      >
+      <button
+        class="rounded px-2 py-1 text-xs hover:bg-secondary"
+        onclick={() => exec('strike')}
+        title="Strike"><s>S</s></button
+      >
       <span class="mx-1 border-l border-border"></span>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('h1')}>H1</button>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('h2')}>H2</button>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('h3')}>H3</button>
+      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('h1')}
+        >H1</button
+      >
+      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('h2')}
+        >H2</button
+      >
+      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('h3')}
+        >H3</button
+      >
       <span class="mx-1 border-l border-border"></span>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('bullet')}>&#8226; List</button>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('ordered')}>1. List</button>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('blockquote')}>&#8220;</button>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('code')}>&lt;/&gt;</button>
+      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('bullet')}
+        >&#8226; List</button
+      >
+      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('ordered')}
+        >1. List</button
+      >
+      <button
+        class="rounded px-2 py-1 text-xs hover:bg-secondary"
+        onclick={() => exec('blockquote')}>&#8220;</button
+      >
+      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('code')}
+        >&lt;/&gt;</button
+      >
       <span class="mx-1 border-l border-border"></span>
       <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={setLink}>Link</button>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('table')}>Table</button>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('image')}>Image</button>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('highlight')}>HL</button>
+      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('table')}
+        >Table</button
+      >
+      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('image')}
+        >Image</button
+      >
+      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('highlight')}
+        >HL</button
+      >
       <span class="mx-1 border-l border-border"></span>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('left')}>&#8592;</button>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('center')}>&#8596;</button>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('right')}>&#8594;</button>
+      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('left')}
+        >&#8592;</button
+      >
+      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('center')}
+        >&#8596;</button
+      >
+      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('right')}
+        >&#8594;</button
+      >
       <span class="mx-1 border-l border-border"></span>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('tableRowBefore')} title="Insert row before">&#8593; Row</button>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('tableRowAfter')} title="Insert row after">&#8595; Row</button>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('tableRowDelete')} title="Delete row">&times; Row</button>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('tableColBefore')} title="Insert column before">&#8592; Col</button>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('tableColAfter')} title="Insert column after">&#8594; Col</button>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('tableColDelete')} title="Delete column">&times; Col</button>
+      <button
+        class="rounded px-2 py-1 text-xs hover:bg-secondary"
+        onclick={() => exec('tableRowBefore')}
+        title="Insert row before">&#8593; Row</button
+      >
+      <button
+        class="rounded px-2 py-1 text-xs hover:bg-secondary"
+        onclick={() => exec('tableRowAfter')}
+        title="Insert row after">&#8595; Row</button
+      >
+      <button
+        class="rounded px-2 py-1 text-xs hover:bg-secondary"
+        onclick={() => exec('tableRowDelete')}
+        title="Delete row">&times; Row</button
+      >
+      <button
+        class="rounded px-2 py-1 text-xs hover:bg-secondary"
+        onclick={() => exec('tableColBefore')}
+        title="Insert column before">&#8592; Col</button
+      >
+      <button
+        class="rounded px-2 py-1 text-xs hover:bg-secondary"
+        onclick={() => exec('tableColAfter')}
+        title="Insert column after">&#8594; Col</button
+      >
+      <button
+        class="rounded px-2 py-1 text-xs hover:bg-secondary"
+        onclick={() => exec('tableColDelete')}
+        title="Delete column">&times; Col</button
+      >
       <span class="mx-1 border-l border-border"></span>
-      <label class="flex items-center gap-0.5 rounded px-1 py-1 text-xs hover:bg-secondary" title="Text color">
-        <input type="color" value={textColor} onchange={(e) => { textColor = (e.target as HTMLInputElement).value; exec('textColor', textColor); }} class="h-4 w-4 cursor-pointer border-0 p-0" />
+      <label
+        class="flex items-center gap-0.5 rounded px-1 py-1 text-xs hover:bg-secondary"
+        title="Text color"
+      >
+        <input
+          type="color"
+          value={textColor}
+          onchange={(e) => {
+            textColor = (e.target as HTMLInputElement).value;
+            exec('textColor', textColor);
+          }}
+          class="h-4 w-4 cursor-pointer border-0 p-0"
+        />
         <span>A</span>
       </label>
-      <label class="flex items-center gap-0.5 rounded px-1 py-1 text-xs hover:bg-secondary" title="Highlight color">
-        <input type="color" value={hlColor} onchange={(e) => { hlColor = (e.target as HTMLInputElement).value; exec('highlightColor', hlColor); }} class="h-4 w-4 cursor-pointer border-0 p-0" />
+      <label
+        class="flex items-center gap-0.5 rounded px-1 py-1 text-xs hover:bg-secondary"
+        title="Highlight color"
+      >
+        <input
+          type="color"
+          value={hlColor}
+          onchange={(e) => {
+            hlColor = (e.target as HTMLInputElement).value;
+            exec('highlightColor', hlColor);
+          }}
+          class="h-4 w-4 cursor-pointer border-0 p-0"
+        />
         <span>HL</span>
       </label>
       <span class="mx-1 border-l border-border"></span>
-      <button class="rounded px-2 py-1 hover:bg-secondary" onclick={() => zen.toggle()} title={zen.active ? 'Exit Zen Mode' : 'Zen Mode'}>
+      <button
+        class="rounded px-2 py-1 hover:bg-secondary"
+        onclick={() => zen.toggle()}
+        title={zen.active ? 'Exit Zen Mode' : 'Zen Mode'}
+      >
         {#if zen.active}
           <Minimize2 class="h-3.5 w-3.5" />
         {:else}
@@ -283,7 +454,12 @@
       </select>
     </div>
   {/if}
-  <div bind:this={editorEl} spellcheck={spellcheckEnabled} lang={editorLang} class="prose prose-sm dark:prose-invert max-w-none px-4 py-3 min-h-[200px] focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:leading-relaxed [&_.ProseMirror_p.is-editor-empty:first-child]:before:text-muted-foreground [&_.ProseMirror_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)] [&_.ProseMirror_p.is-editor-empty:first-child]:before:pointer-events-none [&_.ProseMirror_p.is-editor-empty:first-child]:before:float-left [&_.ProseMirror_p.is-editor-empty:first-child]:before:h-0 [&_.ProseMirror_p]:my-1"></div>
+  <div
+    bind:this={editorEl}
+    spellcheck={spellcheckEnabled}
+    lang={editorLang}
+    class="prose prose-sm dark:prose-invert max-w-none px-4 py-3 min-h-[200px] focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:leading-relaxed [&_.ProseMirror_p.is-editor-empty:first-child]:before:text-muted-foreground [&_.ProseMirror_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)] [&_.ProseMirror_p.is-editor-empty:first-child]:before:pointer-events-none [&_.ProseMirror_p.is-editor-empty:first-child]:before:float-left [&_.ProseMirror_p.is-editor-empty:first-child]:before:h-0 [&_.ProseMirror_p]:my-1"
+  ></div>
 </div>
 
 {#if hoverMention}

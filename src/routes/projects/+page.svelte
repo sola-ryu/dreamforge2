@@ -86,7 +86,7 @@
       </p>
     {/if}
 
-    {#each ($page.data?.projects || []) as project}
+    {#each $page.data?.projects || [] as project}
       <div
         class={cn(
           'flex items-center justify-between rounded-lg border border-border bg-card p-4',
@@ -105,7 +105,9 @@
           {#if project.description}
             <p class="mt-1 text-sm text-muted-foreground">{project.description}</p>
           {/if}
-          <p class="mt-1 text-xs text-muted-foreground">Modified {formatDate(project.modifiedAt)}</p>
+          <p class="mt-1 text-xs text-muted-foreground">
+            Modified {formatDate(project.modifiedAt)}
+          </p>
         </div>
         <div class="flex items-center gap-2">
           <form method="POST" action="?/togglePin">
@@ -118,10 +120,7 @@
               {/if}
             </button>
           </form>
-          <a
-            href="/projects/{project.id}"
-            class="rounded p-2 hover:bg-secondary"
-          >
+          <a href="/projects/{project.id}" class="rounded p-2 hover:bg-secondary">
             <ExternalLink class="h-4 w-4" />
           </a>
         </div>

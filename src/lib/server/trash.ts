@@ -71,15 +71,18 @@ export function softDeleteEntity(
   const expiresAt = new Date(Date.now() + TRASH_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const trashId = generateId();
 
-  drizzleDb.insert(trashTable).values({
-    id: trashId,
-    projectId,
-    entityId: id,
-    entityType: type,
-    originalPath: path.relative(projectPath, sourcePath),
-    deletedAt: now,
-    expiresAt
-  }).run();
+  drizzleDb
+    .insert(trashTable)
+    .values({
+      id: trashId,
+      projectId,
+      entityId: id,
+      entityType: type,
+      originalPath: path.relative(projectPath, sourcePath),
+      deletedAt: now,
+      expiresAt
+    })
+    .run();
 
   return {
     id: trashId,
@@ -129,7 +132,11 @@ export function restoreEntity(projectId: string, projectPath: string, trashId: s
   return true;
 }
 
-export function permanentDeleteEntity(projectId: string, projectPath: string, trashId: string): boolean {
+export function permanentDeleteEntity(
+  projectId: string,
+  projectPath: string,
+  trashId: string
+): boolean {
   const item = drizzleDb
     .select()
     .from(trashTable)
@@ -170,18 +177,14 @@ export function listTrashItems(projectId: string, projectPath: string): TrashIte
       expiresAt: item.expiresAt,
       name: md ? (md.frontmatter.name as string) || item.entityId : item.entityId,
       body: md?.body || '',
-      frontmatter: md?.frontmatter as Record<string, unknown> || {}
+      frontmatter: (md?.frontmatter as Record<string, unknown>) || {}
     };
   });
 }
 
 export function purgeExpiredTrashItems(): void {
   const now = new Date().toISOString();
-  const expired = drizzleDb
-    .select()
-    .from(trashTable)
-    .where(lt(trashTable.expiresAt, now))
-    .all();
+  const expired = drizzleDb.select().from(trashTable).where(lt(trashTable.expiresAt, now)).all();
 
   for (const item of expired) {
     drizzleDb.delete(trashTable).where(eq(trashTable.id, item.id)).run();

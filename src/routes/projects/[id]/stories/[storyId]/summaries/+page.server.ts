@@ -36,7 +36,11 @@ export const load = async ({ params, locals }) => {
 export const actions = {
   updateSceneSummary: async ({ params, locals, request }) => {
     if (!locals.user) return { success: false };
-    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    const project = drizzleDb
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
+      .get();
     if (!project) return { success: false };
     const form = await request.formData();
     const chapterId = form.get('chapterId') as string;

@@ -64,17 +64,20 @@ export function uploadImages(
 
     fs.writeFileSync(filePath, file.buffer);
 
-    drizzleDb.insert(projectImages).values({
-      id,
-      projectId,
-      filename,
-      originalName: file.name,
-      mimeType: MIME_MAP[ext.toLowerCase()] || 'application/octet-stream',
-      size: file.buffer.length,
-      caption: null,
-      altText: null,
-      createdAt: now
-    }).run();
+    drizzleDb
+      .insert(projectImages)
+      .values({
+        id,
+        projectId,
+        filename,
+        originalName: file.name,
+        mimeType: MIME_MAP[ext.toLowerCase()] || 'application/octet-stream',
+        size: file.buffer.length,
+        caption: null,
+        altText: null,
+        createdAt: now
+      })
+      .run();
 
     results.push({
       id,
@@ -131,7 +134,11 @@ export function listProjectImages(projectId: string, projectPath: string): Proje
   }));
 }
 
-export function getProjectImage(projectId: string, projectPath: string, imageId: string): ProjectImage | null {
+export function getProjectImage(
+  projectId: string,
+  projectPath: string,
+  imageId: string
+): ProjectImage | null {
   const row = drizzleDb
     .select()
     .from(projectImages)
@@ -209,33 +216,44 @@ export function linkEntityToImage(projectId: string, imageId: string, entityId: 
   const existing = drizzleDb
     .select()
     .from(imageEntityLinks)
-    .where(and(
-      eq(imageEntityLinks.imageId, imageId),
-      eq(imageEntityLinks.entityId, entityId),
-      eq(imageEntityLinks.projectId, projectId)
-    ))
+    .where(
+      and(
+        eq(imageEntityLinks.imageId, imageId),
+        eq(imageEntityLinks.entityId, entityId),
+        eq(imageEntityLinks.projectId, projectId)
+      )
+    )
     .get();
 
   if (existing) return true;
 
-  drizzleDb.insert(imageEntityLinks).values({
-    id: generateId(),
-    imageId,
-    entityId,
-    projectId
-  }).run();
+  drizzleDb
+    .insert(imageEntityLinks)
+    .values({
+      id: generateId(),
+      imageId,
+      entityId,
+      projectId
+    })
+    .run();
 
   return true;
 }
 
-export function unlinkEntityFromImage(projectId: string, imageId: string, entityId: string): boolean {
+export function unlinkEntityFromImage(
+  projectId: string,
+  imageId: string,
+  entityId: string
+): boolean {
   const result = drizzleDb
     .delete(imageEntityLinks)
-    .where(and(
-      eq(imageEntityLinks.imageId, imageId),
-      eq(imageEntityLinks.entityId, entityId),
-      eq(imageEntityLinks.projectId, projectId)
-    ))
+    .where(
+      and(
+        eq(imageEntityLinks.imageId, imageId),
+        eq(imageEntityLinks.entityId, entityId),
+        eq(imageEntityLinks.projectId, projectId)
+      )
+    )
     .run();
 
   return result.changes > 0;
@@ -254,10 +272,7 @@ export function getImagesForEntity(projectId: string, entityId: string): Project
   const rows = drizzleDb
     .select()
     .from(projectImages)
-    .where(and(
-      eq(projectImages.projectId, projectId),
-      inArray(projectImages.id, imageIds)
-    ))
+    .where(and(eq(projectImages.projectId, projectId), inArray(projectImages.id, imageIds)))
     .all();
 
   return rows.map((r) => ({
@@ -299,16 +314,19 @@ export function scanExistingImages(projectId: string, projectPath: string): void
     const now = new Date().toISOString();
     const id = filename.replace(ext, '');
 
-    drizzleDb.insert(projectImages).values({
-      id,
-      projectId,
-      filename,
-      originalName: filename,
-      mimeType: MIME_MAP[ext] || 'application/octet-stream',
-      size: stat.size,
-      caption: null,
-      altText: null,
-      createdAt: now
-    }).run();
+    drizzleDb
+      .insert(projectImages)
+      .values({
+        id,
+        projectId,
+        filename,
+        originalName: filename,
+        mimeType: MIME_MAP[ext] || 'application/octet-stream',
+        size: stat.size,
+        caption: null,
+        altText: null,
+        createdAt: now
+      })
+      .run();
   }
 }

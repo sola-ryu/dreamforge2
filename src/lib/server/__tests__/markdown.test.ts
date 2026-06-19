@@ -105,10 +105,7 @@ describe('serializeMarkdown', () => {
   });
 
   it('serializes arrays as JSON', () => {
-    const result = serializeMarkdown(
-      { id: 'test', tags: ['a', 'b', 'c'] },
-      'body'
-    );
+    const result = serializeMarkdown({ id: 'test', tags: ['a', 'b', 'c'] }, 'body');
     expect(result).toContain('tags: ["a","b","c"]');
   });
 
@@ -135,12 +132,15 @@ describe('readMarkdownFile', () => {
   it('reads and parses a file', () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'df-test-'));
     const filePath = path.join(tmpDir, 'test.md');
-    fs.writeFileSync(filePath, `---
+    fs.writeFileSync(
+      filePath,
+      `---
 id: file-test
 name: File Test
 type: note
 ---
-File body`);
+File body`
+    );
 
     const result = readMarkdownFile(filePath);
     expect(result).not.toBeNull();

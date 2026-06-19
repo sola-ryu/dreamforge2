@@ -45,7 +45,12 @@ function slugifyPath(slug: string): string {
   return slug.replace(/\//g, '-');
 }
 
-export function generateUniqueSlug(projectPath: string, type: EntityType, name: string, excludeId?: string): string {
+export function generateUniqueSlug(
+  projectPath: string,
+  type: EntityType,
+  name: string,
+  excludeId?: string
+): string {
   let slug = slugifyPath(slugify(name));
   if (!slug) slug = 'untitled';
 
@@ -72,7 +77,11 @@ export function generateUniqueSlug(projectPath: string, type: EntityType, name: 
   return `${slug}-${counter}`;
 }
 
-export function resolveEntityPath(projectPath: string, type: EntityType, id: string): string | null {
+export function resolveEntityPath(
+  projectPath: string,
+  type: EntityType,
+  id: string
+): string | null {
   const dir = getEntityDir(projectPath, type);
   if (!fs.existsSync(dir)) return null;
 
@@ -137,9 +146,7 @@ export function listEntities(
     });
   }
 
-  results.sort(
-    (a, b) => new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime()
-  );
+  results.sort((a, b) => new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime());
 
   return results;
 }
@@ -191,7 +198,9 @@ export function createEntity(
     imagePath: null,
     created: now,
     modified: now,
-    ...Object.fromEntries(Object.entries(data).filter(([k]) => !['name', 'body', 'tags'].includes(k)))
+    ...Object.fromEntries(
+      Object.entries(data).filter(([k]) => !['name', 'body', 'tags'].includes(k))
+    )
   };
 
   const body = (data.body as string) || '';
@@ -293,7 +302,10 @@ export function deleteEntity(
 
   fs.unlinkSync(filePath);
 
-  drizzleDb.delete(entitiesTable).where(and(eq(entitiesTable.id, id), eq(entitiesTable.projectId, projectId))).run();
+  drizzleDb
+    .delete(entitiesTable)
+    .where(and(eq(entitiesTable.id, id), eq(entitiesTable.projectId, projectId)))
+    .run();
 
   return true;
 }
@@ -336,27 +348,29 @@ export function searchEntities(
   query: string,
   typeFilter?: EntityType
 ): EntityData[] {
-  let results = drizzleDb
-    .select()
-    .from(entitiesTable)
-    .where(eq(entitiesTable.projectId, projectId));
+  const conditions = [eq(entitiesTable.projectId, projectId)];
 
   if (typeFilter) {
-    results = results.where(eq(entitiesTable.type, typeFilter)) as typeof results;
+    conditions.push(eq(entitiesTable.type, typeFilter));
   }
 
   if (query) {
-    results = results.where(like(entitiesTable.name, `%${query}%`)) as typeof results;
+    conditions.push(like(entitiesTable.name, `%${query}%`));
   }
 
-  const dbResults = results.orderBy(desc(entitiesTable.modifiedAt)).all();
+  const dbResults = drizzleDb
+    .select()
+    .from(entitiesTable)
+    .where(and(...conditions))
+    .orderBy(desc(entitiesTable.modifiedAt))
+    .all();
 
   return dbResults.map((r) => ({
     id: r.id,
     projectId: r.projectId,
     type: r.type as EntityType,
     name: r.name,
-    tags: r.tags,
+    tags: r.tags || [],
     status: r.status,
     imagePath: r.imagePath,
     body: '',

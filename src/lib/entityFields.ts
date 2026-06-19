@@ -3,7 +3,16 @@ import type { EntityType } from '$lib/types';
 export interface FieldDef {
   key: string;
   label: string;
-  type: 'text' | 'textarea' | 'number' | 'tags' | 'markdown' | 'entityRef' | 'image' | 'boolean' | 'date';
+  type:
+    | 'text'
+    | 'textarea'
+    | 'number'
+    | 'tags'
+    | 'markdown'
+    | 'entityRef'
+    | 'image'
+    | 'boolean'
+    | 'date';
   entityType?: EntityType;
   placeholder?: string;
   required?: boolean;
@@ -14,7 +23,12 @@ export const ENTITY_FIELDS: Record<EntityType, FieldDef[]> = {
     { key: 'motivations', label: 'Motivations', type: 'textarea' },
     { key: 'traits', label: 'Traits', type: 'tags' },
     { key: 'backstory', label: 'Backstory', type: 'markdown' },
-    { key: 'personalityType', label: 'Personality Type', type: 'text', placeholder: 'e.g. INTJ, Choleric' }
+    {
+      key: 'personalityType',
+      label: 'Personality Type',
+      type: 'text',
+      placeholder: 'e.g. INTJ, Choleric'
+    }
   ],
   organization: [
     { key: 'members', label: 'Members', type: 'entityRef', entityType: 'character' },

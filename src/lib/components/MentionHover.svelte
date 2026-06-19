@@ -1,5 +1,10 @@
 <script lang="ts">
-  let { name = '', type = '', status = '', preview = '' }: {
+  let {
+    name = '',
+    type = '',
+    status = '',
+    preview = ''
+  }: {
     name?: string;
     type?: string;
     status?: string;

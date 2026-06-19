@@ -13,7 +13,12 @@
     chapterTitle?: string;
   }
 
-  let { beats = [], scenes = [], onReorder, onLinkScene }: {
+  let {
+    beats = [],
+    scenes = [],
+    onReorder,
+    onLinkScene
+  }: {
     beats: Beat[];
     scenes: SceneInfo[];
     onReorder?: (beatTitles: string[]) => void;
@@ -48,7 +53,7 @@
   function getSceneLabel(sceneId: string | null): string {
     if (!sceneId) return '';
     const scene = scenes.find((s) => s.id === sceneId);
-    return scene ? (scene.title || 'Untitled Scene') : sceneId;
+    return scene ? scene.title || 'Untitled Scene' : sceneId;
   }
 
   function isLinked(sceneId: string | null): boolean {
@@ -61,15 +66,22 @@
     <div
       class="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2"
       draggable="true"
+      role="listitem"
       ondragstart={(e) => handleDragStart(e, beat.title)}
       ondragover={handleDragOver}
       ondrop={(e) => handleDrop(e, beat.title)}
     >
       <GripVertical class="h-4 w-4 cursor-grab text-muted-foreground opacity-40" />
-      <span class="flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-xs text-muted-foreground">{i + 1}</span>
+      <span
+        class="flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-xs text-muted-foreground"
+        >{i + 1}</span
+      >
       <span class="flex-1 text-sm">{beat.title}</span>
       {#if beat.sceneId}
-        <a href="/scenes/{beat.sceneId}" class="flex items-center gap-1 rounded bg-secondary/50 px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground">
+        <a
+          href="/scenes/{beat.sceneId}"
+          class="flex items-center gap-1 rounded bg-secondary/50 px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground"
+        >
           <Link2 class="h-3 w-3" />
           {getSceneLabel(beat.sceneId)}
         </a>
@@ -81,7 +93,10 @@
       >
         <option value="">No scene</option>
         {#each scenes as scene}
-          <option value={scene.id}>{scene.chapterTitle ? `${scene.chapterTitle} / ` : ''}{scene.title || 'Untitled'}</option>
+          <option value={scene.id}
+            >{scene.chapterTitle ? `${scene.chapterTitle} / ` : ''}{scene.title ||
+              'Untitled'}</option
+          >
         {/each}
       </select>
     </div>

@@ -127,7 +127,10 @@ export const actions = {
         for (const [csvCol, fieldKey] of Object.entries(mapping)) {
           if (fieldKey && row[csvCol] !== undefined) {
             if (fieldKey === 'tags') {
-              mapped[fieldKey] = row[csvCol].split(',').map((s) => s.trim()).filter(Boolean);
+              mapped[fieldKey] = row[csvCol]
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean);
             } else {
               mapped[fieldKey] = row[csvCol];
             }
@@ -140,7 +143,9 @@ export const actions = {
         }
 
         const importId = mapped.id as string;
-        const existing = importId ? existingById.get(importId) : existingByName.get(String(mapped.name).toLowerCase());
+        const existing = importId
+          ? existingById.get(importId)
+          : existingByName.get(String(mapped.name).toLowerCase());
 
         delete mapped.id;
 
@@ -152,7 +157,9 @@ export const actions = {
             name: mapped.name as string,
             body: (mapped.body as string) || undefined,
             tags: mapped.tags as string[] | undefined,
-            ...Object.fromEntries(Object.entries(mapped).filter(([k]) => !['name', 'body', 'tags'].includes(k)))
+            ...Object.fromEntries(
+              Object.entries(mapped).filter(([k]) => !['name', 'body', 'tags'].includes(k))
+            )
           });
           created++;
         }

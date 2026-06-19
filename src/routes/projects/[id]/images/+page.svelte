@@ -32,7 +32,9 @@
       Back to {$page.data?.project?.name || 'Project'}
     </a>
     <h1 class="text-2xl font-bold">Images</h1>
-    <p class="text-sm text-muted-foreground">Manage images for {$page.data?.project?.name || 'this project'}</p>
+    <p class="text-sm text-muted-foreground">
+      Manage images for {$page.data?.project?.name || 'this project'}
+    </p>
   </div>
 
   <div class="mb-8 rounded-lg border border-border bg-card p-4">
@@ -52,7 +54,9 @@
       }}
       class="space-y-4"
     >
-      <div class="flex items-center justify-center border-2 border-dashed border-border rounded-lg p-6">
+      <div
+        class="flex items-center justify-center border-2 border-dashed border-border rounded-lg p-6"
+      >
         <label class="flex cursor-pointer flex-col items-center gap-2">
           <Upload class="h-8 w-8 text-muted-foreground" />
           <span class="text-sm text-muted-foreground">Click to select images</span>
@@ -85,7 +89,9 @@
               >
                 <X class="h-3 w-3" />
               </button>
-              <p class="mt-1 max-w-24 truncate text-xs text-muted-foreground">{uploadFiles[i].name}</p>
+              <p class="mt-1 max-w-24 truncate text-xs text-muted-foreground">
+                {uploadFiles[i].name}
+              </p>
             </div>
           {/each}
         </div>
@@ -97,7 +103,9 @@
           disabled={uploading}
           class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
-          {uploading ? 'Uploading...' : `Upload ${uploadFiles.length} file${uploadFiles.length > 1 ? 's' : ''}`}
+          {uploading
+            ? 'Uploading...'
+            : `Upload ${uploadFiles.length} file${uploadFiles.length > 1 ? 's' : ''}`}
         </button>
       {/if}
     </form>

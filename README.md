@@ -33,13 +33,13 @@ docker compose up -d
 
 Set via environment variables:
 
-| Variable | Default | Description |
-|---|---|---|
-| `DATABASE_PATH` | `/data/dreamforge.db` | SQLite database path |
-| `DATA_DIR` | `/data/projects` | Projects directory |
-| `PUBLIC_ALLOW_REGISTRATION` | `true` | Allow new user signups |
-| `ADMIN_EMAIL` | `admin@dreamforge.local` | Initial admin email |
-| `ADMIN_PASSWORD` | `changeme` | Initial admin password |
+| Variable                    | Default                  | Description            |
+| --------------------------- | ------------------------ | ---------------------- |
+| `DATABASE_PATH`             | `/data/dreamforge.db`    | SQLite database path   |
+| `DATA_DIR`                  | `/data/projects`         | Projects directory     |
+| `PUBLIC_ALLOW_REGISTRATION` | `true`                   | Allow new user signups |
+| `ADMIN_EMAIL`               | `admin@dreamforge.local` | Initial admin email    |
+| `ADMIN_PASSWORD`            | `changeme`               | Initial admin password |
 
 ## Development
 
@@ -57,15 +57,15 @@ docker compose -f docker-compose.dev.yml up
 
 ## Scripts
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Start dev server with hot-reload |
-| `npm run build` | Production build |
-| `npm run preview` | Preview production build |
-| `npm test` | Run tests |
-| `npm run check` | Type-check |
-| `npm run lint` | Lint |
-| `npm run format` | Format code |
+| Command           | Description                      |
+| ----------------- | -------------------------------- |
+| `npm run dev`     | Start dev server with hot-reload |
+| `npm run build`   | Production build                 |
+| `npm run preview` | Preview production build         |
+| `npm test`        | Run tests                        |
+| `npm run check`   | Type-check                       |
+| `npm run lint`    | Lint                             |
+| `npm run format`  | Format code                      |
 
 ## Features
 

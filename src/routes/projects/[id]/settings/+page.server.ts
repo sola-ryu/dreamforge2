@@ -3,7 +3,11 @@ import db from '$lib/server/db';
 import { projects } from '$lib/server/schema';
 import { eq, and } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { getCustomFieldDefs, addCustomFieldDef, deleteCustomFieldDef } from '$lib/server/customFields';
+import {
+  getCustomFieldDefs,
+  addCustomFieldDef,
+  deleteCustomFieldDef
+} from '$lib/server/customFields';
 import { routeToEntityType, entityTypeToRoute } from '$lib/utils/entityTypes';
 import type { EntityType } from '$lib/types';
 
@@ -58,7 +62,16 @@ export const actions = {
       return fail(400, { error: 'Invalid entity type' });
     }
 
-    const validFieldTypes = ['text', 'textarea', 'number', 'tags', 'markdown', 'entityRef', 'boolean', 'date'];
+    const validFieldTypes = [
+      'text',
+      'textarea',
+      'number',
+      'tags',
+      'markdown',
+      'entityRef',
+      'boolean',
+      'date'
+    ];
     if (!validFieldTypes.includes(fieldType)) {
       return fail(400, { error: 'Invalid field type' });
     }
@@ -67,7 +80,7 @@ export const actions = {
       key,
       label,
       fieldType: fieldType as any,
-      refEntityType: refEntityType ? (routeToEntityType(refEntityType) || null) : null,
+      refEntityType: refEntityType ? routeToEntityType(refEntityType) || null : null,
       placeholder,
       required
     });

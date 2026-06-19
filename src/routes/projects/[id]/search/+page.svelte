@@ -41,10 +41,12 @@
 
   <div class="space-y-2">
     {#if $page.data?.query && $page.data?.results?.length === 0}
-      <p class="py-12 text-center text-muted-foreground">No results for &ldquo;{$page.data.query}&rdquo;</p>
+      <p class="py-12 text-center text-muted-foreground">
+        No results for &ldquo;{$page.data.query}&rdquo;
+      </p>
     {/if}
 
-    {#each ($page.data?.results || []) as entity}
+    {#each $page.data?.results || [] as entity}
       <a
         href="/projects/{$page.params.id}/{entityTypeToRoute(entity.type)}/{entity.id}"
         class="flex items-center gap-4 rounded-lg border border-border bg-card p-4 hover:bg-secondary/50"
@@ -53,9 +55,13 @@
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2">
             <span class="font-medium">{entity.name}</span>
-            <span class="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground">{entity.type}</span>
-            {#each (entity.tags || []) as tag}
-              <span class="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground">{tag}</span>
+            <span class="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground"
+              >{entity.type}</span
+            >
+            {#each entity.tags || [] as tag}
+              <span class="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground"
+                >{tag}</span
+              >
             {/each}
           </div>
           <p class="text-xs text-muted-foreground">Modified {formatDate(entity.modifiedAt)}</p>

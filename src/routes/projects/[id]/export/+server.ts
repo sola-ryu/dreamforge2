@@ -28,12 +28,14 @@ export async function GET({ params, locals }) {
   return new Promise((resolve) => {
     archive.on('end', () => {
       const zipBuffer = Buffer.concat(chunks);
-      resolve(new Response(zipBuffer, {
-        headers: {
-          'content-type': 'application/zip',
-          'content-disposition': `attachment; filename="${project.name.replace(/[^a-zA-Z0-9]/g, '_')}.zip"`
-        }
-      }));
+      resolve(
+        new Response(zipBuffer, {
+          headers: {
+            'content-type': 'application/zip',
+            'content-disposition': `attachment; filename="${project.name.replace(/[^a-zA-Z0-9]/g, '_')}.zip"`
+          }
+        })
+      );
     });
 
     archive.directory(project.dataPath, false);

@@ -39,19 +39,32 @@
       <h1 class="text-2xl font-bold">{$page.data?.image?.originalName || 'Image'}</h1>
       <div class="flex gap-2">
         {#if editing}
-          <button form="edit-form" type="submit" class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
+          <button
+            form="edit-form"
+            type="submit"
+            class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
             <Save class="h-4 w-4" />
             Save
           </button>
-          <button class="rounded-lg border border-border px-4 py-2 text-sm hover:bg-secondary" onclick={() => (editing = false)}>
+          <button
+            class="rounded-lg border border-border px-4 py-2 text-sm hover:bg-secondary"
+            onclick={() => (editing = false)}
+          >
             Cancel
           </button>
         {:else}
-          <button class="rounded-lg border border-border px-4 py-2 text-sm hover:bg-secondary" onclick={() => (editing = true)}>
+          <button
+            class="rounded-lg border border-border px-4 py-2 text-sm hover:bg-secondary"
+            onclick={() => (editing = true)}
+          >
             Edit Details
           </button>
           <form method="POST" action="?/delete" use:enhance>
-            <button type="submit" class="flex items-center gap-2 rounded-lg border border-destructive/50 px-4 py-2 text-sm text-destructive hover:bg-destructive/10">
+            <button
+              type="submit"
+              class="flex items-center gap-2 rounded-lg border border-destructive/50 px-4 py-2 text-sm text-destructive hover:bg-destructive/10"
+            >
               <Trash2 class="h-4 w-4" />
               Delete
             </button>
@@ -118,11 +131,19 @@
           </div>
           <div>
             <span class="block font-medium">Size</span>
-            <span>{$page.data?.image?.size ? Math.round($page.data.image.size / 1024) + ' KB' : ''}</span>
+            <span
+              >{$page.data?.image?.size
+                ? Math.round($page.data.image.size / 1024) + ' KB'
+                : ''}</span
+            >
           </div>
           <div>
             <span class="block font-medium">URL</span>
-            <a href={$page.data?.image?.url} target="_blank" class="underline hover:text-foreground">
+            <a
+              href={$page.data?.image?.url}
+              target="_blank"
+              class="underline hover:text-foreground"
+            >
               <ExternalLink class="inline h-3 w-3" />
             </a>
           </div>
@@ -143,15 +164,20 @@
       </div>
 
       {#if showLinkPicker}
-        <form method="POST" action="?/linkEntity" use:enhance={() => {
-          return async ({ result }) => {
-            if (result.type === 'success') {
-              showLinkPicker = false;
-              selectedEntityId = '';
-              goto(window.location.href);
-            }
-          };
-        }} class="mb-3 flex gap-2">
+        <form
+          method="POST"
+          action="?/linkEntity"
+          use:enhance={() => {
+            return async ({ result }) => {
+              if (result.type === 'success') {
+                showLinkPicker = false;
+                selectedEntityId = '';
+                goto(window.location.href);
+              }
+            };
+          }}
+          class="mb-3 flex gap-2"
+        >
           <select
             name="entityId"
             bind:value={selectedEntityId}
@@ -160,16 +186,22 @@
           >
             <option value="">Select entity...</option>
             {#each unlinkedEntities() as e}
-              <option value={e.id}>{ENTITY_LABELS[e.type as keyof typeof ENTITY_LABELS] || e.type}: {e.name}</option>
+              <option value={e.id}
+                >{ENTITY_LABELS[e.type as keyof typeof ENTITY_LABELS] || e.type}: {e.name}</option
+              >
             {/each}
           </select>
-          <button type="submit" class="rounded bg-primary px-2 py-1 text-xs text-primary-foreground">Add</button>
+          <button type="submit" class="rounded bg-primary px-2 py-1 text-xs text-primary-foreground"
+            >Add</button
+          >
         </form>
       {/if}
 
       <div class="space-y-1">
-        {#each ($page.data?.image?.linkedEntities || []) as entity}
-          <div class="flex items-center justify-between rounded border border-border/50 px-2 py-1.5">
+        {#each $page.data?.image?.linkedEntities || [] as entity}
+          <div
+            class="flex items-center justify-between rounded border border-border/50 px-2 py-1.5"
+          >
             <a
               href="/projects/{$page.params.id}/{entity.type}s/{entity.id}"
               class="flex items-center gap-1 text-xs hover:underline"
@@ -177,13 +209,20 @@
               <span class="rounded bg-secondary px-1 text-xs">{entity.type}</span>
               {entity.name}
             </a>
-            <form method="POST" action="?/unlinkEntity" use:enhance={() => {
-              return async ({ result }) => {
-                if (result.type === 'success') goto(window.location.href);
-              };
-            }}>
+            <form
+              method="POST"
+              action="?/unlinkEntity"
+              use:enhance={() => {
+                return async ({ result }) => {
+                  if (result.type === 'success') goto(window.location.href);
+                };
+              }}
+            >
               <input type="hidden" name="entityId" value={entity.id} />
-              <button type="submit" class="rounded p-0.5 text-muted-foreground hover:text-destructive">
+              <button
+                type="submit"
+                class="rounded p-0.5 text-muted-foreground hover:text-destructive"
+              >
                 <Unlink class="h-3 w-3" />
               </button>
             </form>

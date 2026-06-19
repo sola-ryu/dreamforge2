@@ -33,7 +33,8 @@ export function listPlotlines(projectPath: string): Plotline[] {
   const dir = getPlotlinesDir(projectPath);
   if (!fs.existsSync(dir)) return [];
 
-  return fs.readdirSync(dir)
+  return fs
+    .readdirSync(dir)
     .filter((f) => f.endsWith('.json'))
     .map((f) => {
       try {

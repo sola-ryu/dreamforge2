@@ -43,7 +43,7 @@ export const actions = {
 
     if (!title) return fail(400, { error: 'Title is required' });
 
-    const templateId = form.get('template') as string || null;
+    const templateId = (form.get('template') as string) || null;
 
     createPlotline(project.dataPath, { title, storyId, template: templateId });
     return { success: true };

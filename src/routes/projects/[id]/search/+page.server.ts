@@ -10,7 +10,11 @@ const drizzleDb = drizzle(db);
 export const load = async ({ params, locals, url }) => {
   if (!locals.user) throw redirect(302, '/login');
 
-  const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+  const project = drizzleDb
+    .select()
+    .from(projects)
+    .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
+    .get();
   if (!project) throw redirect(302, '/projects');
 
   const query = url.searchParams.get('q') || '';

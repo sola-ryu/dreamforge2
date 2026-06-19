@@ -61,8 +61,16 @@
           ></textarea>
         </div>
         <div class="flex gap-2">
-          <button type="submit" class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Create</button>
-          <button type="button" class="rounded-lg border border-border px-4 py-2 text-sm hover:bg-secondary" onclick={() => (showCreate = false)}>Cancel</button>
+          <button
+            type="submit"
+            class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >Create</button
+          >
+          <button
+            type="button"
+            class="rounded-lg border border-border px-4 py-2 text-sm hover:bg-secondary"
+            onclick={() => (showCreate = false)}>Cancel</button
+          >
         </div>
       </form>
     </div>
@@ -73,9 +81,12 @@
       <p class="py-12 text-center text-muted-foreground">No stories yet.</p>
     {/if}
 
-    {#each ($page.data?.stories || []) as story}
+    {#each $page.data?.stories || [] as story}
       <div class="group relative rounded-lg border border-border bg-card">
-        <a href="/projects/{$page.params.id}/stories/{story.id}" class="flex items-center gap-4 px-4 py-3">
+        <a
+          href="/projects/{$page.params.id}/stories/{story.id}"
+          class="flex items-center gap-4 px-4 py-3"
+        >
           <BookOpen class="h-5 w-5 text-primary" />
           <div class="flex-1">
             <span class="font-medium">{story.title}</span>

@@ -5,7 +5,18 @@
   import { ENTITY_LABELS, ENTITY_PLURAL } from '$lib/entityFields';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import { cn, formatDate } from '$lib/utils';
-  import { Plus, Search, MoreHorizontal, FileText, Edit, Trash2, Undo2, Download, Upload } from 'lucide-svelte';
+  import type { EntityType } from '$lib/types';
+  import {
+    Plus,
+    Search,
+    MoreHorizontal,
+    FileText,
+    Edit,
+    Trash2,
+    Undo2,
+    Download,
+    Upload
+  } from 'lucide-svelte';
 
   let showCreate = $state(false);
   let newName = $state('');
@@ -51,7 +62,7 @@
   <div class="mb-6 flex items-center justify-between">
     <div>
       <h1 class="text-2xl font-bold">
-        {$page.data?.entityType ? ENTITY_PLURAL[$page.data.entityType] : 'Entities'}
+        {$page.data?.entityType ? ENTITY_PLURAL[$page.data.entityType as EntityType] : 'Entities'}
       </h1>
       <p class="text-sm text-muted-foreground">
         {$page.data?.projectName || 'Project'}
@@ -66,7 +77,9 @@
         Export CSV
       </button>
       <a
-        href="/projects/{$page.params.id}/{entityTypeToRoute($page.data?.entityType || 'character')}/import-csv"
+        href="/projects/{$page.params.id}/{entityTypeToRoute(
+          $page.data?.entityType || 'character'
+        )}/import-csv"
         class="flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary"
       >
         <Upload class="h-4 w-4" />
@@ -77,7 +90,7 @@
         onclick={() => (showCreate = !showCreate)}
       >
         <Plus class="h-4 w-4" />
-        New {$page.data?.entityType ? ENTITY_LABELS[$page.data.entityType] : ''}
+        New {$page.data?.entityType ? ENTITY_LABELS[$page.data.entityType as EntityType] : ''}
       </button>
     </div>
   </div>
@@ -223,25 +236,26 @@
   <div class="space-y-2">
     {#if ($page.data?.entities || []).length === 0}
       <p class="py-12 text-center text-muted-foreground">
-        No {$page.data?.entityType ? ENTITY_PLURAL[$page.data.entityType].toLowerCase() : 'entities'} yet.
-        Create one to get started.
+        No {$page.data?.entityType
+          ? ENTITY_PLURAL[$page.data.entityType as EntityType].toLowerCase()
+          : 'entities'} yet. Create one to get started.
       </p>
     {/if}
 
-    {#each ($page.data?.entities || []) as entity}
+    {#each $page.data?.entities || [] as entity}
       <div class="group relative rounded-lg border border-border bg-card hover:bg-secondary/50">
         <a
           href="/projects/{$page.params.id}/{entityTypeToRoute(entity.type)}/{entity.id}"
           class="flex items-center gap-4 px-4 py-3"
         >
-        <div
-          class={cn(
-            'flex-shrink-0 rounded-full border p-2',
-            entity.status === 'complete' && 'border-green-500/30',
-            entity.status === 'wip' && 'border-yellow-500/30',
-            entity.status === 'draft' && 'border-muted-foreground/30'
-          )}
-        >
+          <div
+            class={cn(
+              'flex-shrink-0 rounded-full border p-2',
+              entity.status === 'complete' && 'border-green-500/30',
+              entity.status === 'wip' && 'border-yellow-500/30',
+              entity.status === 'draft' && 'border-muted-foreground/30'
+            )}
+          >
             <FileText class="h-4 w-4 text-muted-foreground" />
           </div>
           <div class="flex-1 min-w-0">
@@ -281,17 +295,23 @@
             <MoreHorizontal class="h-4 w-4" />
           </button>
           {#if showMenu === entity.id}
-            <div class="absolute right-0 top-full z-50 mt-1 w-36 rounded-lg border border-border bg-popover shadow-lg">
-              <form method="POST" action="?/delete" use:enhance={() => {
-                return async ({ result }) => {
-                  if (result.type === 'success') {
-                    const d = result.data as { trashItem?: { id: string } };
-                    if (d?.trashItem) {
-                      showToast('Entity moved to trash', d.trashItem.id);
+            <div
+              class="absolute right-0 top-full z-50 mt-1 w-36 rounded-lg border border-border bg-popover shadow-lg"
+            >
+              <form
+                method="POST"
+                action="?/delete"
+                use:enhance={() => {
+                  return async ({ result }) => {
+                    if (result.type === 'success') {
+                      const d = result.data as { trashItem?: { id: string } };
+                      if (d?.trashItem) {
+                        showToast('Entity moved to trash', d.trashItem.id);
+                      }
                     }
-                  }
-                };
-              }}>
+                  };
+                }}
+              >
                 <input type="hidden" name="entityId" value={entity.id} />
                 <button
                   type="submit"
@@ -310,16 +330,22 @@
 </div>
 
 {#if toastVisible}
-  <div class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-lg">
+  <div
+    class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-lg"
+  >
     <span class="text-sm">{toastMessage}</span>
-    <form method="POST" action="?/restore" use:enhance={() => {
-      return async ({ result }) => {
-        if (result.type === 'success') {
-          cancelDelete();
-          goto(window.location.href);
-        }
-      };
-    }}>
+    <form
+      method="POST"
+      action="?/restore"
+      use:enhance={() => {
+        return async ({ result }) => {
+          if (result.type === 'success') {
+            cancelDelete();
+            goto(window.location.href);
+          }
+        };
+      }}
+    >
       <input type="hidden" name="trashId" value={toastTrashId} />
       <button
         type="submit"
@@ -329,10 +355,7 @@
         Undo
       </button>
     </form>
-    <button
-      class="text-xs text-muted-foreground hover:text-foreground"
-      onclick={cancelDelete}
-    >
+    <button class="text-xs text-muted-foreground hover:text-foreground" onclick={cancelDelete}>
       Dismiss
     </button>
   </div>

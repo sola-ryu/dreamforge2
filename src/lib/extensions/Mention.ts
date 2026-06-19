@@ -29,9 +29,7 @@ export const MentionExtension = Node.create({
   },
 
   parseHTML() {
-    return [
-      { tag: 'span[data-mention]' }
-    ];
+    return [{ tag: 'span[data-mention]' }];
   },
 
   renderHTML({ node }) {
@@ -48,9 +46,11 @@ export const MentionExtension = Node.create({
 
   addCommands() {
     return {
-      insertMention: (attrs) => ({ chain }) => {
-        return chain().insertContent({ type: this.name, attrs }).run();
-      }
+      insertMention:
+        (attrs) =>
+        ({ chain }) => {
+          return chain().insertContent({ type: this.name, attrs }).run();
+        }
     };
   }
 });

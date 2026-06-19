@@ -29,24 +29,39 @@ export function addBookmark(userId: string, projectId: string, entityId: string)
   const existing = drizzleDb
     .select()
     .from(bookmarks)
-    .where(and(eq(bookmarks.userId, userId), eq(bookmarks.projectId, projectId), eq(bookmarks.entityId, entityId)))
+    .where(
+      and(
+        eq(bookmarks.userId, userId),
+        eq(bookmarks.projectId, projectId),
+        eq(bookmarks.entityId, entityId)
+      )
+    )
     .get();
 
   if (!existing) {
-    drizzleDb.insert(bookmarks).values({
-      id: generateId(),
-      userId,
-      projectId,
-      entityId,
-      createdAt: new Date().toISOString()
-    }).run();
+    drizzleDb
+      .insert(bookmarks)
+      .values({
+        id: generateId(),
+        userId,
+        projectId,
+        entityId,
+        createdAt: new Date().toISOString()
+      })
+      .run();
   }
 }
 
 export function removeBookmark(userId: string, projectId: string, entityId: string): void {
   drizzleDb
     .delete(bookmarks)
-    .where(and(eq(bookmarks.userId, userId), eq(bookmarks.projectId, projectId), eq(bookmarks.entityId, entityId)))
+    .where(
+      and(
+        eq(bookmarks.userId, userId),
+        eq(bookmarks.projectId, projectId),
+        eq(bookmarks.entityId, entityId)
+      )
+    )
     .run();
 }
 
@@ -54,7 +69,13 @@ export function isBookmarked(userId: string, projectId: string, entityId: string
   const result = drizzleDb
     .select()
     .from(bookmarks)
-    .where(and(eq(bookmarks.userId, userId), eq(bookmarks.projectId, projectId), eq(bookmarks.entityId, entityId)))
+    .where(
+      and(
+        eq(bookmarks.userId, userId),
+        eq(bookmarks.projectId, projectId),
+        eq(bookmarks.entityId, entityId)
+      )
+    )
     .get();
   return !!result;
 }

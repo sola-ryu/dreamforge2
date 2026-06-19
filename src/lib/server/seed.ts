@@ -22,13 +22,16 @@ export async function seed() {
 
   if (!existing) {
     const passwordHash = await hash(adminPassword);
-    drizzleDb.insert(users).values({
-      id: generateId(),
-      email: adminEmail,
-      username: 'admin',
-      passwordHash,
-      createdAt: new Date().toISOString()
-    }).run();
+    drizzleDb
+      .insert(users)
+      .values({
+        id: generateId(),
+        email: adminEmail,
+        username: 'admin',
+        passwordHash,
+        createdAt: new Date().toISOString()
+      })
+      .run();
 
     console.log('Admin user created');
   }

@@ -32,11 +32,14 @@ export const actions = {
     const sessionId = generateId();
     const expiresAt = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30; // 30 days
 
-    drizzleDb.insert(sessions).values({
-      id: sessionId,
-      userId: user.id,
-      expiresAt
-    }).run();
+    drizzleDb
+      .insert(sessions)
+      .values({
+        id: sessionId,
+        userId: user.id,
+        expiresAt
+      })
+      .run();
 
     cookies.set('dreamforge-session', sessionId, {
       path: '/',

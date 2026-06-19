@@ -1,5 +1,11 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { getProjectImage, updateImage, deleteImage, linkEntityToImage, unlinkEntityFromImage } from '$lib/server/images';
+import {
+  getProjectImage,
+  updateImage,
+  deleteImage,
+  linkEntityToImage,
+  unlinkEntityFromImage
+} from '$lib/server/images';
 import { listEntities } from '$lib/server/entities';
 import { routeToEntityType } from '$lib/utils/entityTypes';
 import db from '$lib/server/db';
@@ -24,7 +30,15 @@ export const load = async ({ params, locals }) => {
   const image = getProjectImage(params.id, project.dataPath, params.imageId);
   if (!image) throw redirect(302, `/projects/${params.id}/images`);
 
-  const allEntityTypes: EntityType[] = ['character', 'organization', 'location', 'culture', 'species', 'item', 'note'];
+  const allEntityTypes: EntityType[] = [
+    'character',
+    'organization',
+    'location',
+    'culture',
+    'species',
+    'item',
+    'note'
+  ];
 
   const allEntities = allEntityTypes.flatMap((type) =>
     listEntities(params.id, project.dataPath, type).map((e) => ({
@@ -34,9 +48,7 @@ export const load = async ({ params, locals }) => {
     }))
   );
 
-  const linkedIds = new Set(
-    image.linkedEntities.map((e) => e.id)
-  );
+  const linkedIds = new Set(image.linkedEntities.map((e) => e.id));
 
   return {
     project: { ...project, pinned: Boolean(project.pinned) },
@@ -59,8 +71,8 @@ export const actions = {
     if (!project) return fail(404, { error: 'Project not found' });
 
     const form = await request.formData();
-    const caption = form.get('caption') as string || null;
-    const altText = form.get('altText') as string || null;
+    const caption = (form.get('caption') as string) || null;
+    const altText = (form.get('altText') as string) || null;
 
     updateImage(params.id, params.imageId, { caption, altText });
 

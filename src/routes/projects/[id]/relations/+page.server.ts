@@ -33,15 +33,23 @@ function saveRelations(projectPath: string, relations: RelationEntry[]): void {
 export const load = async ({ params, locals }) => {
   if (!locals.user) throw redirect(302, '/login');
 
-  const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+  const project = drizzleDb
+    .select()
+    .from(projects)
+    .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
+    .get();
   if (!project) throw redirect(302, '/projects');
 
   const relations = loadRelations(project.dataPath);
-  const allEntities = drizzleDb.select().from(entities).where(eq(entities.projectId, params.id)).all();
+  const allEntities = drizzleDb
+    .select()
+    .from(entities)
+    .where(eq(entities.projectId, params.id))
+    .all();
 
   return {
     relations,
-    entities: allEntities.map(e => ({ id: e.id, name: e.name, type: e.type })),
+    entities: allEntities.map((e) => ({ id: e.id, name: e.name, type: e.type })),
     projectName: project.name
   };
 };
@@ -49,7 +57,11 @@ export const load = async ({ params, locals }) => {
 export const actions = {
   create: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    const project = drizzleDb
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
+      .get();
     if (!project) return fail(404, { error: 'Project not found' });
 
     const form = await request.formData();
@@ -59,7 +71,7 @@ export const actions = {
       sourceId: form.get('sourceId') as string,
       targetId: form.get('targetId') as string,
       relationType: form.get('relationType') as string,
-      label: form.get('label') as string || null
+      label: (form.get('label') as string) || null
     });
     saveRelations(project.dataPath, relations);
     return { success: true };
@@ -67,13 +79,17 @@ export const actions = {
 
   delete: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    const project = drizzleDb
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
+      .get();
     if (!project) return fail(404, { error: 'Project not found' });
 
     const form = await request.formData();
     const relId = form.get('relId') as string;
     let relations = loadRelations(project.dataPath);
-    relations = relations.filter(r => r.id !== relId);
+    relations = relations.filter((r) => r.id !== relId);
     saveRelations(project.dataPath, relations);
     return { success: true };
   }

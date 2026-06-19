@@ -1,11 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import chokidar from 'chokidar';
+import chokidar, { type FSWatcher } from 'chokidar';
 import { readMarkdownFile } from './markdown';
 import { syncEntityToDb } from './entities';
 import type { EntityType } from '$lib/types';
 
-const watchers = new Map<string, chokidar.FSWatcher>();
+const watchers = new Map<string, FSWatcher>();
 
 const ENTITY_PATTERNS: Record<string, EntityType> = {
   characters: 'character',

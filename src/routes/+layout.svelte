@@ -20,7 +20,12 @@
   {#if $page.data?.user && !zen.active}
     <Sidebar />
   {/if}
-  <main class="flex-1 overflow-auto" style={zen.active && zen.backgroundImage ? `background-image: url(${zen.backgroundImage}); background-size: cover; background-position: center; background-attachment: fixed;` : ''}>
+  <main
+    class="flex-1 overflow-auto"
+    style={zen.active && zen.backgroundImage
+      ? `background-image: url(${zen.backgroundImage}); background-size: cover; background-position: center; background-attachment: fixed;`
+      : ''}
+  >
     {@render children()}
   </main>
 </div>

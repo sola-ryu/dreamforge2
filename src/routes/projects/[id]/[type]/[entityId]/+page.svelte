@@ -4,7 +4,20 @@
   import { goto, invalidateAll } from '$app/navigation';
   import { ENTITY_LABELS } from '$lib/entityFields';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
-  import { ArrowLeft, Save, Trash2, Image, Bookmark, BookmarkMinus, SwitchCamera, Undo2, Link2, Unlink, ImagePlus } from 'lucide-svelte';
+  import type { EntityType } from '$lib/types';
+  import {
+    ArrowLeft,
+    Save,
+    Trash2,
+    Image,
+    Bookmark,
+    BookmarkMinus,
+    SwitchCamera,
+    Undo2,
+    Link2,
+    Unlink,
+    ImagePlus
+  } from 'lucide-svelte';
 
   let editing = $state(false);
   let showConvert = $state(false);
@@ -27,7 +40,7 @@
       tags = ($page.data.entity.tags || []).join(', ');
       status = $page.data.entity.status;
       const f: Record<string, unknown> = {};
-      for (const field of ($page.data?.customFields || [])) {
+      for (const field of $page.data?.customFields || []) {
         f[field.key] = $page.data.entity.frontmatter?.[field.key];
       }
       fields = f;
@@ -65,7 +78,9 @@
       class="mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
     >
       <ArrowLeft class="h-4 w-4" />
-      Back to {$page.data?.entityType ? ENTITY_LABELS[$page.data.entityType] + 's' : ''}
+      Back to {$page.data?.entityType
+        ? ENTITY_LABELS[$page.data.entityType as EntityType] + 's'
+        : ''}
     </a>
 
     <div class="flex items-center justify-between">
@@ -193,7 +208,8 @@
                   disabled={!editing}
                   class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                   placeholder={field.placeholder || ''}
-                >{fields[field.key] as string || ''}</textarea>
+                  >{(fields[field.key] as string) || ''}</textarea
+                >
               {:else if field.type === 'tags'}
                 <input
                   id={field.key}
@@ -258,10 +274,7 @@
         <div class="flex flex-wrap gap-2">
           {#each $page.data.entityImages as img}
             <div class="group relative">
-              <a
-                href="/projects/{$page.params.id}/images/{img.id}"
-                class="block"
-              >
+              <a href="/projects/{$page.params.id}/images/{img.id}" class="block">
                 <img
                   src={img.url}
                   alt={img.altText || img.originalName}
@@ -270,7 +283,12 @@
               </a>
               {#if editing}
                 <button
-                  onclick={() => fetch(window.location.href + '?/unlinkImage', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ imageId: img.id }) }).then(() => invalidateAll())}
+                  onclick={() =>
+                    fetch(window.location.href + '?/unlinkImage', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                      body: new URLSearchParams({ imageId: img.id })
+                    }).then(() => invalidateAll())}
                   class="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground opacity-0 group-hover:opacity-100"
                   title="Unlink image"
                 >
@@ -288,7 +306,7 @@
             class="flex-1 rounded border border-input bg-background px-2 py-1.5 text-xs"
           >
             <option value="">Select an image...</option>
-            {#each ($page.data?.projectImages || []) as img}
+            {#each $page.data?.projectImages || [] as img}
               <option value={img.id}>{img.originalName}</option>
             {/each}
           </select>
@@ -296,7 +314,11 @@
             onclick={() => {
               const select = document.getElementById('image-select') as HTMLSelectElement;
               if (!select.value) return;
-              fetch(window.location.href + '?/linkImage', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ imageId: select.value }) }).then(() => window.location.reload());
+              fetch(window.location.href + '?/linkImage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ imageId: select.value })
+              }).then(() => window.location.reload());
             }}
             class="flex items-center gap-1 rounded bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
           >
@@ -315,7 +337,8 @@
         rows={20}
         disabled={!editing}
         class="w-full rounded-lg border border-input bg-background px-3 py-2 font-mono text-sm"
-      >{body}</textarea>
+        >{body}</textarea
+      >
       {#if !editing}
         <div class="mt-4 prose prose-sm dark:prose-invert max-w-none">
           {@html $page.data?.entity?.body || ''}
@@ -357,19 +380,30 @@
       <form method="POST" action="?/convertToScene" use:enhance class="space-y-3">
         <div>
           <label for="convertStory" class="block text-xs text-muted-foreground mb-1">Story</label>
-          <select id="convertStory" name="storyId" required bind:value={convertStoryId}
+          <select
+            id="convertStory"
+            name="storyId"
+            required
+            bind:value={convertStoryId}
             class="w-full rounded border border-input bg-background px-2 py-1 text-sm"
-            onchange={() => { convertChapterId = ''; }}
+            onchange={() => {
+              convertChapterId = '';
+            }}
           >
             <option value="">Select a story...</option>
-            {#each ($page.data?.stories || []) as story}
+            {#each $page.data?.stories || [] as story}
               <option value={story.id}>{story.title}</option>
             {/each}
           </select>
         </div>
         <div>
-          <label for="convertChapter" class="block text-xs text-muted-foreground mb-1">Chapter (optional)</label>
-          <select id="convertChapter" name="chapterId" bind:value={convertChapterId}
+          <label for="convertChapter" class="block text-xs text-muted-foreground mb-1"
+            >Chapter (optional)</label
+          >
+          <select
+            id="convertChapter"
+            name="chapterId"
+            bind:value={convertChapterId}
             class="w-full rounded border border-input bg-background px-2 py-1 text-sm"
           >
             <option value="">New chapter...</option>
@@ -379,8 +413,16 @@
           </select>
         </div>
         <div class="flex gap-2">
-          <button type="submit" class="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:opacity-90">Convert</button>
-          <button type="button" class="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-secondary" onclick={() => (showConvert = false)}>Cancel</button>
+          <button
+            type="submit"
+            class="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:opacity-90"
+            >Convert</button
+          >
+          <button
+            type="button"
+            class="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+            onclick={() => (showConvert = false)}>Cancel</button
+          >
         </div>
       </form>
     </div>
@@ -388,24 +430,33 @@
 
   <div class="mt-4 rounded-lg border border-border bg-card p-4">
     <p class="text-xs text-muted-foreground">
-      Created: {$page.data?.entity?.createdAt ? new Date($page.data.entity.createdAt).toLocaleString() : ''}
-      &middot;
-      Modified: {$page.data?.entity?.modifiedAt ? new Date($page.data.entity.modifiedAt).toLocaleString() : ''}
+      Created: {$page.data?.entity?.createdAt
+        ? new Date($page.data.entity.createdAt).toLocaleString()
+        : ''}
+      &middot; Modified: {$page.data?.entity?.modifiedAt
+        ? new Date($page.data.entity.modifiedAt).toLocaleString()
+        : ''}
     </p>
   </div>
 </div>
 
 {#if toastVisible}
-  <div class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-lg">
+  <div
+    class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-lg"
+  >
     <span class="text-sm">{toastMessage}</span>
-    <form method="POST" action="?/restore" use:enhance={() => {
-      return async ({ result }) => {
-        if (result.type === 'success') {
-          cancelDelete();
-          goto(window.location.href);
-        }
-      };
-    }}>
+    <form
+      method="POST"
+      action="?/restore"
+      use:enhance={() => {
+        return async ({ result }) => {
+          if (result.type === 'success') {
+            cancelDelete();
+            goto(window.location.href);
+          }
+        };
+      }}
+    >
       <input type="hidden" name="trashId" value={toastTrashId} />
       <button
         type="submit"
@@ -415,10 +466,7 @@
         Undo
       </button>
     </form>
-    <button
-      class="text-xs text-muted-foreground hover:text-foreground"
-      onclick={cancelDelete}
-    >
+    <button class="text-xs text-muted-foreground hover:text-foreground" onclick={cancelDelete}>
       Dismiss
     </button>
   </div>

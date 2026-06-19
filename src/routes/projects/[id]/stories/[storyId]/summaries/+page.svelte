@@ -21,7 +21,12 @@
     window.location.reload();
   }
 
-  async function handleUpdateSummary(chapterId: string, sceneId: string, field: string, value: string) {
+  async function handleUpdateSummary(
+    chapterId: string,
+    sceneId: string,
+    field: string,
+    value: string
+  ) {
     const form = new FormData();
     form.set('chapterId', chapterId);
     form.set('sceneId', sceneId);
@@ -33,12 +38,17 @@
 
 <div class="mx-auto max-w-4xl p-6">
   <div class="mb-6">
-    <a href="/projects/{$page.params.id}/stories/{$page.params.storyId}" class="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+    <a
+      href="/projects/{$page.params.id}/stories/{$page.params.storyId}"
+      class="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+    >
       <ArrowLeft class="h-4 w-4" />
       Back to {$page.data?.story?.title || 'Story'}
     </a>
     <h1 class="mt-2 text-2xl font-bold">Summaries</h1>
-    <p class="text-sm text-muted-foreground">{$page.data?.projectName || 'Project'} &middot; {$page.data?.story?.title || ''}</p>
+    <p class="text-sm text-muted-foreground">
+      {$page.data?.projectName || 'Project'} &middot; {$page.data?.story?.title || ''}
+    </p>
   </div>
 
   <SummariesView

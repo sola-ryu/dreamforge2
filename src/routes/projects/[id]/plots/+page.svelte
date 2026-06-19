@@ -43,24 +43,39 @@
       >
         <div>
           <label for="title" class="block text-sm font-medium">Title</label>
-          <input id="title" name="title" type="text" required bind:value={newTitle}
+          <input
+            id="title"
+            name="title"
+            type="text"
+            required
+            bind:value={newTitle}
             class="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-            placeholder="Plotline title..." />
+            placeholder="Plotline title..."
+          />
         </div>
         <div>
           <label for="storyId" class="block text-sm font-medium">Story</label>
-          <select id="storyId" name="storyId" required bind:value={newStory}
-            class="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm">
+          <select
+            id="storyId"
+            name="storyId"
+            required
+            bind:value={newStory}
+            class="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+          >
             <option value="">Select a story...</option>
-            {#each ($page.data?.stories || []) as story}
+            {#each $page.data?.stories || [] as story}
               <option value={story.id}>{story.title}</option>
             {/each}
           </select>
         </div>
         <div>
           <label for="template" class="block text-sm font-medium">Template</label>
-          <select id="template" name="template" bind:value={selectedTemplate}
-            class="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm">
+          <select
+            id="template"
+            name="template"
+            bind:value={selectedTemplate}
+            class="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+          >
             <option value="freeform">Freeform (no template)</option>
             <option value="heros_journey">Hero's Journey</option>
             <option value="save_the_cat">Save the Cat</option>
@@ -68,8 +83,16 @@
           </select>
         </div>
         <div class="flex gap-2">
-          <button type="submit" class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Create</button>
-          <button type="button" class="rounded-lg border border-border px-4 py-2 text-sm hover:bg-secondary" onclick={() => (showCreate = false)}>Cancel</button>
+          <button
+            type="submit"
+            class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >Create</button
+          >
+          <button
+            type="button"
+            class="rounded-lg border border-border px-4 py-2 text-sm hover:bg-secondary"
+            onclick={() => (showCreate = false)}>Cancel</button
+          >
         </div>
       </form>
     </div>
@@ -82,15 +105,20 @@
       </p>
     {/if}
 
-    {#each ($page.data?.plotlines || []) as plotline}
+    {#each $page.data?.plotlines || [] as plotline}
       <div class="rounded-lg border border-border bg-card hover:bg-secondary/50">
-        <a href="/projects/{$page.params.id}/plots/{plotline.id}" class="flex items-center gap-4 px-4 py-3">
+        <a
+          href="/projects/{$page.params.id}/plots/{plotline.id}"
+          class="flex items-center gap-4 px-4 py-3"
+        >
           <GripVertical class="h-4 w-4 text-muted-foreground opacity-40" />
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2">
               <span class="font-medium truncate">{plotline.title}</span>
               {#if plotline.template}
-                <span class="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground">{plotline.template}</span>
+                <span class="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground"
+                  >{plotline.template}</span
+                >
               {/if}
             </div>
             <p class="text-xs text-muted-foreground">
@@ -99,7 +127,11 @@
           </div>
           <form method="POST" action="?/delete" onsubmit={() => confirm('Delete this plotline?')}>
             <input type="hidden" name="plotlineId" value={plotline.id} />
-            <button type="submit" class="rounded p-1.5 hover:bg-secondary" onclick={(e) => e.stopPropagation()}>
+            <button
+              type="submit"
+              class="rounded p-1.5 hover:bg-secondary"
+              onclick={(e) => e.stopPropagation()}
+            >
               <Trash2 class="h-4 w-4 text-destructive" />
             </button>
           </form>

@@ -13,7 +13,15 @@ export interface CustomFieldDef {
   entityType: EntityType;
   key: string;
   label: string;
-  fieldType: 'text' | 'textarea' | 'number' | 'tags' | 'markdown' | 'entityRef' | 'boolean' | 'date';
+  fieldType:
+    | 'text'
+    | 'textarea'
+    | 'number'
+    | 'tags'
+    | 'markdown'
+    | 'entityRef'
+    | 'boolean'
+    | 'date';
   refEntityType: EntityType | null;
   placeholder: string | null;
   required: boolean;
@@ -77,12 +85,21 @@ export function setCustomFieldDefs(
 export function addCustomFieldDef(
   projectId: string,
   entityType: EntityType,
-  def: { key: string; label: string; fieldType: CustomFieldDef['fieldType']; refEntityType?: EntityType | null; placeholder?: string; required?: boolean }
+  def: {
+    key: string;
+    label: string;
+    fieldType: CustomFieldDef['fieldType'];
+    refEntityType?: EntityType | null;
+    placeholder?: string;
+    required?: boolean;
+  }
 ): CustomFieldDef {
   const existing = drizzleDb
     .select()
     .from(customFieldDefs)
-    .where(and(eq(customFieldDefs.projectId, projectId), eq(customFieldDefs.entityType, entityType)))
+    .where(
+      and(eq(customFieldDefs.projectId, projectId), eq(customFieldDefs.entityType, entityType))
+    )
     .all();
 
   const record = {

@@ -42,18 +42,18 @@ Inside a project, stories are the narrative layer.
 
 Projects contain multiple entity types, each with its own module/page:
 
-| Module | Description |
-|--------|-------------|
-| **Characters** | Custom stats, motivations, traits, backstory, personality types, attached images. |
-| **Organizations** | Governments, corporations, religions, guilds. Members, leaders, ownership tracking. |
-| **Locations** | Geology, ecosystem, land ownership, hierarchical placement (contained within another location). |
-| **Cultures** | Languages, rituals/ceremonies, value systems, mythos, custom stats/descriptions. |
-| **Species** | Fantasy races, alien species, flora/fauna — anything that influences the world. |
-| **Items** | Valuable/persistent objects (artifacts, weapons, McGuffins). References to owners/characters. |
-| **Notes** | Per-story or project-wide notes. Easy referencing and editing via sidebar. |
-| **Relations** | Graph-based relationship mapping (who hates who, org↔org links, etc.). |
-| **Images** | Attached media per entity. Concept art, character portraits, reference photos. |
-| **Templates** | Pre-built entity schemas and story structures (stored as Markdown). |
+| Module            | Description                                                                                     |
+| ----------------- | ----------------------------------------------------------------------------------------------- |
+| **Characters**    | Custom stats, motivations, traits, backstory, personality types, attached images.               |
+| **Organizations** | Governments, corporations, religions, guilds. Members, leaders, ownership tracking.             |
+| **Locations**     | Geology, ecosystem, land ownership, hierarchical placement (contained within another location). |
+| **Cultures**      | Languages, rituals/ceremonies, value systems, mythos, custom stats/descriptions.                |
+| **Species**       | Fantasy races, alien species, flora/fauna — anything that influences the world.                 |
+| **Items**         | Valuable/persistent objects (artifacts, weapons, McGuffins). References to owners/characters.   |
+| **Notes**         | Per-story or project-wide notes. Easy referencing and editing via sidebar.                      |
+| **Relations**     | Graph-based relationship mapping (who hates who, org↔org links, etc.).                          |
+| **Images**        | Attached media per entity. Concept art, character portraits, reference photos.                  |
+| **Templates**     | Pre-built entity schemas and story structures (stored as Markdown).                             |
 
 ### 2.4 Plot Module
 
@@ -131,12 +131,12 @@ Projects contain multiple entity types, each with its own module/page:
 
 ### 5.3 Export
 
-| Scope | Format | Details |
-|-------|--------|---------|
-| **Project** | ZIP of `.md` files | Each entity → separate Markdown file with frontmatter. Selective export via checkboxes. |
-| **Story** | Single `.md` or PDF | Author name, chapter title format/alignment/subtitle, scene delimiter, title page toggle, table of contents. |
-| **Chapter** | `.md` or clipboard (HTML) | Per-chapter export dialog. |
-| **Plotline** | `.md` | Direct export. |
+| Scope        | Format                    | Details                                                                                                      |
+| ------------ | ------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **Project**  | ZIP of `.md` files        | Each entity → separate Markdown file with frontmatter. Selective export via checkboxes.                      |
+| **Story**    | Single `.md` or PDF       | Author name, chapter title format/alignment/subtitle, scene delimiter, title page toggle, table of contents. |
+| **Chapter**  | `.md` or clipboard (HTML) | Per-chapter export dialog.                                                                                   |
+| **Plotline** | `.md`                     | Direct export.                                                                                               |
 
 All exports are plain Markdown — no proprietary format lock-in.
 
@@ -157,16 +157,16 @@ All exports are plain Markdown — no proprietary format lock-in.
 
 ### Recommended Stack
 
-| Layer | Technology | Rationale |
-|-------|-----------|-----------|
-| **Framework** | Next.js or SvelteKit | SSR for SEO-friendly landing pages, API routes for backend. |
-| **Database** | SQLite (via better-sqlite3) | Zero-config, file-based, perfect for self-hosted. No external DB needed. |
-| **Storage** | Local filesystem (Markdown + JSON) | Data lives in a folder; users can `git` it, `rsync` it, whatever. |
-| **Auth** | Session cookies (basic) or OAuth2 (optional) | Simple password auth for single-user installs; optional SSO for team/self-hosted. |
-| **Editor** | Tiptap (ProseMirror-based) | Extensible Markdown editor with custom blocks, tables, mentions. |
-| **Graph / Relations** | D3.js or vis.js | Force-directed graph rendering for relationship mapping. |
-| **Export** | markdown-it + jsPDF | Markdown export; optional PDF generation via jsPDF or pandoc. |
-| **Deployment** | Docker image + systemd | One-command deploy. Docker Compose for convenience. |
+| Layer                 | Technology                                   | Rationale                                                                         |
+| --------------------- | -------------------------------------------- | --------------------------------------------------------------------------------- |
+| **Framework**         | Next.js or SvelteKit                         | SSR for SEO-friendly landing pages, API routes for backend.                       |
+| **Database**          | SQLite (via better-sqlite3)                  | Zero-config, file-based, perfect for self-hosted. No external DB needed.          |
+| **Storage**           | Local filesystem (Markdown + JSON)           | Data lives in a folder; users can `git` it, `rsync` it, whatever.                 |
+| **Auth**              | Session cookies (basic) or OAuth2 (optional) | Simple password auth for single-user installs; optional SSO for team/self-hosted. |
+| **Editor**            | Tiptap (ProseMirror-based)                   | Extensible Markdown editor with custom blocks, tables, mentions.                  |
+| **Graph / Relations** | D3.js or vis.js                              | Force-directed graph rendering for relationship mapping.                          |
+| **Export**            | markdown-it + jsPDF                          | Markdown export; optional PDF generation via jsPDF or pandoc.                     |
+| **Deployment**        | Docker image + systemd                       | One-command deploy. Docker Compose for convenience.                               |
 
 ### Data Model Sketch
 
@@ -208,6 +208,7 @@ Project/
 ### Markdown File Format Example
 
 Characters (`characters/wizard.md`):
+
 ```yaml
 ---
 id: wizard
@@ -226,7 +227,6 @@ relationships:
   - target: forest_of_whispers
     type: home
 ---
-
 Elara Voss is a powerful mage who serves as the primary antagonist...
 
 > **Motivation:** Restore her family's honor by reclaiming the throne.
@@ -234,11 +234,12 @@ Elara Voss is a powerful mage who serves as the primary antagonist...
 ```
 
 Scene (`stories/book1/chapters/3/scenes/first_encounter.md`):
+
 ```yaml
 ---
 id: first_encounter
 chapter: ch3
-time: "Nightfall"
+time: 'Nightfall'
 place: forest_of_whispers
 narrator: elara
 participants: [elara, king_alaric]
@@ -246,7 +247,6 @@ plotThreads:
   - setup: elara's_exile
     payoff: null
 ---
-
 The trees parted before her like a curtain...
 ```
 
@@ -262,6 +262,7 @@ The trees parted before her like a curtain...
 ## 8. Roadmap / Phases
 
 ### Phase 1 — MVP
+
 - Project CRUD + data folder management
 - All lore entity modules (Characters, Organizations, Locations, Cultures, Species, Items, Notes)
 - Relations graph viewer
@@ -274,6 +275,7 @@ The trees parted before her like a curtain...
 - Local backups (on-exit + scheduled)
 
 ### Phase 2 — Polish
+
 - Plot module with templates
 - Summaries module
 - Note → Scene conversion
@@ -285,6 +287,7 @@ The trees parted before her like a curtain...
 - PDF export (via pandoc or jsPDF)
 
 ### Phase 3 — Extensibility
+
 - Plugin system (custom entity types, export formats)
 - API (REST or GraphQL) for programmatic access
 - CLI tool for power users (`dreamforge export`, `dreamforge import`, etc.)
@@ -292,6 +295,7 @@ The trees parted before her like a curtain...
 - Import from other tools (Notion, Obsidian, Scrivener)
 
 ### Phase 4 — Advanced
+
 - New modules: Structures, Pantheons, Timelines, Maps, To-do, Project Tracking
 - Import/duplicate entities across projects
 - Trash bin / undo deletions
@@ -304,15 +308,15 @@ The trees parted before her like a curtain...
 
 ## 9. Key Design Decisions
 
-| Decision | Choice | Why |
-|----------|--------|-----|
-| Storage format | Markdown + YAML frontmatter | Human-readable, git-friendly, no vendor lock-in |
-| Database | SQLite | Zero-config, file-based, perfect for self-hosted; Markdown is the source of truth |
-| Auth model | Single-user by default, optional multi-user | Most users run this alone; keep it simple |
-| Export | Markdown first, PDF second | No DOCX — Markdown is the open standard |
-| Sync | None (local-only) | Self-hosted means you control your own sync (git, syncthing, etc.) |
-| Plugin system | Yes | Let the community extend without bloating the core |
+| Decision       | Choice                                      | Why                                                                               |
+| -------------- | ------------------------------------------- | --------------------------------------------------------------------------------- |
+| Storage format | Markdown + YAML frontmatter                 | Human-readable, git-friendly, no vendor lock-in                                   |
+| Database       | SQLite                                      | Zero-config, file-based, perfect for self-hosted; Markdown is the source of truth |
+| Auth model     | Single-user by default, optional multi-user | Most users run this alone; keep it simple                                         |
+| Export         | Markdown first, PDF second                  | No DOCX — Markdown is the open standard                                           |
+| Sync           | None (local-only)                           | Self-hosted means you control your own sync (git, syncthing, etc.)                |
+| Plugin system  | Yes                                         | Let the community extend without bloating the core                                |
 
 ---
 
-*Generated from loreforge.com on 2026-06-19. Pivoted to open-source, Markdown-first, self-hosted.*
+_Generated from loreforge.com on 2026-06-19. Pivoted to open-source, Markdown-first, self-hosted._

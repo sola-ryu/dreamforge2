@@ -18,18 +18,10 @@ export const handle: Handle = async ({ event, resolve }) => {
   const sessionId = event.cookies.get('dreamforge-session');
 
   if (sessionId) {
-    const session = drizzleDb
-      .select()
-      .from(sessions)
-      .where(eq(sessions.id, sessionId))
-      .get();
+    const session = drizzleDb.select().from(sessions).where(eq(sessions.id, sessionId)).get();
 
     if (session && session.expiresAt > Math.floor(Date.now() / 1000)) {
-      const user = drizzleDb
-        .select()
-        .from(users)
-        .where(eq(users.id, session.userId))
-        .get();
+      const user = drizzleDb.select().from(users).where(eq(users.id, session.userId)).get();
 
       event.locals.user = user || null;
       event.locals.session = session;

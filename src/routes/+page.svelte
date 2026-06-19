@@ -26,10 +26,7 @@
         >
           Log In
         </a>
-        <a
-          href="/register"
-          class="rounded-lg border border-border px-6 py-3 hover:bg-secondary"
-        >
+        <a href="/register" class="rounded-lg border border-border px-6 py-3 hover:bg-secondary">
           Register
         </a>
       </div>

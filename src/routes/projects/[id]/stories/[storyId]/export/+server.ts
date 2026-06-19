@@ -8,7 +8,10 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 const drizzleDb = drizzle(db);
 
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+  return html
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .trim();
 }
 
 function renderTitlePage(title: string, subtitle?: string, author?: string) {
@@ -23,20 +26,38 @@ function renderTitlePage(title: string, subtitle?: string, author?: string) {
 }
 
 function renderToc(chapters: { title: string; scenes: { title: string | null }[] }[]) {
-  const items = chapters.flatMap((ch, i) => {
-    const scenes = ch.scenes.map((s, j) =>
-      `<li class="toc-scene">Scene ${j + 1}: ${escapeHtml(s.title || 'Untitled')}</li>`
-    ).join('');
-    return `<li class="toc-chapter">Chapter ${i + 1}: ${escapeHtml(ch.title)}<ol>${scenes}</ol></li>`;
-  }).join('');
+  const items = chapters
+    .flatMap((ch, i) => {
+      const scenes = ch.scenes
+        .map(
+          (s, j) =>
+            `<li class="toc-scene">Scene ${j + 1}: ${escapeHtml(s.title || 'Untitled')}</li>`
+        )
+        .join('');
+      return `<li class="toc-chapter">Chapter ${i + 1}: ${escapeHtml(ch.title)}<ol>${scenes}</ol></li>`;
+    })
+    .join('');
   return `<div class="toc"><h2>Table of Contents</h2><ol>${items}</ol></div>`;
 }
 
 function escapeHtml(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
-function renderScene(scene: { title: string | null; body: string; narrator?: string | null; time?: string | null; place?: string | null }, index: number) {
+function renderScene(
+  scene: {
+    title: string | null;
+    body: string;
+    narrator?: string | null;
+    time?: string | null;
+    place?: string | null;
+  },
+  index: number
+) {
   const bodyText = stripHtml(scene.body) || '(empty)';
   const meta = [];
   if (scene.narrator) meta.push(`Narrator: ${escapeHtml(scene.narrator)}`);
@@ -183,10 +204,14 @@ export const GET = async ({ params, locals, url }) => {
 <body>
 ${showTitlePage ? renderTitlePage(story.title, story.description || undefined, authorName) : ''}
 ${showToc ? renderToc(chaptersWithScenes) : ''}
-${chaptersWithScenes.map((ch, i) => `
+${chaptersWithScenes
+  .map(
+    (ch, i) => `
   <h2 class="chapter-title">${titleFormat === 'number' ? `Chapter ${i + 1}` : escapeHtml(ch.title)}</h2>
   ${ch.scenes.map((s, j) => renderScene(s, j)).join('')}
-`).join('')}
+`
+  )
+  .join('')}
 </body>
 </html>`;
 

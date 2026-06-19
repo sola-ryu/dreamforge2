@@ -30,7 +30,10 @@
 
 <div class="mx-auto max-w-4xl p-6">
   <div class="mb-6">
-    <a href="/projects/{$page.params.id}/plots" class="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+    <a
+      href="/projects/{$page.params.id}/plots"
+      class="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+    >
       <ArrowLeft class="h-4 w-4" />
       Back to Plotlines
     </a>

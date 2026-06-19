@@ -65,7 +65,8 @@ export function listStories(projectPath: string): StoryMeta[] {
   const dir = path.join(projectPath, 'stories');
   if (!fs.existsSync(dir)) return [];
 
-  return fs.readdirSync(dir)
+  return fs
+    .readdirSync(dir)
     .filter((f) => {
       try {
         return fs.statSync(path.join(dir, f)).isDirectory();
@@ -140,7 +141,8 @@ export function listChapters(projectPath: string, storyId: string): ChapterMeta[
   const dir = getChaptersDir(projectPath, storyId);
   if (!fs.existsSync(dir)) return [];
 
-  return fs.readdirSync(dir)
+  return fs
+    .readdirSync(dir)
     .filter((f) => {
       try {
         return fs.statSync(path.join(dir, f)).isDirectory();
@@ -183,11 +185,7 @@ export function getChapterMeta(
   }
 }
 
-export function createChapter(
-  projectPath: string,
-  storyId: string,
-  title: string
-): ChapterMeta {
+export function createChapter(projectPath: string, storyId: string, title: string): ChapterMeta {
   const id = generateId();
   const now = new Date().toISOString();
   const chapters = listChapters(projectPath, storyId);
@@ -240,15 +238,12 @@ export function deleteChapter(projectPath: string, storyId: string, chapterId: s
 
 // --- Scenes ---
 
-export function listScenes(
-  projectPath: string,
-  storyId: string,
-  chapterId: string
-): SceneData[] {
+export function listScenes(projectPath: string, storyId: string, chapterId: string): SceneData[] {
   const dir = getScenesDir(projectPath, storyId, chapterId);
   if (!fs.existsSync(dir)) return [];
 
-  return fs.readdirSync(dir)
+  return fs
+    .readdirSync(dir)
     .filter((f) => f.endsWith('.md'))
     .map((f) => {
       const filePath = path.join(dir, f);
@@ -270,7 +265,10 @@ export function listScenes(
           try {
             participants = JSON.parse(meta.participants as string);
           } catch {
-            participants = ((meta.participants as string) || '').split(',').map((s) => s.trim()).filter(Boolean);
+            participants = ((meta.participants as string) || '')
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean);
           }
         }
 
@@ -360,15 +358,22 @@ export function createScene(
   };
 
   const fileContent = `---\n${Object.entries({
-    id, chapterId, title: scene.title || '',
-    narrator: '', time: '', place: '',
+    id,
+    chapterId,
+    title: scene.title || '',
+    narrator: '',
+    time: '',
+    place: '',
     participants: '[]',
     backgroundImage: '',
     summary: '',
     plotThreads: '[]',
     sortOrder: maxOrder + 1,
-    createdAt: now, modifiedAt: now
-  }).map(([k, v]) => `${k}: ${v}`).join('\n')}\n---\n\n`;
+    createdAt: now,
+    modifiedAt: now
+  })
+    .map(([k, v]) => `${k}: ${v}`)
+    .join('\n')}\n---\n\n`;
 
   const filePath = path.join(getScenesDir(projectPath, storyId, chapterId), `${id}.md`);
   fs.writeFileSync(filePath, fileContent);
