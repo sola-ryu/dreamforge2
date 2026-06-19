@@ -4,6 +4,8 @@ import {
   listScenes, createScene, updateScene, deleteScene,
   reorderChapters, reorderScenes, updateStory, deleteStory
 } from '$lib/server/stories';
+import { searchEntities } from '$lib/server/entities';
+import { sceneToNote } from '$lib/server/conversion';
 import db from '$lib/server/db';
 import { projects } from '$lib/server/schema';
 import { eq, and } from 'drizzle-orm';
@@ -32,7 +34,14 @@ export const load = async ({ params, locals }) => {
     scenes: listScenes(project.dataPath, params.storyId, ch.id)
   }));
 
-  return { story, chapters: chaptersWithScenes, projectName: project.name };
+  const allEntities = searchEntities(params.id, '').map((e) => ({
+    id: e.id,
+    type: e.type,
+    name: e.name,
+    status: e.status
+  }));
+
+  return { story, chapters: chaptersWithScenes, projectName: project.name, entities: allEntities };
 };
 
 export const actions = {
@@ -111,6 +120,18 @@ export const actions = {
     const chapterIds = JSON.parse(form.get('chapterIds') as string);
     reorderChapters(project.dataPath, params.storyId, chapterIds);
     return { success: true };
+  },
+
+  convertToNote: async ({ params, locals, request }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
+    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    if (!project) return fail(404, { error: 'Project not found' });
+    const form = await request.formData();
+    const chapterId = form.get('chapterId') as string;
+    const sceneId = form.get('sceneId') as string;
+    const note = sceneToNote(params.id, project.dataPath, params.storyId, chapterId, sceneId);
+    if (!note) return fail(500, { error: 'Conversion failed' });
+    return { success: true, noteId: note.id };
   },
 
   reorderScenes: async ({ params, locals, request }) => {

@@ -64,9 +64,17 @@ export interface Scene {
   time: string | null;
   place: string | null;
   participants: string[];
+  backgroundImage: string | null;
+  summary: string | null;
+  plotThreads: PlotThread[];
   sortOrder: number;
   createdAt: string;
   modifiedAt: string;
+}
+
+export interface PlotThread {
+  thread: string;
+  type: 'setup' | 'payoff' | 'ongoing';
 }
 
 export interface Relation {

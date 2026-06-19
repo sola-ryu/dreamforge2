@@ -2,6 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { listEntities, createEntity, deleteEntity, searchEntities } from '$lib/server/entities';
 import { routeToEntityType } from '$lib/utils/entityTypes';
 import { watchProject, scanProject } from '$lib/server/watcher';
+import { getNoteTemplates } from '$lib/server/templates';
 import db from '$lib/server/db';
 import { projects } from '$lib/server/schema';
 import { eq, and } from 'drizzle-orm';
@@ -46,7 +47,8 @@ export const load = async ({ params, locals, url }) => {
     entityType,
     projectName: project.name,
     query,
-    status
+    status,
+    templates: entityType === 'note' ? getNoteTemplates() : []
   };
 };
 
@@ -69,7 +71,9 @@ export const actions = {
     const name = form.get('name') as string;
     if (!name) return fail(400, { error: 'Name is required' });
 
-    createEntity(params.id, project.dataPath, entityType, { name });
+    const body = entityType === 'note' ? (form.get('body') as string) || '' : undefined;
+
+    createEntity(params.id, project.dataPath, entityType, { name, body: body || undefined });
 
     return { success: true };
   },

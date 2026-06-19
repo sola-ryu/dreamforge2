@@ -8,8 +8,17 @@
 
   let showCreate = $state(false);
   let newName = $state('');
+  let newBody = $state('');
+  let selectedTemplate = $state('');
   let searchQuery = $state('');
   let showMenu = $state<string | null>(null);
+
+  function selectTemplate(templateId: string) {
+    selectedTemplate = templateId;
+    const templates = $page.data?.templates || [];
+    const tpl = templates.find((t: any) => t.id === templateId);
+    newBody = tpl?.body || '';
+  }
 </script>
 
 <div class="mx-auto max-w-4xl p-6">
@@ -58,6 +67,34 @@
             placeholder="Enter name..."
           />
         </div>
+        {#if $page.data?.entityType === 'note' && ($page.data?.templates || []).length > 0}
+          <div>
+            <label for="template" class="block text-sm font-medium">Template (optional)</label>
+            <select
+              id="template"
+              class="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              value={selectedTemplate}
+              onchange={(e) => selectTemplate((e.target as HTMLSelectElement).value)}
+            >
+              <option value="">Blank note</option>
+              {#each $page.data?.templates || [] as tmpl}
+                <option value={tmpl.id}>{tmpl.name} — {tmpl.description}</option>
+              {/each}
+            </select>
+          </div>
+          {#if newBody}
+            <div>
+              <label for="body" class="block text-sm font-medium">Content (edit as needed)</label>
+              <textarea
+                id="body"
+                name="body"
+                rows="6"
+                bind:value={newBody}
+                class="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm font-mono"
+              ></textarea>
+            </div>
+          {/if}
+        {/if}
         <div class="flex gap-2">
           <button
             type="submit"

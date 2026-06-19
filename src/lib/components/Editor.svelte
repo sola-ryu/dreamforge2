@@ -9,10 +9,20 @@
   import Highlight from '@tiptap/extension-highlight';
   import TextAlign from '@tiptap/extension-text-align';
   import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table';
+  import { TextStyle } from '@tiptap/extension-text-style';
+  import Color from '@tiptap/extension-color';
 
-  let { content = '', placeholder = 'Start writing...', onUpdate }: {
+  import Mention from '@tiptap/extension-mention';
+
+  import { Maximize2, Minimize2, SpellCheck } from 'lucide-svelte';
+  import { getZenMode } from '$lib/stores/zenMode.svelte';
+
+  const zen = getZenMode();
+
+  let { content = '', placeholder = 'Start writing...', entities = [], onUpdate }: {
     content?: string;
     placeholder?: string;
+    entities?: { id: string; type: string; name: string; status?: string }[];
     onUpdate?: (html: string) => void;
   } = $props();
 
@@ -20,7 +30,99 @@
   let editor: Editor;
   let mounted = $state(false);
 
+  let spellcheckEnabled = $state(localStorage.getItem('editor:spellcheck') !== 'false');
+  let editorLang = $state(localStorage.getItem('editor:lang') || 'en');
+  let textColor = $state('#000000');
+  let hlColor = $state('#ffff00');
+  let hoverMention = $state<{ id: string; type: string; label: string; x: number; y: number } | null>(null);
+
+  function toggleSpellcheck() {
+    spellcheckEnabled = !spellcheckEnabled;
+    localStorage.setItem('editor:spellcheck', String(spellcheckEnabled));
+  }
+
+  function setLang(lang: string) {
+    editorLang = lang;
+    localStorage.setItem('editor:lang', lang);
+  }
+
+  function setupMentionHover() {
+    const view = editor.view;
+    if (!view) return;
+    view.dom.addEventListener('mouseover', (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest('[data-mention]');
+      if (target instanceof HTMLElement) {
+        hoverMention = {
+          id: target.dataset.id || '',
+          type: target.dataset.type || '',
+          label: target.textContent?.replace(/^@/, '') || '',
+          x: e.clientX,
+          y: e.clientY
+        };
+      } else {
+        hoverMention = null;
+      }
+    });
+    view.dom.addEventListener('mouseleave', () => { hoverMention = null; });
+  }
+
+  function positionDropdown(dom: HTMLElement, rect: DOMRect) {
+    dom.style.position = 'fixed';
+    dom.style.left = `${rect.left}px`;
+    dom.style.top = `${rect.bottom + 4}px`;
+    dom.style.zIndex = '100';
+  }
+
   onMount(() => {
+    const mentionExt = Mention.configure({
+      HTMLAttributes: { class: 'mention-node' },
+      suggestion: {
+        items: ({ query }: { query: string }) => {
+          return entities.filter((e) =>
+            e.name.toLowerCase().includes(query.toLowerCase())
+          ).slice(0, 8).map((e) => ({ id: e.id, type: e.type, label: e.name }));
+        },
+        render: () => {
+          let dom: HTMLDivElement;
+          return {
+            onStart: (props: any) => {
+              dom = document.createElement('div');
+              dom.className = 'mention-dropdown';
+              document.body.appendChild(dom);
+              if (props.clientRect) positionDropdown(dom, props.clientRect());
+              const update = () => {
+                dom.innerHTML = props.items.map((item: any, i: number) =>
+                  `<button class="${i === props.selectedIndex ? 'bg-accent' : ''} flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-accent" data-index="${i}">${item.label}<span class="ml-auto text-xs text-muted-foreground">${item.type}</span></button>`
+                ).join('');
+                dom.querySelectorAll('button').forEach((btn) => {
+                  btn.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    const idx = parseInt(btn.dataset.index || '0', 10);
+                    props.command({ id: props.items[idx].id, type: props.items[idx].type, label: props.items[idx].label });
+                  });
+                });
+              };
+              update();
+            },
+            onUpdate: (props: any) => {
+              if (props.clientRect) positionDropdown(dom, props.clientRect());
+              dom.innerHTML = props.items.map((item: any, i: number) =>
+                `<button class="${i === props.selectedIndex ? 'bg-accent' : ''} flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-accent" data-index="${i}">${item.label}<span class="ml-auto text-xs text-muted-foreground">${item.type}</span></button>`
+              ).join('');
+              dom.querySelectorAll('button').forEach((btn) => {
+                btn.addEventListener('mousedown', (e) => {
+                  e.preventDefault();
+                  const idx = parseInt(btn.dataset.index || '0', 10);
+                  props.command({ id: props.items[idx].id, type: props.items[idx].type, label: props.items[idx].label });
+                });
+              });
+            },
+            onExit: () => { if (dom) dom.remove(); }
+          };
+        }
+      }
+    });
+
     editor = new Editor({
       element: editorEl,
       extensions: [
@@ -36,7 +138,10 @@
         Table.configure({ resizable: true }),
         TableRow,
         TableCell,
-        TableHeader
+        TableHeader,
+        TextStyle.configure(),
+        Color.configure(),
+        mentionExt
       ],
       content,
       onUpdate: ({ editor: ed }) => {
@@ -45,6 +150,7 @@
     });
 
     mounted = true;
+    setupMentionHover();
 
     return () => {
       editor.destroy();
@@ -76,6 +182,14 @@
         break;
       }
       case 'highlight': editor.chain().focus().toggleHighlight().run(); break;
+      case 'highlightColor': editor.chain().focus().toggleHighlight({ color: value }).run(); break;
+      case 'textColor': editor.chain().focus().setColor(value).run(); break;
+      case 'tableRowBefore': editor.chain().focus().addRowBefore().run(); break;
+      case 'tableRowAfter': editor.chain().focus().addRowAfter().run(); break;
+      case 'tableRowDelete': editor.chain().focus().deleteRow().run(); break;
+      case 'tableColBefore': editor.chain().focus().addColumnBefore().run(); break;
+      case 'tableColAfter': editor.chain().focus().addColumnAfter().run(); break;
+      case 'tableColDelete': editor.chain().focus().deleteColumn().run(); break;
       case 'left': editor.chain().focus().setTextAlign('left').run(); break;
       case 'center': editor.chain().focus().setTextAlign('center').run(); break;
       case 'right': editor.chain().focus().setTextAlign('right').run(); break;
@@ -120,10 +234,67 @@
       <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('left')}>&#8592;</button>
       <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('center')}>&#8596;</button>
       <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('right')}>&#8594;</button>
+      <span class="mx-1 border-l border-border"></span>
+      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('tableRowBefore')} title="Insert row before">&#8593; Row</button>
+      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('tableRowAfter')} title="Insert row after">&#8595; Row</button>
+      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('tableRowDelete')} title="Delete row">&times; Row</button>
+      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('tableColBefore')} title="Insert column before">&#8592; Col</button>
+      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('tableColAfter')} title="Insert column after">&#8594; Col</button>
+      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('tableColDelete')} title="Delete column">&times; Col</button>
+      <span class="mx-1 border-l border-border"></span>
+      <label class="flex items-center gap-0.5 rounded px-1 py-1 text-xs hover:bg-secondary" title="Text color">
+        <input type="color" value={textColor} onchange={(e) => { textColor = (e.target as HTMLInputElement).value; exec('textColor', textColor); }} class="h-4 w-4 cursor-pointer border-0 p-0" />
+        <span>A</span>
+      </label>
+      <label class="flex items-center gap-0.5 rounded px-1 py-1 text-xs hover:bg-secondary" title="Highlight color">
+        <input type="color" value={hlColor} onchange={(e) => { hlColor = (e.target as HTMLInputElement).value; exec('highlightColor', hlColor); }} class="h-4 w-4 cursor-pointer border-0 p-0" />
+        <span>HL</span>
+      </label>
+      <span class="mx-1 border-l border-border"></span>
+      <button class="rounded px-2 py-1 hover:bg-secondary" onclick={() => zen.toggle()} title={zen.active ? 'Exit Zen Mode' : 'Zen Mode'}>
+        {#if zen.active}
+          <Minimize2 class="h-3.5 w-3.5" />
+        {:else}
+          <Maximize2 class="h-3.5 w-3.5" />
+        {/if}
+      </button>
+      <span class="mx-1 border-l border-border"></span>
+      <button
+        class="rounded px-2 py-1 hover:bg-secondary"
+        class:opacity-40={!spellcheckEnabled}
+        onclick={toggleSpellcheck}
+        title={spellcheckEnabled ? 'Spellcheck on' : 'Spellcheck off'}
+      >
+        <SpellCheck class="h-3.5 w-3.5" />
+      </button>
+      <select
+        class="rounded border-0 bg-transparent px-1 py-1 text-xs hover:bg-secondary"
+        value={editorLang}
+        onchange={(e) => setLang((e.target as HTMLSelectElement).value)}
+        title="Editor language"
+      >
+        <option value="en">EN</option>
+        <option value="fr">FR</option>
+        <option value="de">DE</option>
+        <option value="es">ES</option>
+        <option value="it">IT</option>
+        <option value="pt">PT</option>
+        <option value="nl">NL</option>
+      </select>
     </div>
   {/if}
-  <div bind:this={editorEl} class="prose prose-sm dark:prose-invert max-w-none px-4 py-3 min-h-[200px] focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:leading-relaxed [&_.ProseMirror_p.is-editor-empty:first-child]:before:text-muted-foreground [&_.ProseMirror_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)] [&_.ProseMirror_p.is-editor-empty:first-child]:before:pointer-events-none [&_.ProseMirror_p.is-editor-empty:first-child]:before:float-left [&_.ProseMirror_p.is-editor-empty:first-child]:before:h-0 [&_.ProseMirror_p]:my-1"></div>
+  <div bind:this={editorEl} spellcheck={spellcheckEnabled} lang={editorLang} class="prose prose-sm dark:prose-invert max-w-none px-4 py-3 min-h-[200px] focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:leading-relaxed [&_.ProseMirror_p.is-editor-empty:first-child]:before:text-muted-foreground [&_.ProseMirror_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)] [&_.ProseMirror_p.is-editor-empty:first-child]:before:pointer-events-none [&_.ProseMirror_p.is-editor-empty:first-child]:before:float-left [&_.ProseMirror_p.is-editor-empty:first-child]:before:h-0 [&_.ProseMirror_p]:my-1"></div>
 </div>
+
+{#if hoverMention}
+  <div
+    class="fixed z-50 rounded-lg border border-border bg-popover px-3 py-2 shadow-lg"
+    style="left: {hoverMention.x}px; top: {hoverMention.y - 10}px; transform: translateY(-100%);"
+  >
+    <div class="text-sm font-medium">{hoverMention.label}</div>
+    <div class="text-xs text-muted-foreground capitalize">{hoverMention.type}</div>
+  </div>
+{/if}
 
 <style>
   .editor-wrapper :global(.ProseMirror) {
@@ -178,5 +349,21 @@
     color: hsl(var(--primary));
     text-decoration: underline;
     cursor: pointer;
+  }
+  .editor-wrapper :global([data-mention]) {
+    background: hsl(var(--accent));
+    border-radius: 0.25em;
+    padding: 0.125em 0.25em;
+    color: hsl(var(--accent-foreground));
+    cursor: pointer;
+  }
+  :global(.mention-dropdown) {
+    min-width: 12rem;
+    max-height: 12rem;
+    overflow-y: auto;
+    border-radius: 0.5rem;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--popover));
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 </style>

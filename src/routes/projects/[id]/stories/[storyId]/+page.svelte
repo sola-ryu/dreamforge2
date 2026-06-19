@@ -1,8 +1,11 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { enhance } from '$app/forms';
-  import { ArrowLeft, Plus, Trash2, GripVertical, FileText, ChevronDown, ChevronRight, BookOpen, Save } from 'lucide-svelte';
+  import { ArrowLeft, Plus, Trash2, GripVertical, FileText, ChevronDown, ChevronRight, BookOpen, Save, Image, LayoutList, SwitchCamera, Download } from 'lucide-svelte';
+  import { getZenMode } from '$lib/stores/zenMode.svelte';
   import Editor from '$lib/components/Editor.svelte';
+
+  const zen = getZenMode();
 
   let showCreateChapter = $state(false);
   let chapterTitle = $state('');
@@ -14,6 +17,7 @@
   let sceneTime = $state('');
   let scenePlace = $state('');
   let sceneParticipants = $state('');
+  let sceneBackgroundImage = $state('');
   let activeChapterId = $state('');
   let isSaving = $state(false);
 
@@ -29,9 +33,13 @@
     sceneTime = scene.time || '';
     scenePlace = scene.place || '';
     sceneParticipants = (scene.participants || []).join(', ');
+    sceneBackgroundImage = scene.backgroundImage || '';
+    zen.backgroundImage = scene.backgroundImage || null;
   }
 
   function closeScene() {
+    zen.backgroundImage = null;
+    if (zen.active) zen.active = false;
     activeSceneId = null;
     activeChapterId = '';
     sceneTitle = '';
@@ -40,6 +48,7 @@
     sceneTime = '';
     scenePlace = '';
     sceneParticipants = '';
+    sceneBackgroundImage = '';
   }
 
   function toggleChapter(id: string) {
@@ -117,7 +126,19 @@
         <ArrowLeft class="h-4 w-4" />
         Back
       </a>
-      <h2 class="mt-2 text-lg font-semibold">{$page.data?.story?.title || 'Story'}</h2>
+      <div class="mt-2 flex items-center justify-between">
+        <h2 class="text-lg font-semibold">{$page.data?.story?.title || 'Story'}</h2>
+        <div class="flex items-center gap-1">
+          <a href="/projects/{$page.params.id}/stories/{$page.params.storyId}/export" target="_blank" class="flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs hover:bg-secondary">
+            <Download class="h-3 w-3" />
+            Export
+          </a>
+          <a href="/projects/{$page.params.id}/stories/{$page.params.storyId}/summaries" class="flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs hover:bg-secondary">
+            <LayoutList class="h-3 w-3" />
+            Summaries
+          </a>
+        </div>
+      </div>
     </div>
 
     <button
@@ -235,6 +256,19 @@
               Save
             </button>
             <button
+              class="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+              title="Convert to Note"
+              onclick={async () => {
+                const f = new FormData();
+                f.set('chapterId', activeChapterId);
+                f.set('sceneId', activeSceneId || '');
+                await fetch('?/convertToNote', { method: 'POST', body: f });
+                window.location.reload();
+              }}
+            >
+              <SwitchCamera class="h-4 w-4" />
+            </button>
+            <button
               type="button"
               class="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-secondary"
               onclick={closeScene}
@@ -261,10 +295,15 @@
             <label for="scene-participants" class="text-muted-foreground">Participants:</label>
             <input id="scene-participants" type="text" name="participants" bind:value={sceneParticipants} class="rounded border border-input bg-background px-2 py-1 text-sm" placeholder="char_id1, char_id2" />
           </div>
+          <div class="flex items-center gap-2">
+            <Image class="h-3.5 w-3.5 text-muted-foreground" />
+            <input type="text" name="backgroundImage" bind:value={sceneBackgroundImage} class="rounded border border-input bg-background px-2 py-1 text-sm" placeholder="Background image URL for Zen Mode" />
+          </div>
         </div>
 
         <Editor
           content={sceneBody}
+          entities={$page.data?.entities || []}
           onUpdate={(html) => (sceneBody = html)}
         />
       </form>

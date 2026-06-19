@@ -3,9 +3,12 @@
   import { enhance } from '$app/forms';
   import { ENTITY_FIELDS, ENTITY_LABELS } from '$lib/entityFields';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
-  import { ArrowLeft, Save, Trash2, Image, Bookmark, BookmarkMinus } from 'lucide-svelte';
+  import { ArrowLeft, Save, Trash2, Image, Bookmark, BookmarkMinus, SwitchCamera } from 'lucide-svelte';
 
   let editing = $state(false);
+  let showConvert = $state(false);
+  let convertStoryId = $state('');
+  let convertChapterId = $state('');
   let name = $state($page.data?.entity?.name || '');
   let body = $state($page.data?.entity?.body || '');
   let fields = $state<Record<string, unknown>>({});
@@ -63,6 +66,15 @@
             Cancel
           </button>
         {:else}
+          {#if $page.data?.entityType === 'note'}
+            <button
+              class="flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary"
+              onclick={() => (showConvert = !showConvert)}
+            >
+              <SwitchCamera class="h-4 w-4" />
+              Convert to Scene
+            </button>
+          {/if}
           <form method="POST" action="?/toggleBookmark" use:enhance>
             <button
               type="submit"
@@ -205,6 +217,41 @@
           <Trash2 class="h-4 w-4" />
           Delete Entity
         </button>
+      </form>
+    </div>
+  {/if}
+
+  {#if showConvert && $page.data?.entityType === 'note'}
+    <div class="mt-4 rounded-lg border border-border bg-card p-4">
+      <h3 class="mb-3 text-sm font-medium">Convert Note to Scene</h3>
+      <form method="POST" action="?/convertToScene" use:enhance class="space-y-3">
+        <div>
+          <label for="convertStory" class="block text-xs text-muted-foreground mb-1">Story</label>
+          <select id="convertStory" name="storyId" required bind:value={convertStoryId}
+            class="w-full rounded border border-input bg-background px-2 py-1 text-sm"
+            onchange={() => { convertChapterId = ''; }}
+          >
+            <option value="">Select a story...</option>
+            {#each ($page.data?.stories || []) as story}
+              <option value={story.id}>{story.title}</option>
+            {/each}
+          </select>
+        </div>
+        <div>
+          <label for="convertChapter" class="block text-xs text-muted-foreground mb-1">Chapter (optional)</label>
+          <select id="convertChapter" name="chapterId" bind:value={convertChapterId}
+            class="w-full rounded border border-input bg-background px-2 py-1 text-sm"
+          >
+            <option value="">New chapter...</option>
+            {#each ($page.data?.stories || []).find((s: any) => s.id === convertStoryId)?.chapters || [] as ch}
+              <option value={ch.id}>{ch.title}</option>
+            {/each}
+          </select>
+        </div>
+        <div class="flex gap-2">
+          <button type="submit" class="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:opacity-90">Convert</button>
+          <button type="button" class="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-secondary" onclick={() => (showConvert = false)}>Cancel</button>
+        </div>
       </form>
     </div>
   {/if}

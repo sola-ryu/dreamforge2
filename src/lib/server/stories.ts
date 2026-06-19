@@ -21,6 +21,11 @@ interface ChapterMeta {
   modifiedAt: string;
 }
 
+interface PlotThreadData {
+  thread: string;
+  type: 'setup' | 'payoff' | 'ongoing';
+}
+
 interface SceneData {
   id: string;
   chapterId: string;
@@ -29,6 +34,9 @@ interface SceneData {
   time: string | null;
   place: string | null;
   participants: string[];
+  backgroundImage: string | null;
+  summary: string | null;
+  plotThreads: PlotThreadData[];
   sortOrder: number;
   body: string;
   createdAt: string;
@@ -266,6 +274,15 @@ export function listScenes(
           }
         }
 
+        let plotThreads: PlotThreadData[] = [];
+        if (meta.plotThreads) {
+          try {
+            plotThreads = JSON.parse(meta.plotThreads as string);
+          } catch {
+            plotThreads = [];
+          }
+        }
+
         return {
           id: (meta.id as string) || f.replace('.md', ''),
           chapterId,
@@ -274,6 +291,9 @@ export function listScenes(
           time: (meta.time as string) || null,
           place: (meta.place as string) || null,
           participants,
+          backgroundImage: (meta.backgroundImage as string) || null,
+          summary: (meta.summary as string) || null,
+          plotThreads,
           sortOrder: parseInt((meta.sortOrder as string) || '0', 10),
           body,
           createdAt: (meta.createdAt as string) || new Date().toISOString(),
@@ -330,24 +350,22 @@ export function createScene(
     time: null,
     place: null,
     participants: [],
+    backgroundImage: null,
+    summary: null,
+    plotThreads: [],
     sortOrder: maxOrder + 1,
     body: '',
     createdAt: now,
     modifiedAt: now
   };
 
-  const frontmatter = JSON.stringify({
-    id, chapterId, title: scene.title,
-    narrator: null, time: null, place: null,
-    participants: [],
-    sortOrder: maxOrder + 1,
-    createdAt: now, modifiedAt: now
-  });
-
   const fileContent = `---\n${Object.entries({
     id, chapterId, title: scene.title || '',
     narrator: '', time: '', place: '',
     participants: '[]',
+    backgroundImage: '',
+    summary: '',
+    plotThreads: '[]',
     sortOrder: maxOrder + 1,
     createdAt: now, modifiedAt: now
   }).map(([k, v]) => `${k}: ${v}`).join('\n')}\n---\n\n`;
@@ -372,7 +390,7 @@ export function updateScene(
   const updated = { ...scene, ...data, modifiedAt: now };
 
   const filePath = path.join(getScenesDir(projectPath, storyId, chapterId), `${sceneId}.md`);
-  const content = `---\nid: ${updated.id}\nchapterId: ${updated.chapterId}\ntitle: ${updated.title || ''}\nnarrator: ${updated.narrator || ''}\ntime: ${updated.time || ''}\nplace: ${updated.place || ''}\nparticipants: ${JSON.stringify(updated.participants)}\nsortOrder: ${updated.sortOrder}\ncreatedAt: ${updated.createdAt}\nmodifiedAt: ${updated.modifiedAt}\n---\n\n${updated.body}\n`;
+  const content = `---\nid: ${updated.id}\nchapterId: ${updated.chapterId}\ntitle: ${updated.title || ''}\nnarrator: ${updated.narrator || ''}\ntime: ${updated.time || ''}\nplace: ${updated.place || ''}\nparticipants: ${JSON.stringify(updated.participants)}\nbackgroundImage: ${updated.backgroundImage || ''}\nsummary: ${updated.summary || ''}\nplotThreads: ${JSON.stringify(updated.plotThreads)}\nsortOrder: ${updated.sortOrder}\ncreatedAt: ${updated.createdAt}\nmodifiedAt: ${updated.modifiedAt}\n---\n\n${updated.body}\n`;
   fs.writeFileSync(filePath, content);
 
   return updated;

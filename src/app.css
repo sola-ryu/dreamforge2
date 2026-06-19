@@ -105,3 +105,30 @@
       'calt' 1;
   }
 }
+
+.zen-mode main {
+  max-width: 50rem;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.zen-mode .editor-wrapper {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.zen-mode .editor-wrapper .border-b {
+  border-bottom: none;
+}
+
+.zen-mode .ProseMirror {
+  font-size: 1.125rem;
+  line-height: 1.8;
+}
+
+.zen-mode main .flex.h-full {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}

@@ -2,6 +2,8 @@ import { fail, redirect } from '@sveltejs/kit';
 import { getEntity, updateEntity, deleteEntity } from '$lib/server/entities';
 import { routeToEntityType } from '$lib/utils/entityTypes';
 import { addBookmark, removeBookmark, isBookmarked } from '$lib/server/bookmarks';
+import { noteToScene } from '$lib/server/conversion';
+import { listStories, listChapters } from '$lib/server/stories';
 import db from '$lib/server/db';
 import { projects } from '$lib/server/schema';
 import { eq, and } from 'drizzle-orm';
@@ -28,11 +30,18 @@ export const load = async ({ params, locals }) => {
 
   const bookmarked = isBookmarked(locals.user.id, params.id, params.entityId);
 
+  const stories = entityType === 'note' ? listStories(project.dataPath) : [];
+  const storiesWithChapters = stories.map((s) => ({
+    ...s,
+    chapters: listChapters(project.dataPath, s.id)
+  }));
+
   return {
     entity,
     projectName: project.name,
     entityType,
-    bookmarked
+    bookmarked,
+    stories: storiesWithChapters
   };
 };
 
@@ -65,6 +74,23 @@ export const actions = {
     if (!project) return fail(404, { error: 'Project not found' });
     deleteEntity(params.id, project.dataPath, entityType, params.entityId);
     throw redirect(302, `/projects/${params.id}/${params.type}`);
+  },
+
+  convertToScene: async ({ params, locals, request }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
+    const entityType = routeToEntityType(params.type);
+    if (entityType !== 'note') return fail(400, { error: 'Only notes can be converted' });
+    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    if (!project) return fail(404, { error: 'Project not found' });
+
+    const form = await request.formData();
+    const storyId = form.get('storyId') as string;
+    const chapterId = form.get('chapterId') as string || null;
+    const newChapterTitle = form.get('newChapterTitle') as string;
+
+    const scene = noteToScene(params.id, project.dataPath, params.entityId, storyId, chapterId, newChapterTitle);
+    if (!scene) return fail(500, { error: 'Conversion failed' });
+    return { success: true, sceneId: scene.id };
   },
 
   toggleBookmark: async ({ params, locals }) => {
