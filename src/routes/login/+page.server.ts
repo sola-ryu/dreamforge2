@@ -24,7 +24,7 @@ export const actions = {
       return fail(400, { error: 'Invalid email or password' });
     }
 
-    const valid = await verify(user.passwordHash, password);
+    const valid = await verify(password, user.passwordHash);
     if (!valid) {
       return fail(400, { error: 'Invalid email or password' });
     }
