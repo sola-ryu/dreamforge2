@@ -111,8 +111,7 @@
                       scene.id,
                       'summary',
                       (e.target as HTMLTextAreaElement).value
-                    )}
-                ></textarea>
+                    )}></textarea>
               {/if}
               {#if scene.plotThreads.length > 0}
                 <div class="mt-1 flex flex-wrap gap-1">

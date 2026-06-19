@@ -180,8 +180,7 @@
                     name={field.key}
                     rows="3"
                     class="mt-1 w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-                    placeholder={field.placeholder || ''}
-                  ></textarea>
+                    placeholder={field.placeholder || ''}></textarea>
                 {:else}
                   <input
                     id="cf-{field.key}"

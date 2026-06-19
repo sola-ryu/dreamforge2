@@ -117,8 +117,7 @@
             disabled={!editing}
             bind:value={altText}
             class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-            placeholder="Describe the image for accessibility..."
-          ></textarea>
+            placeholder="Describe the image for accessibility..."></textarea>
         </div>
         <div class="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
           <div>
