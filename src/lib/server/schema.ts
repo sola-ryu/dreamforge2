@@ -112,3 +112,18 @@ export const bookmarks = sqliteTable('bookmarks', {
   entityId: text('entity_id').notNull(),
   createdAt: text('created_at').notNull()
 });
+
+export const customFieldDefs = sqliteTable('custom_field_defs', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id')
+    .notNull()
+    .references(() => projects.id),
+  entityType: text('entity_type').notNull(),
+  key: text('key').notNull(),
+  label: text('label').notNull(),
+  fieldType: text('field_type').notNull(),
+  refEntityType: text('ref_entity_type'),
+  placeholder: text('placeholder'),
+  required: integer('required', { mode: 'boolean' }).notNull().default(false),
+  sortOrder: integer('sort_order').notNull().default(0)
+});

@@ -4,6 +4,9 @@ import { routeToEntityType } from '$lib/utils/entityTypes';
 import { addBookmark, removeBookmark, isBookmarked } from '$lib/server/bookmarks';
 import { noteToScene } from '$lib/server/conversion';
 import { listStories, listChapters } from '$lib/server/stories';
+import { getCustomFieldDefs } from '$lib/server/customFields';
+import { mergeFields } from '$lib/entityFields';
+import { ENTITY_FIELDS } from '$lib/entityFields';
 import db from '$lib/server/db';
 import { projects } from '$lib/server/schema';
 import { eq, and } from 'drizzle-orm';
@@ -36,12 +39,24 @@ export const load = async ({ params, locals }) => {
     chapters: listChapters(project.dataPath, s.id)
   }));
 
+  const customFieldDefs = getCustomFieldDefs(params.id, entityType).map((f) => ({
+    key: f.key,
+    label: f.label,
+    type: f.fieldType,
+    entityType: f.refEntityType || undefined,
+    placeholder: f.placeholder || undefined,
+    required: f.required
+  }));
+
+  const mergedFields = mergeFields(ENTITY_FIELDS[entityType], customFieldDefs);
+
   return {
     entity,
     projectName: project.name,
     entityType,
     bookmarked,
-    stories: storiesWithChapters
+    stories: storiesWithChapters,
+    customFields: mergedFields
   };
 };
 

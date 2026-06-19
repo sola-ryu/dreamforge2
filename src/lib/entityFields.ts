@@ -1,11 +1,12 @@
 import type { EntityType } from '$lib/types';
 
-interface FieldDef {
+export interface FieldDef {
   key: string;
   label: string;
-  type: 'text' | 'textarea' | 'number' | 'tags' | 'markdown' | 'entityRef' | 'image';
+  type: 'text' | 'textarea' | 'number' | 'tags' | 'markdown' | 'entityRef' | 'image' | 'boolean' | 'date';
   entityType?: EntityType;
   placeholder?: string;
+  required?: boolean;
 }
 
 export const ENTITY_FIELDS: Record<EntityType, FieldDef[]> = {
@@ -65,3 +66,8 @@ export const ENTITY_PLURAL: Record<EntityType, string> = {
   item: 'Items',
   note: 'Notes'
 };
+
+export function mergeFields(staticFields: FieldDef[], customFields: FieldDef[]): FieldDef[] {
+  const customKeys = new Set(customFields.map((f) => f.key));
+  return [...staticFields.filter((f) => !customKeys.has(f.key)), ...customFields];
+}

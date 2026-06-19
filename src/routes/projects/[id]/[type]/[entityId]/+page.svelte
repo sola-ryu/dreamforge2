@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { enhance } from '$app/forms';
-  import { ENTITY_FIELDS, ENTITY_LABELS } from '$lib/entityFields';
+  import { ENTITY_LABELS } from '$lib/entityFields';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import { ArrowLeft, Save, Trash2, Image, Bookmark, BookmarkMinus, SwitchCamera } from 'lucide-svelte';
 
@@ -22,11 +22,8 @@
       tags = ($page.data.entity.tags || []).join(', ');
       status = $page.data.entity.status;
       const f: Record<string, unknown> = {};
-      const type = $page.data.entityType;
-      if (type) {
-        for (const field of ENTITY_FIELDS[type]) {
-          f[field.key] = $page.data.entity.frontmatter?.[field.key];
-        }
+      for (const field of ($page.data?.customFields || [])) {
+        f[field.key] = $page.data.entity.frontmatter?.[field.key];
       }
       fields = f;
     }
@@ -147,12 +144,13 @@
         </div>
       </div>
 
-      {#if $page.data?.entityType && ENTITY_FIELDS[$page.data.entityType].length > 0}
+      {#if ($page.data?.customFields || []).length > 0}
         <div class="space-y-4">
-          {#each ENTITY_FIELDS[$page.data.entityType] as field}
+          {#each $page.data.customFields as field}
             <div>
               <label for={field.key} class="block text-sm font-medium mb-1">
                 {field.label}
+                {#if field.required}<span class="text-destructive">*</span>{/if}
               </label>
               {#if field.type === 'textarea' || field.type === 'markdown'}
                 <textarea
@@ -172,6 +170,24 @@
                   value={((fields[field.key] as string[]) || []).join(', ')}
                   class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                   placeholder="tag1, tag2, tag3"
+                />
+              {:else if field.type === 'boolean'}
+                <input
+                  id={field.key}
+                  name={field.key}
+                  type="checkbox"
+                  disabled={!editing}
+                  checked={fields[field.key] === true}
+                  class="rounded border-input"
+                />
+              {:else if field.type === 'date'}
+                <input
+                  id={field.key}
+                  name={field.key}
+                  type="date"
+                  disabled={!editing}
+                  value={(fields[field.key] as string) || ''}
+                  class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                 />
               {:else}
                 <input

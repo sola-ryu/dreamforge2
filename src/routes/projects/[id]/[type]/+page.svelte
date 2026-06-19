@@ -9,6 +9,7 @@
   let showCreate = $state(false);
   let newName = $state('');
   let newBody = $state('');
+  let newFields = $state<Record<string, unknown>>({});
   let selectedTemplate = $state('');
   let searchQuery = $state('');
   let showMenu = $state<string | null>(null);
@@ -46,10 +47,11 @@
         method="POST"
         action="?/create"
         use:enhance={() => {
-          return async ({ result }) => {
+          return async ({ result, update }) => {
             if (result.type === 'success') {
               showCreate = false;
               newName = '';
+              update();
             }
           };
         }}
@@ -94,6 +96,50 @@
               ></textarea>
             </div>
           {/if}
+        {/if}
+        {#if ($page.data?.customFields || []).length > 0}
+          <div class="border-t border-border pt-3">
+            <p class="mb-2 text-xs font-medium text-muted-foreground">Custom Fields</p>
+            {#each $page.data.customFields as field}
+              <div class="mb-2">
+                <label for="cf-{field.key}" class="block text-xs text-muted-foreground mb-0.5">
+                  {field.label}
+                  {#if field.required}<span class="text-destructive">*</span>{/if}
+                </label>
+                {#if field.type === 'boolean'}
+                  <input
+                    id="cf-{field.key}"
+                    name={field.key}
+                    type="checkbox"
+                    class="rounded border-input"
+                  />
+                {:else if field.type === 'date'}
+                  <input
+                    id="cf-{field.key}"
+                    name={field.key}
+                    type="date"
+                    class="mt-1 w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                  />
+                {:else if field.type === 'textarea' || field.type === 'markdown'}
+                  <textarea
+                    id="cf-{field.key}"
+                    name={field.key}
+                    rows="3"
+                    class="mt-1 w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                    placeholder={field.placeholder || ''}
+                  ></textarea>
+                {:else}
+                  <input
+                    id="cf-{field.key}"
+                    name={field.key}
+                    type={field.type === 'number' ? 'number' : 'text'}
+                    class="mt-1 w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                    placeholder={field.placeholder || ''}
+                  />
+                {/if}
+              </div>
+            {/each}
+          </div>
         {/if}
         <div class="flex gap-2">
           <button

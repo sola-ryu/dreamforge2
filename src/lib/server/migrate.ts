@@ -101,10 +101,23 @@ export function migrate() {
 
     CREATE TABLE IF NOT EXISTS bookmarks (
       id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES users(id),
+      user_id TEXT NOT NULL REFERENCES projects(id),
       project_id TEXT NOT NULL REFERENCES projects(id),
       entity_id TEXT NOT NULL,
       created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS custom_field_defs (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL REFERENCES projects(id),
+      entity_type TEXT NOT NULL,
+      key TEXT NOT NULL,
+      label TEXT NOT NULL,
+      field_type TEXT NOT NULL,
+      ref_entity_type TEXT,
+      placeholder TEXT,
+      required INTEGER NOT NULL DEFAULT 0,
+      sort_order INTEGER NOT NULL DEFAULT 0
     );
   `);
 }

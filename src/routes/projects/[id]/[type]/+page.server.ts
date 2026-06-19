@@ -3,6 +3,8 @@ import { listEntities, createEntity, deleteEntity, searchEntities } from '$lib/s
 import { routeToEntityType } from '$lib/utils/entityTypes';
 import { watchProject, scanProject } from '$lib/server/watcher';
 import { getNoteTemplates } from '$lib/server/templates';
+import { getCustomFieldDefs } from '$lib/server/customFields';
+import { mergeFields, ENTITY_FIELDS } from '$lib/entityFields';
 import db from '$lib/server/db';
 import { projects } from '$lib/server/schema';
 import { eq, and } from 'drizzle-orm';
@@ -42,13 +44,25 @@ export const load = async ({ params, locals, url }) => {
     entityList = entityList.filter((e) => e.status === status);
   }
 
+  const customFieldDefs = getCustomFieldDefs(params.id, entityType).map((f) => ({
+    key: f.key,
+    label: f.label,
+    type: f.fieldType,
+    entityType: f.refEntityType || undefined,
+    placeholder: f.placeholder || undefined,
+    required: f.required
+  }));
+
+  const mergedFields = mergeFields(ENTITY_FIELDS[entityType], customFieldDefs);
+
   return {
     entities: entityList,
     entityType,
     projectName: project.name,
     query,
     status,
-    templates: entityType === 'note' ? getNoteTemplates() : []
+    templates: entityType === 'note' ? getNoteTemplates() : [],
+    customFields: mergedFields
   };
 };
 
