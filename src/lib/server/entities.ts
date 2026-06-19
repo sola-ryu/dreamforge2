@@ -1,11 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import db from './db';
-import { entities } from './schema';
+import { entities as entitiesTable } from './schema';
 import { eq, and, like, desc } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { readMarkdownFile, writeMarkdownFile, type Frontmatter } from './markdown';
-import { generateId } from '$lib/utils';
+import { generateId, slugify } from '$lib/utils';
 import type { EntityType } from '$lib/types';
 
 const drizzleDb = drizzle(db);
@@ -41,9 +41,69 @@ function getEntityDir(projectPath: string, type: EntityType): string {
   return path.join(projectPath, ENTITY_DIRS[type]);
 }
 
-function getEntityPath(projectPath: string, type: EntityType, id: string): string {
+function slugifyPath(slug: string): string {
+  return slug.replace(/\//g, '-');
+}
+
+export function generateUniqueSlug(projectPath: string, type: EntityType, name: string, excludeId?: string): string {
+  let slug = slugifyPath(slugify(name));
+  if (!slug) slug = 'untitled';
+
   const dir = getEntityDir(projectPath, type);
-  return path.join(dir, `${id}.md`);
+  if (!fs.existsSync(dir)) return slug;
+
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith('.md'));
+  const existingSlugs = new Set<string>();
+  for (const file of files) {
+    if (excludeId) {
+      const filePath = path.join(dir, file);
+      const md = readMarkdownFile(filePath);
+      if (md && md.frontmatter.id === excludeId) continue;
+    }
+    existingSlugs.add(file.replace(/\.md$/, ''));
+  }
+
+  if (!existingSlugs.has(slug)) return slug;
+
+  let counter = 1;
+  while (existingSlugs.has(`${slug}-${counter}`)) {
+    counter++;
+  }
+  return `${slug}-${counter}`;
+}
+
+export function resolveEntityPath(projectPath: string, type: EntityType, id: string): string | null {
+  const dir = getEntityDir(projectPath, type);
+  if (!fs.existsSync(dir)) return null;
+
+  const slugRecord = drizzleDb
+    .select({ slug: entitiesTable.slug })
+    .from(entitiesTable)
+    .where(eq(entitiesTable.id, id))
+    .get();
+
+  if (slugRecord?.slug) {
+    const slugPath = path.join(dir, `${slugRecord.slug}.md`);
+    if (fs.existsSync(slugPath)) {
+      const md = readMarkdownFile(slugPath);
+      if (md && md.frontmatter.id === id) return slugPath;
+    }
+  }
+
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith('.md'));
+
+  for (const file of files) {
+    const filePath = path.join(dir, file);
+    const md = readMarkdownFile(filePath);
+    if (md && md.frontmatter.id === id) {
+      return filePath;
+    }
+  }
+
+  const idPath = path.join(dir, `${id}.md`);
+  if (fs.existsSync(idPath)) return idPath;
+
+  return null;
 }
 
 export function listEntities(
@@ -90,7 +150,9 @@ export function getEntity(
   type: EntityType,
   id: string
 ): EntityData | null {
-  const filePath = getEntityPath(projectPath, type, id);
+  const filePath = resolveEntityPath(projectPath, type, id);
+  if (!filePath) return null;
+
   const md = readMarkdownFile(filePath);
   if (!md) return null;
 
@@ -117,10 +179,12 @@ export function createEntity(
 ): EntityData {
   const now = new Date().toISOString();
   const id = generateId();
+  const slug = generateUniqueSlug(projectPath, type, data.name);
 
   const frontmatter: Frontmatter = {
     id,
     name: data.name,
+    slug,
     type,
     tags: data.tags || [],
     status: 'draft',
@@ -131,8 +195,12 @@ export function createEntity(
   };
 
   const body = (data.body as string) || '';
+  const dir = getEntityDir(projectPath, type);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
 
-  writeMarkdownFile(getEntityPath(projectPath, type, id), frontmatter as Record<string, unknown>, body);
+  writeMarkdownFile(path.join(dir, `${slug}.md`), frontmatter as Record<string, unknown>, body);
 
   syncEntityToDb(projectId, type, id, frontmatter);
 
@@ -162,19 +230,46 @@ export function updateEntity(
   if (!existing) return null;
 
   const now = new Date().toISOString();
+  const nameChanged = data.name && data.name !== existing.name;
+
+  let currentSlug = existing.frontmatter.slug as string | undefined;
+  if (!currentSlug) {
+    currentSlug = generateUniqueSlug(projectPath, type, existing.name);
+  }
+
+  let newSlug = currentSlug;
+  if (nameChanged) {
+    newSlug = generateUniqueSlug(projectPath, type, data.name as string, id);
+  }
+
   const frontmatter: Record<string, unknown> = {
     ...existing.frontmatter,
     ...data,
     id,
     type,
-    modified: now
+    modified: now,
+    slug: newSlug
   };
 
   delete frontmatter.body;
 
   const body = (data.body as string) ?? existing.body;
 
-  writeMarkdownFile(getEntityPath(projectPath, type, id), frontmatter, body);
+  if (nameChanged && newSlug !== currentSlug) {
+    const dir = getEntityDir(projectPath, type);
+    const oldPath = path.join(dir, `${currentSlug}.md`);
+    const newPath = path.join(dir, `${newSlug}.md`);
+
+    writeMarkdownFile(newPath, frontmatter, body);
+
+    if (fs.existsSync(oldPath)) {
+      fs.unlinkSync(oldPath);
+    }
+  } else {
+    const dir = getEntityDir(projectPath, type);
+    const filePath = resolveEntityPath(projectPath, type, id) || path.join(dir, `${newSlug}.md`);
+    writeMarkdownFile(filePath, frontmatter, body);
+  }
 
   syncEntityToDb(projectId, type, id, frontmatter);
 
@@ -193,12 +288,12 @@ export function deleteEntity(
   type: EntityType,
   id: string
 ): boolean {
-  const filePath = getEntityPath(projectPath, type, id);
-  if (!fs.existsSync(filePath)) return false;
+  const filePath = resolveEntityPath(projectPath, type, id);
+  if (!filePath) return false;
 
   fs.unlinkSync(filePath);
 
-  drizzleDb.delete(entities).where(and(eq(entities.id, id), eq(entities.projectId, projectId))).run();
+  drizzleDb.delete(entitiesTable).where(and(eq(entitiesTable.id, id), eq(entitiesTable.projectId, projectId))).run();
 
   return true;
 }
@@ -212,8 +307,8 @@ export function syncEntityToDb(
   const now = new Date().toISOString();
   const existing = drizzleDb
     .select()
-    .from(entities)
-    .where(and(eq(entities.id, id), eq(entities.projectId, projectId)))
+    .from(entitiesTable)
+    .where(and(eq(entitiesTable.id, id), eq(entitiesTable.projectId, projectId)))
     .get();
 
   const record = {
@@ -221,6 +316,7 @@ export function syncEntityToDb(
     projectId,
     type,
     name: (frontmatter.name as string) || id,
+    slug: (frontmatter.slug as string) || null,
     tags: (frontmatter.tags as string[]) || [],
     status: (frontmatter.status as string) || 'draft',
     imagePath: (frontmatter.imagePath as string) || null,
@@ -229,9 +325,9 @@ export function syncEntityToDb(
   };
 
   if (existing) {
-    drizzleDb.update(entities).set(record).where(eq(entities.id, id)).run();
+    drizzleDb.update(entitiesTable).set(record).where(eq(entitiesTable.id, id)).run();
   } else {
-    drizzleDb.insert(entities).values(record).run();
+    drizzleDb.insert(entitiesTable).values(record).run();
   }
 }
 
@@ -242,18 +338,18 @@ export function searchEntities(
 ): EntityData[] {
   let results = drizzleDb
     .select()
-    .from(entities)
-    .where(eq(entities.projectId, projectId));
+    .from(entitiesTable)
+    .where(eq(entitiesTable.projectId, projectId));
 
   if (typeFilter) {
-    results = results.where(eq(entities.type, typeFilter)) as typeof results;
+    results = results.where(eq(entitiesTable.type, typeFilter)) as typeof results;
   }
 
   if (query) {
-    results = results.where(like(entities.name, `%${query}%`)) as typeof results;
+    results = results.where(like(entitiesTable.name, `%${query}%`)) as typeof results;
   }
 
-  const dbResults = results.orderBy(desc(entities.modifiedAt)).all();
+  const dbResults = results.orderBy(desc(entitiesTable.modifiedAt)).all();
 
   return dbResults.map((r) => ({
     id: r.id,

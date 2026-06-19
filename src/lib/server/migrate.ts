@@ -51,6 +51,7 @@ export function migrate() {
       project_id TEXT NOT NULL REFERENCES projects(id),
       type TEXT NOT NULL,
       name TEXT NOT NULL,
+      slug TEXT,
       tags TEXT DEFAULT '[]',
       status TEXT NOT NULL DEFAULT 'draft',
       image_path TEXT,
@@ -149,4 +150,10 @@ export function migrate() {
       sort_order INTEGER NOT NULL DEFAULT 0
     );
   `);
+
+  try {
+    db.exec(`ALTER TABLE entities ADD COLUMN slug TEXT`);
+  } catch {
+    // Column already exists — ignore
+  }
 }

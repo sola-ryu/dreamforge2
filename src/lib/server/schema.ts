@@ -45,6 +45,7 @@ export const entities = sqliteTable('entities', {
     .references(() => projects.id),
   type: text('type').notNull(),
   name: text('name').notNull(),
+  slug: text('slug'),
   tags: text('tags', { mode: 'json' }).$type<string[]>().default([]),
   status: text('status').notNull().default('draft'),
   imagePath: text('image_path'),

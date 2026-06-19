@@ -4,8 +4,8 @@ import db from './db';
 import { trashItems as trashTable, entities } from './schema';
 import { eq, and, lt } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { readMarkdownFile, writeMarkdownFile } from './markdown';
-import { ENTITY_DIRS } from './entities';
+import { readMarkdownFile } from './markdown';
+import { ENTITY_DIRS, resolveEntityPath, generateUniqueSlug } from './entities';
 import { generateId } from '$lib/utils';
 import type { EntityType } from '$lib/types';
 
@@ -27,11 +27,11 @@ export interface TrashItem {
   frontmatter: Record<string, unknown>;
 }
 
-function getEntityPath(projectPath: string, type: EntityType, id: string): string {
-  const dir = type === 'note'
-    ? path.join(projectPath, 'notes', '_project')
-    : path.join(projectPath, ENTITY_DIRS[type]);
-  return path.join(dir, `${id}.md`);
+function getEntityDir(projectPath: string, type: EntityType): string {
+  if (type === 'note') {
+    return path.join(projectPath, 'notes', '_project');
+  }
+  return path.join(projectPath, ENTITY_DIRS[type]);
 }
 
 function getTrashDir(projectPath: string): string {
@@ -48,8 +48,8 @@ export function softDeleteEntity(
   type: EntityType,
   id: string
 ): TrashItem | null {
-  const sourcePath = getEntityPath(projectPath, type, id);
-  if (!fs.existsSync(sourcePath)) return null;
+  const sourcePath = resolveEntityPath(projectPath, type, id);
+  if (!sourcePath) return null;
 
   const md = readMarkdownFile(sourcePath);
   if (!md) return null;
@@ -105,16 +105,21 @@ export function restoreEntity(projectId: string, projectPath: string, trashId: s
   if (!item) return false;
 
   const trashPath = getTrashEntityPath(projectPath, item.entityType as EntityType, item.entityId);
-  const destPath = path.join(projectPath, item.originalPath);
 
   if (!fs.existsSync(trashPath)) {
     drizzleDb.delete(trashTable).where(eq(trashTable.id, trashId)).run();
     return false;
   }
 
-  const dir = path.dirname(destPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  const md = readMarkdownFile(trashPath);
+  const name = md ? (md.frontmatter.name as string) || item.entityId : item.entityId;
+  const type = item.entityType as EntityType;
+  const slug = generateUniqueSlug(projectPath, type, name, item.entityId);
+  const destDir = getEntityDir(projectPath, type);
+  const destPath = path.join(destDir, `${slug}.md`);
+
+  if (!fs.existsSync(destDir)) {
+    fs.mkdirSync(destDir, { recursive: true });
   }
 
   fs.renameSync(trashPath, destPath);

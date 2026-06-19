@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { enhance } from '$app/forms';
-  import { goto } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
   import { ENTITY_LABELS } from '$lib/entityFields';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import { ArrowLeft, Save, Trash2, Image, Bookmark, BookmarkMinus, SwitchCamera, Undo2, Link2, Unlink, ImagePlus } from 'lucide-svelte';
@@ -269,26 +269,22 @@
                 />
               </a>
               {#if editing}
-                <form method="POST" action="?/unlinkImage" use:enhance>
-                  <input type="hidden" name="imageId" value={img.id} />
-                  <button
-                    type="submit"
-                    class="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground opacity-0 group-hover:opacity-100"
-                    title="Unlink image"
-                  >
-                    <Unlink class="h-3 w-3" />
-                  </button>
-                </form>
+                <button
+                  onclick={() => fetch(window.location.href + '?/unlinkImage', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ imageId: img.id }) }).then(() => invalidateAll())}
+                  class="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground opacity-0 group-hover:opacity-100"
+                  title="Unlink image"
+                >
+                  <Unlink class="h-3 w-3" />
+                </button>
               {/if}
             </div>
           {/each}
         </div>
       {/if}
       {#if editing}
-        <form method="POST" action="?/linkImage" use:enhance class="mt-3 flex gap-2">
+        <div class="mt-3 flex gap-2">
           <select
-            name="imageId"
-            required
+            id="image-select"
             class="flex-1 rounded border border-input bg-background px-2 py-1.5 text-xs"
           >
             <option value="">Select an image...</option>
@@ -296,11 +292,18 @@
               <option value={img.id}>{img.originalName}</option>
             {/each}
           </select>
-          <button type="submit" class="flex items-center gap-1 rounded bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground">
+          <button
+            onclick={() => {
+              const select = document.getElementById('image-select') as HTMLSelectElement;
+              if (!select.value) return;
+              fetch(window.location.href + '?/linkImage', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ imageId: select.value }) }).then(() => window.location.reload());
+            }}
+            class="flex items-center gap-1 rounded bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+          >
             <Link2 class="h-3 w-3" />
             Link
           </button>
-        </form>
+        </div>
       {/if}
     </div>
 
