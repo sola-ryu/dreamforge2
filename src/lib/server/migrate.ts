@@ -117,6 +117,25 @@ export function migrate() {
       expires_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS project_images (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL REFERENCES projects(id),
+      filename TEXT NOT NULL,
+      original_name TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      size INTEGER NOT NULL,
+      caption TEXT,
+      alt_text TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS image_entity_links (
+      id TEXT PRIMARY KEY,
+      image_id TEXT NOT NULL REFERENCES project_images(id),
+      entity_id TEXT NOT NULL,
+      project_id TEXT NOT NULL REFERENCES projects(id)
+    );
+
     CREATE TABLE IF NOT EXISTS custom_field_defs (
       id TEXT PRIMARY KEY,
       project_id TEXT NOT NULL REFERENCES projects(id),

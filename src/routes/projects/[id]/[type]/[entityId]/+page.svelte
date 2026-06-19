@@ -4,7 +4,7 @@
   import { goto } from '$app/navigation';
   import { ENTITY_LABELS } from '$lib/entityFields';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
-  import { ArrowLeft, Save, Trash2, Image, Bookmark, BookmarkMinus, SwitchCamera, Undo2 } from 'lucide-svelte';
+  import { ArrowLeft, Save, Trash2, Image, Bookmark, BookmarkMinus, SwitchCamera, Undo2, Link2, Unlink, ImagePlus } from 'lucide-svelte';
 
   let editing = $state(false);
   let showConvert = $state(false);
@@ -236,6 +236,71 @@
             </div>
           {/each}
         </div>
+      {/if}
+    </div>
+
+    <div class="rounded-lg border border-border bg-card p-4">
+      <div class="mb-2 flex items-center justify-between">
+        <h2 class="text-sm font-medium">Images</h2>
+        {#if editing}
+          <a
+            href="/projects/{$page.params.id}/images"
+            class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <ImagePlus class="h-3 w-3" />
+            Gallery
+          </a>
+        {/if}
+      </div>
+      {#if ($page.data?.entityImages || []).length === 0}
+        <p class="py-2 text-xs text-muted-foreground">No images linked to this entity.</p>
+      {:else}
+        <div class="flex flex-wrap gap-2">
+          {#each $page.data.entityImages as img}
+            <div class="group relative">
+              <a
+                href="/projects/{$page.params.id}/images/{img.id}"
+                class="block"
+              >
+                <img
+                  src={img.url}
+                  alt={img.altText || img.originalName}
+                  class="h-20 w-20 rounded-lg border border-border object-cover"
+                />
+              </a>
+              {#if editing}
+                <form method="POST" action="?/unlinkImage" use:enhance>
+                  <input type="hidden" name="imageId" value={img.id} />
+                  <button
+                    type="submit"
+                    class="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground opacity-0 group-hover:opacity-100"
+                    title="Unlink image"
+                  >
+                    <Unlink class="h-3 w-3" />
+                  </button>
+                </form>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      {/if}
+      {#if editing}
+        <form method="POST" action="?/linkImage" use:enhance class="mt-3 flex gap-2">
+          <select
+            name="imageId"
+            required
+            class="flex-1 rounded border border-input bg-background px-2 py-1.5 text-xs"
+          >
+            <option value="">Select an image...</option>
+            {#each ($page.data?.projectImages || []) as img}
+              <option value={img.id}>{img.originalName}</option>
+            {/each}
+          </select>
+          <button type="submit" class="flex items-center gap-1 rounded bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground">
+            <Link2 class="h-3 w-3" />
+            Link
+          </button>
+        </form>
       {/if}
     </div>
 

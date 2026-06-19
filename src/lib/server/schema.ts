@@ -125,6 +125,31 @@ export const trashItems = sqliteTable('trash_items', {
   expiresAt: text('expires_at').notNull()
 });
 
+export const projectImages = sqliteTable('project_images', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id')
+    .notNull()
+    .references(() => projects.id),
+  filename: text('filename').notNull(),
+  originalName: text('original_name').notNull(),
+  mimeType: text('mime_type').notNull(),
+  size: integer('size').notNull(),
+  caption: text('caption'),
+  altText: text('alt_text'),
+  createdAt: text('created_at').notNull()
+});
+
+export const imageEntityLinks = sqliteTable('image_entity_links', {
+  id: text('id').primaryKey(),
+  imageId: text('image_id')
+    .notNull()
+    .references(() => projectImages.id),
+  entityId: text('entity_id').notNull(),
+  projectId: text('project_id')
+    .notNull()
+    .references(() => projects.id)
+});
+
 export const customFieldDefs = sqliteTable('custom_field_defs', {
   id: text('id').primaryKey(),
   projectId: text('project_id')

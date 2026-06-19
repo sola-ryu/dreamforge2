@@ -6,6 +6,7 @@ import { noteToScene } from '$lib/server/conversion';
 import { listStories, listChapters } from '$lib/server/stories';
 import { getCustomFieldDefs } from '$lib/server/customFields';
 import { softDeleteEntity, restoreEntity } from '$lib/server/trash';
+import { getImagesForEntity, listProjectImages, linkEntityToImage, unlinkEntityFromImage } from '$lib/server/images';
 import { mergeFields } from '$lib/entityFields';
 import { ENTITY_FIELDS } from '$lib/entityFields';
 import db from '$lib/server/db';
@@ -50,6 +51,8 @@ export const load = async ({ params, locals }) => {
   }));
 
   const mergedFields = mergeFields(ENTITY_FIELDS[entityType], customFieldDefs);
+  const entityImages = getImagesForEntity(params.id, params.entityId);
+  const projectImages = listProjectImages(params.id, project.dataPath);
 
   return {
     entity,
@@ -57,7 +60,9 @@ export const load = async ({ params, locals }) => {
     entityType,
     bookmarked,
     stories: storiesWithChapters,
-    customFields: mergedFields
+    customFields: mergedFields,
+    entityImages,
+    projectImages
   };
 };
 
@@ -129,6 +134,32 @@ export const actions = {
     if (!trashId) return fail(400, { error: 'Trash ID required' });
     const ok = restoreEntity(params.id, project.dataPath, trashId);
     if (!ok) return fail(500, { error: 'Restore failed' });
+    return { success: true };
+  },
+
+  linkImage: async ({ params, locals, request }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
+    const entityType = routeToEntityType(params.type);
+    if (!entityType) return fail(400, { error: 'Invalid entity type' });
+    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    if (!project) return fail(404, { error: 'Project not found' });
+    const form = await request.formData();
+    const imageId = form.get('imageId') as string;
+    if (!imageId) return fail(400, { error: 'Image ID required' });
+    linkEntityToImage(params.id, imageId, params.entityId);
+    return { success: true };
+  },
+
+  unlinkImage: async ({ params, locals, request }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
+    const entityType = routeToEntityType(params.type);
+    if (!entityType) return fail(400, { error: 'Invalid entity type' });
+    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    if (!project) return fail(404, { error: 'Project not found' });
+    const form = await request.formData();
+    const imageId = form.get('imageId') as string;
+    if (!imageId) return fail(400, { error: 'Image ID required' });
+    unlinkEntityFromImage(params.id, imageId, params.entityId);
     return { success: true };
   }
 };
