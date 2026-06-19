@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { toggleTheme } from '$lib/stores/theme';
-  import { Home, BookMarked, SunMoon, LogOut, Download, Search } from 'lucide-svelte';
+  import { Home, BookMarked, SunMoon, LogOut, Download, Search, Clock } from 'lucide-svelte';
 </script>
 
 <aside class="flex w-64 flex-col border-r border-border bg-card">
@@ -36,6 +36,14 @@
         class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-secondary"
       >
         Stories
+      </a>
+
+      <a
+        href="/projects/{$page.params.id}/timelines"
+        class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-secondary"
+      >
+        <Clock class="h-4 w-4" />
+        Timelines
       </a>
 
       <a

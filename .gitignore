@@ -9,3 +9,4 @@ package/
 *.db-journal
 data/
 .DS_Store
+CLAUDE.md
