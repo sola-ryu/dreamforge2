@@ -263,8 +263,11 @@
         action="?/delete"
         use:enhance={() => {
           return async ({ result }) => {
-            if (result.type === 'success' && result.data?.trashItem) {
-              showToast('Entity moved to trash', result.data.trashItem.id);
+            if (result.type === 'success') {
+              const d = result.data as { trashItem?: { id: string } };
+              if (d?.trashItem) {
+                showToast('Entity moved to trash', d.trashItem.id);
+              }
             }
           };
         }}

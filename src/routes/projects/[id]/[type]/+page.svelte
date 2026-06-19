@@ -5,7 +5,7 @@
   import { ENTITY_LABELS, ENTITY_PLURAL } from '$lib/entityFields';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import { cn, formatDate } from '$lib/utils';
-  import { Plus, Search, MoreHorizontal, FileText, Edit, Trash2, Undo2 } from 'lucide-svelte';
+  import { Plus, Search, MoreHorizontal, FileText, Edit, Trash2, Undo2, Download, Upload } from 'lucide-svelte';
 
   let showCreate = $state(false);
   let newName = $state('');
@@ -40,6 +40,11 @@
     const tpl = templates.find((t: any) => t.id === templateId);
     newBody = tpl?.body || '';
   }
+
+  function downloadCsv() {
+    const route = entityTypeToRoute($page.data?.entityType || 'character');
+    window.open(`/projects/${$page.params.id}/${route}/export-csv`, '_blank');
+  }
 </script>
 
 <div class="mx-auto max-w-4xl p-6">
@@ -52,13 +57,29 @@
         {$page.data?.projectName || 'Project'}
       </p>
     </div>
-    <button
-      class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-      onclick={() => (showCreate = !showCreate)}
-    >
-      <Plus class="h-4 w-4" />
-      New {$page.data?.entityType ? ENTITY_LABELS[$page.data.entityType] : ''}
-    </button>
+    <div class="flex items-center gap-2">
+      <button
+        class="flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary"
+        onclick={downloadCsv}
+      >
+        <Download class="h-4 w-4" />
+        Export CSV
+      </button>
+      <a
+        href="/projects/{$page.params.id}/{entityTypeToRoute($page.data?.entityType || 'character')}/import-csv"
+        class="flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary"
+      >
+        <Upload class="h-4 w-4" />
+        Import CSV
+      </a>
+      <button
+        class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+        onclick={() => (showCreate = !showCreate)}
+      >
+        <Plus class="h-4 w-4" />
+        New {$page.data?.entityType ? ENTITY_LABELS[$page.data.entityType] : ''}
+      </button>
+    </div>
   </div>
 
   {#if showCreate}
@@ -263,8 +284,11 @@
             <div class="absolute right-0 top-full z-50 mt-1 w-36 rounded-lg border border-border bg-popover shadow-lg">
               <form method="POST" action="?/delete" use:enhance={() => {
                 return async ({ result }) => {
-                  if (result.type === 'success' && result.data?.trashItem) {
-                    showToast('Entity moved to trash', result.data.trashItem.id);
+                  if (result.type === 'success') {
+                    const d = result.data as { trashItem?: { id: string } };
+                    if (d?.trashItem) {
+                      showToast('Entity moved to trash', d.trashItem.id);
+                    }
                   }
                 };
               }}>
