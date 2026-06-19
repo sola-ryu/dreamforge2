@@ -107,6 +107,16 @@ export function migrate() {
       created_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS trash_items (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL REFERENCES projects(id),
+      entity_id TEXT NOT NULL,
+      entity_type TEXT NOT NULL,
+      original_path TEXT NOT NULL,
+      deleted_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS custom_field_defs (
       id TEXT PRIMARY KEY,
       project_id TEXT NOT NULL REFERENCES projects(id),

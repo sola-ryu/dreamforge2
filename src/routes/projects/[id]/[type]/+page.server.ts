@@ -1,5 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { listEntities, createEntity, deleteEntity, searchEntities } from '$lib/server/entities';
+import { listEntities, createEntity, searchEntities } from '$lib/server/entities';
+import { softDeleteEntity, restoreEntity } from '$lib/server/trash';
 import { routeToEntityType } from '$lib/utils/entityTypes';
 import { watchProject, scanProject } from '$lib/server/watcher';
 import { getNoteTemplates } from '$lib/server/templates';
@@ -110,8 +111,24 @@ export const actions = {
     const entityId = form.get('entityId') as string;
     if (!entityId) return fail(400, { error: 'Entity ID required' });
 
-    deleteEntity(params.id, project.dataPath, entityType, entityId);
+    const trashItem = softDeleteEntity(params.id, project.dataPath, entityType, entityId);
 
+    return { success: true, trashItem };
+  },
+
+  restore: async ({ params, locals, request }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
+    const project = drizzleDb
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
+      .get();
+    if (!project) return fail(404, { error: 'Project not found' });
+    const form = await request.formData();
+    const trashId = form.get('trashId') as string;
+    if (!trashId) return fail(400, { error: 'Trash ID required' });
+    const ok = restoreEntity(params.id, project.dataPath, trashId);
+    if (!ok) return fail(500, { error: 'Restore failed' });
     return { success: true };
   }
 };

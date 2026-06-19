@@ -1,9 +1,10 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { enhance } from '$app/forms';
+  import { goto } from '$app/navigation';
   import { ENTITY_LABELS } from '$lib/entityFields';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
-  import { ArrowLeft, Save, Trash2, Image, Bookmark, BookmarkMinus, SwitchCamera } from 'lucide-svelte';
+  import { ArrowLeft, Save, Trash2, Image, Bookmark, BookmarkMinus, SwitchCamera, Undo2 } from 'lucide-svelte';
 
   let editing = $state(false);
   let showConvert = $state(false);
@@ -14,6 +15,10 @@
   let fields = $state<Record<string, unknown>>({});
   let tags = $state('');
   let status = $state($page.data?.entity?.status || 'draft');
+  let toastMessage = $state('');
+  let toastTrashId = $state('');
+  let toastTimer: ReturnType<typeof setTimeout> | null = null;
+  let toastVisible = $state(false);
 
   $effect(() => {
     if ($page.data?.entity) {
@@ -28,6 +33,25 @@
       fields = f;
     }
   });
+
+  function showToast(message: string, trashId: string) {
+    toastMessage = message;
+    toastTrashId = trashId;
+    toastVisible = true;
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toastVisible = false;
+      const type = $page.data?.entityType;
+      if (type) {
+        goto(`/projects/${$page.params.id}/${entityTypeToRoute(type)}`);
+      }
+    }, 5000);
+  }
+
+  function cancelDelete() {
+    if (toastTimer) clearTimeout(toastTimer);
+    toastVisible = false;
+  }
 
   function toggleEdit() {
     editing = !editing;
@@ -45,7 +69,16 @@
     </a>
 
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold">{$page.data?.entity?.name || 'Entity'}</h1>
+      {#if editing}
+        <input
+          type="text"
+          bind:value={name}
+          class="text-2xl font-bold bg-transparent border-b border-primary/50 outline-none w-full"
+          placeholder="Entity name"
+        />
+      {:else}
+        <h1 class="text-2xl font-bold">{name || 'Entity'}</h1>
+      {/if}
       <div class="flex gap-2">
         {#if editing}
           <button
@@ -225,7 +258,17 @@
 
   {#if editing}
     <div class="mt-6 border-t border-border pt-4">
-      <form method="POST" action="?/delete">
+      <form
+        method="POST"
+        action="?/delete"
+        use:enhance={() => {
+          return async ({ result }) => {
+            if (result.type === 'success' && result.data?.trashItem) {
+              showToast('Entity moved to trash', result.data.trashItem.id);
+            }
+          };
+        }}
+      >
         <button
           type="submit"
           class="flex items-center gap-2 rounded-lg border border-destructive/50 px-4 py-2 text-sm text-destructive hover:bg-destructive/10"
@@ -280,3 +323,32 @@
     </p>
   </div>
 </div>
+
+{#if toastVisible}
+  <div class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-lg">
+    <span class="text-sm">{toastMessage}</span>
+    <form method="POST" action="?/restore" use:enhance={() => {
+      return async ({ result }) => {
+        if (result.type === 'success') {
+          cancelDelete();
+          goto(window.location.href);
+        }
+      };
+    }}>
+      <input type="hidden" name="trashId" value={toastTrashId} />
+      <button
+        type="submit"
+        class="flex items-center gap-1 rounded bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+      >
+        <Undo2 class="h-3 w-3" />
+        Undo
+      </button>
+    </form>
+    <button
+      class="text-xs text-muted-foreground hover:text-foreground"
+      onclick={cancelDelete}
+    >
+      Dismiss
+    </button>
+  </div>
+{/if}

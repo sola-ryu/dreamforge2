@@ -113,6 +113,18 @@ export const bookmarks = sqliteTable('bookmarks', {
   createdAt: text('created_at').notNull()
 });
 
+export const trashItems = sqliteTable('trash_items', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id')
+    .notNull()
+    .references(() => projects.id),
+  entityId: text('entity_id').notNull(),
+  entityType: text('entity_type').notNull(),
+  originalPath: text('original_path').notNull(),
+  deletedAt: text('deleted_at').notNull(),
+  expiresAt: text('expires_at').notNull()
+});
+
 export const customFieldDefs = sqliteTable('custom_field_defs', {
   id: text('id').primaryKey(),
   projectId: text('project_id')

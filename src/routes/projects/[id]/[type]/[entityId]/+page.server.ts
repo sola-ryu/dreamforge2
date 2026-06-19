@@ -1,10 +1,11 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { getEntity, updateEntity, deleteEntity } from '$lib/server/entities';
+import { getEntity, updateEntity } from '$lib/server/entities';
 import { routeToEntityType } from '$lib/utils/entityTypes';
 import { addBookmark, removeBookmark, isBookmarked } from '$lib/server/bookmarks';
 import { noteToScene } from '$lib/server/conversion';
 import { listStories, listChapters } from '$lib/server/stories';
 import { getCustomFieldDefs } from '$lib/server/customFields';
+import { softDeleteEntity, restoreEntity } from '$lib/server/trash';
 import { mergeFields } from '$lib/entityFields';
 import { ENTITY_FIELDS } from '$lib/entityFields';
 import db from '$lib/server/db';
@@ -87,8 +88,9 @@ export const actions = {
     if (!entityType) return fail(400, { error: 'Invalid entity type' });
     const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
     if (!project) return fail(404, { error: 'Project not found' });
-    deleteEntity(params.id, project.dataPath, entityType, params.entityId);
-    throw redirect(302, `/projects/${params.id}/${params.type}`);
+    const trashItem = softDeleteEntity(params.id, project.dataPath, entityType, params.entityId);
+    if (!trashItem) return fail(500, { error: 'Failed to delete entity' });
+    return { success: true, trashItem };
   },
 
   convertToScene: async ({ params, locals, request }) => {
@@ -115,6 +117,18 @@ export const actions = {
     } else {
       addBookmark(locals.user.id, params.id, params.entityId);
     }
+    return { success: true };
+  },
+
+  restore: async ({ params, locals, request }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
+    const project = drizzleDb.select().from(projects).where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id))).get();
+    if (!project) return fail(404, { error: 'Project not found' });
+    const form = await request.formData();
+    const trashId = form.get('trashId') as string;
+    if (!trashId) return fail(400, { error: 'Trash ID required' });
+    const ok = restoreEntity(params.id, project.dataPath, trashId);
+    if (!ok) return fail(500, { error: 'Restore failed' });
     return { success: true };
   }
 };

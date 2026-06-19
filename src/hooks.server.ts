@@ -4,13 +4,15 @@ import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from '$lib/server/migrate';
 import { seed } from '$lib/server/seed';
+import { purgeExpiredTrashItems } from '$lib/server/trash';
 import type { Handle } from '@sveltejs/kit';
 
 const drizzleDb = drizzle(db);
 
-// Run migrations and seed on startup
+// Run migrations, seed, and purge expired trash on startup
 migrate();
 seed();
+purgeExpiredTrashItems();
 
 export const handle: Handle = async ({ event, resolve }) => {
   const sessionId = event.cookies.get('dreamforge-session');

@@ -1,9 +1,9 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { BookOpen, Users, Building2, MapPin, Globe, Bug, Package, FileText, Share2, Settings } from 'lucide-svelte';
+  import { BookOpen, Users, Building2, MapPin, Globe, Bug, Package, FileText, Share2, Settings, Trash2 } from 'lucide-svelte';
   import type { EntityType } from '$lib/types';
 
-  const modules: Array<{ type: EntityType | 'stories' | 'relations' | 'settings'; label: string; icon: any; href: string }> = [
+  const modules: Array<{ type: EntityType | 'stories' | 'relations' | 'settings' | 'trash'; label: string; icon: any; href: string }> = [
     { type: 'stories', label: 'Stories', icon: BookOpen, href: 'stories' },
     { type: 'character', label: 'Characters', icon: Users, href: 'characters' },
     { type: 'organization', label: 'Organizations', icon: Building2, href: 'organizations' },
@@ -13,7 +13,8 @@
     { type: 'item', label: 'Items', icon: Package, href: 'items' },
     { type: 'note', label: 'Notes', icon: FileText, href: 'notes' },
     { type: 'relations', label: 'Relations', icon: Share2, href: 'relations' },
-    { type: 'settings', label: 'Settings', icon: Settings, href: 'settings' }
+    { type: 'settings', label: 'Settings', icon: Settings, href: 'settings' },
+    { type: 'trash', label: 'Trash', icon: Trash2, href: 'trash' }
   ];
 </script>
 
