@@ -4,6 +4,7 @@
   import { goto } from '$app/navigation';
   import { ENTITY_LABELS, ENTITY_PLURAL } from '$lib/entityFields';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
+  import Editor from '$lib/components/Editor.svelte';
   import { cn, formatDate } from '$lib/utils';
   import type { EntityType } from '$lib/types';
   import {
@@ -255,13 +256,12 @@
           {#if newBody}
             <div>
               <label for="body" class="block text-sm font-medium">Content (edit as needed)</label>
-              <textarea
-                id="body"
-                name="body"
-                rows="6"
-                bind:value={newBody}
-                class="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm font-mono"
-              ></textarea>
+              <input type="hidden" name="body" value={newBody} />
+              <Editor
+                content={newBody}
+                entities={$page.data?.entities || []}
+                onUpdate={(md) => (newBody = md)}
+              />
             </div>
           {/if}
         {/if}

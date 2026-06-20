@@ -1,5 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { getEntity, updateEntity } from '$lib/server/entities';
+import { getEntity, updateEntity, searchEntities } from '$lib/server/entities';
 import { routeToEntityType } from '$lib/utils/entityTypes';
 import { addBookmark, removeBookmark, isBookmarked } from '$lib/server/bookmarks';
 import { noteToScene } from '$lib/server/conversion';
@@ -50,6 +50,13 @@ export const load = async ({ params, locals }) => {
   const entityImages = getImagesForEntity(params.id, params.entityId);
   const projectImages = listProjectImages(params.id, project.dataPath);
 
+  const allEntities = searchEntities(params.id, '').map((e) => ({
+    id: e.id,
+    type: e.type,
+    name: e.name,
+    status: e.status
+  }));
+
   return {
     entity,
     projectName: project.name,
@@ -59,6 +66,7 @@ export const load = async ({ params, locals }) => {
     customFields: mergedFields,
     entityImages,
     projectImages,
+    entities: allEntities,
     role,
     currentUserId: locals.user.id,
     projectOwnerId: project.userId

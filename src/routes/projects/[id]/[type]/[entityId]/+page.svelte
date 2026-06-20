@@ -5,6 +5,8 @@
   import { ENTITY_LABELS } from '$lib/entityFields';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import type { EntityType } from '$lib/types';
+  import Editor from '$lib/components/Editor.svelte';
+  import { marked } from 'marked';
   import Comments from '$lib/components/Comments.svelte';
   import {
     ArrowLeft,
@@ -319,18 +321,33 @@
 
     <div class="rounded-lg border border-border bg-card p-4">
       <label for="body" class="mb-2 block text-sm font-medium">Content</label>
-      <textarea
-        id="body"
-        name="body"
-        rows={20}
-        disabled={!editing}
-        class="w-full rounded-lg border border-input bg-background px-3 py-2 font-mono text-sm"
-        >{body}</textarea
-      >
-      {#if !editing}
-        <div class="mt-4 prose prose-sm dark:prose-invert max-w-none">
-          {@html $page.data?.entity?.body || ''}
-        </div>
+      {#if $page.data?.entityType === 'note'}
+        <input type="hidden" name="body" value={body} />
+        {#if editing}
+          <Editor
+            content={body}
+            entities={$page.data?.entities || []}
+            onUpdate={(md) => (body = md)}
+          />
+        {:else}
+          <div class="mt-4 prose prose-sm dark:prose-invert max-w-none">
+            {@html marked.parse(body || '')}
+          </div>
+        {/if}
+      {:else}
+        <textarea
+          id="body"
+          name="body"
+          rows={20}
+          disabled={!editing}
+          class="w-full rounded-lg border border-input bg-background px-3 py-2 font-mono text-sm"
+          >{body}</textarea
+        >
+        {#if !editing}
+          <div class="mt-4 prose prose-sm dark:prose-invert max-w-none">
+            {@html $page.data?.entity?.body || ''}
+          </div>
+        {/if}
       {/if}
     </div>
   </form>
