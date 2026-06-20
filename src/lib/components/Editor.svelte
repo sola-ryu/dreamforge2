@@ -8,6 +8,7 @@
   import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table';
   import { Markdown } from '@tiptap/markdown';
   import Mention from '@tiptap/extension-mention';
+  import { HighlightMarkdown } from './highlight';
 
   import { Maximize2, Minimize2, SpellCheck } from 'lucide-svelte';
   import { getZenMode } from '$lib/stores/zenMode.svelte';
@@ -159,6 +160,7 @@
         TableRow,
         TableCell,
         TableHeader,
+        HighlightMarkdown,
         Markdown.configure({
           indentation: { style: 'space', size: 2 }
         }),
@@ -224,6 +226,9 @@
         if (url) editor.chain().focus().setImage({ src: url }).run();
         break;
       }
+      case 'highlight':
+        editor.chain().focus().toggleHighlight().run();
+        break;
       case 'tableRowBefore':
         editor.chain().focus().addRowBefore().run();
         break;
@@ -307,6 +312,9 @@
       >
       <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('image')}
         >Image</button
+      >
+      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('highlight')}
+        >HL</button
       >
       <span class="mx-1 border-l border-border"></span>
       <button
