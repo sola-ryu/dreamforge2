@@ -1,7 +1,18 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { toggleTheme } from '$lib/stores/theme.svelte';
-  import { Home, BookMarked, SunMoon, LogOut, Download, Search, Clock } from 'lucide-svelte';
+  import {
+    Home,
+    BookMarked,
+    SunMoon,
+    LogOut,
+    Download,
+    Search,
+    Clock,
+    LayoutDashboard,
+    BookOpenText,
+    GitBranch
+  } from 'lucide-svelte';
 </script>
 
 <aside class="flex w-64 flex-col border-r border-border bg-card">
@@ -28,6 +39,7 @@
         href="/projects/{$page.params.id}"
         class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-secondary"
       >
+        <LayoutDashboard class="h-4 w-4" />
         Dashboard
       </a>
 
@@ -35,6 +47,7 @@
         href="/projects/{$page.params.id}/stories"
         class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-secondary"
       >
+        <BookOpenText class="h-4 w-4" />
         Stories
       </a>
 
@@ -50,6 +63,7 @@
         href="/projects/{$page.params.id}/relations"
         class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-secondary"
       >
+        <GitBranch class="h-4 w-4" />
         Relations
       </a>
 
