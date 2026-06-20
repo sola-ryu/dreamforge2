@@ -2,16 +2,11 @@
   import { onMount } from 'svelte';
   import { Editor } from '@tiptap/core';
   import StarterKit from '@tiptap/starter-kit';
-  import Underline from '@tiptap/extension-underline';
   import Link from '@tiptap/extension-link';
   import Placeholder from '@tiptap/extension-placeholder';
   import ImageExt from '@tiptap/extension-image';
-  import Highlight from '@tiptap/extension-highlight';
-  import TextAlign from '@tiptap/extension-text-align';
   import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table';
-  import { TextStyle } from '@tiptap/extension-text-style';
-  import Color from '@tiptap/extension-color';
-
+  import { Markdown } from '@tiptap/markdown';
   import Mention from '@tiptap/extension-mention';
 
   import { Maximize2, Minimize2, SpellCheck } from 'lucide-svelte';
@@ -28,7 +23,7 @@
     content?: string;
     placeholder?: string;
     entities?: { id: string; type: string; name: string; status?: string }[];
-    onUpdate?: (html: string) => void;
+    onUpdate?: (md: string) => void;
   } = $props();
 
   let editorEl: HTMLDivElement;
@@ -37,8 +32,6 @@
 
   let spellcheckEnabled = $state(localStorage.getItem('editor:spellcheck') !== 'false');
   let editorLang = $state(localStorage.getItem('editor:lang') || 'en');
-  let textColor = $state('#000000');
-  let hlColor = $state('#ffff00');
   let hoverMention = $state<{
     id: string;
     type: string;
@@ -159,23 +152,22 @@
         StarterKit.configure({
           heading: { levels: [1, 2, 3, 4, 5, 6] }
         }),
-        Underline,
         Link.configure({ openOnClick: false }),
         Placeholder.configure({ placeholder }),
         ImageExt,
-        Highlight,
-        TextAlign.configure({ types: ['heading', 'paragraph'] }),
         Table.configure({ resizable: true }),
         TableRow,
         TableCell,
         TableHeader,
-        TextStyle.configure(),
-        Color.configure(),
+        Markdown.configure({
+          indentation: { style: 'space', size: 2 }
+        }),
         mentionExt
       ],
       content,
+      contentType: 'markdown',
       onUpdate: ({ editor: ed }) => {
-        onUpdate?.(ed.getHTML());
+        onUpdate?.(ed.getMarkdown());
       }
     });
 
@@ -194,9 +186,6 @@
         break;
       case 'italic':
         editor.chain().focus().toggleItalic().run();
-        break;
-      case 'underline':
-        editor.chain().focus().toggleUnderline().run();
         break;
       case 'strike':
         editor.chain().focus().toggleStrike().run();
@@ -235,15 +224,6 @@
         if (url) editor.chain().focus().setImage({ src: url }).run();
         break;
       }
-      case 'highlight':
-        editor.chain().focus().toggleHighlight().run();
-        break;
-      case 'highlightColor':
-        editor.chain().focus().toggleHighlight({ color: value }).run();
-        break;
-      case 'textColor':
-        editor.chain().focus().setColor(value).run();
-        break;
       case 'tableRowBefore':
         editor.chain().focus().addRowBefore().run();
         break;
@@ -261,15 +241,6 @@
         break;
       case 'tableColDelete':
         editor.chain().focus().deleteColumn().run();
-        break;
-      case 'left':
-        editor.chain().focus().setTextAlign('left').run();
-        break;
-      case 'center':
-        editor.chain().focus().setTextAlign('center').run();
-        break;
-      case 'right':
-        editor.chain().focus().setTextAlign('right').run();
         break;
     }
   }
@@ -299,11 +270,6 @@
         class="rounded px-2 py-1 text-xs hover:bg-secondary"
         onclick={() => exec('italic')}
         title="Italic"><em>I</em></button
-      >
-      <button
-        class="rounded px-2 py-1 text-xs hover:bg-secondary"
-        onclick={() => exec('underline')}
-        title="Underline"><u>U</u></button
       >
       <button
         class="rounded px-2 py-1 text-xs hover:bg-secondary"
@@ -342,19 +308,6 @@
       <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('image')}
         >Image</button
       >
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('highlight')}
-        >HL</button
-      >
-      <span class="mx-1 border-l border-border"></span>
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('left')}
-        >&#8592;</button
-      >
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('center')}
-        >&#8596;</button
-      >
-      <button class="rounded px-2 py-1 text-xs hover:bg-secondary" onclick={() => exec('right')}
-        >&#8594;</button
-      >
       <span class="mx-1 border-l border-border"></span>
       <button
         class="rounded px-2 py-1 text-xs hover:bg-secondary"
@@ -386,37 +339,6 @@
         onclick={() => exec('tableColDelete')}
         title="Delete column">&times; Col</button
       >
-      <span class="mx-1 border-l border-border"></span>
-      <label
-        class="flex items-center gap-0.5 rounded px-1 py-1 text-xs hover:bg-secondary"
-        title="Text color"
-      >
-        <input
-          type="color"
-          value={textColor}
-          onchange={(e) => {
-            textColor = (e.target as HTMLInputElement).value;
-            exec('textColor', textColor);
-          }}
-          class="h-4 w-4 cursor-pointer border-0 p-0"
-        />
-        <span>A</span>
-      </label>
-      <label
-        class="flex items-center gap-0.5 rounded px-1 py-1 text-xs hover:bg-secondary"
-        title="Highlight color"
-      >
-        <input
-          type="color"
-          value={hlColor}
-          onchange={(e) => {
-            hlColor = (e.target as HTMLInputElement).value;
-            exec('highlightColor', hlColor);
-          }}
-          class="h-4 w-4 cursor-pointer border-0 p-0"
-        />
-        <span>HL</span>
-      </label>
       <span class="mx-1 border-l border-border"></span>
       <button
         class="rounded px-2 py-1 hover:bg-secondary"

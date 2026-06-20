@@ -1,5 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { listStories, createStory, deleteStory } from '$lib/server/stories';
+import { listStories, createStory, createChapter, createScene, deleteStory } from '$lib/server/stories';
 import { getProjectAccess } from '$lib/server/members';
 
 export const load = async ({ params, locals }) => {
@@ -28,9 +28,11 @@ export const actions = {
     if (!title) return fail(400, { error: 'Title is required' });
 
     const description = form.get('description') as string;
-    createStory(project.dataPath, title, description);
+    const story = createStory(project.dataPath, title, description);
+    const chapter = createChapter(project.dataPath, story.id, 'Chapter 1');
+    const scene = createScene(project.dataPath, story.id, chapter.id);
 
-    return { success: true };
+    return { success: true, storyId: story.id, chapterId: chapter.id, sceneId: scene.id };
   },
 
   delete: async ({ params, locals, request }) => {

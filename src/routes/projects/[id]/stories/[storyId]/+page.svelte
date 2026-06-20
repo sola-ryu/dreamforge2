@@ -39,6 +39,30 @@
   let dragChapterId = $state<string | null>(null);
   let dragSceneId = $state<string | null>(null);
 
+  let initialSceneId = $state<string | null>(null);
+
+  $effect(() => {
+    const sceneParam = $page.url.searchParams.get('scene');
+    if (sceneParam && !initialSceneId) {
+      initialSceneId = sceneParam;
+    }
+  });
+
+  $effect(() => {
+    const sceneId = initialSceneId;
+    const chapters = $page.data?.chapters;
+    if (!sceneId || !chapters || chapters.length === 0) return;
+
+    for (const ch of chapters) {
+      const scene = (ch.scenes || []).find((s: any) => s.id === sceneId);
+      if (scene) {
+        expandedChapters = new Set([...expandedChapters, ch.id]);
+        openScene(scene, ch.id);
+        break;
+      }
+    }
+  });
+
   function openScene(scene: any, chapterId: string) {
     activeSceneId = scene.id;
     activeChapterId = chapterId;
@@ -443,7 +467,7 @@
         <Editor
           content={sceneBody}
           entities={$page.data?.entities || []}
-          onUpdate={(html) => (sceneBody = html)}
+          onUpdate={(md) => (sceneBody = md)}
         />
       </form>
     {:else}

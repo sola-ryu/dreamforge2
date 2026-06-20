@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { enhance } from '$app/forms';
+  import { goto } from '$app/navigation';
   import { Plus, BookOpen, Trash2 } from 'lucide-svelte';
 
   let showCreate = $state(false);
@@ -35,10 +36,15 @@
         use:enhance={() => {
           return async ({ result, update }) => {
             if (result.type === 'success') {
-              showCreate = false;
-              title = '';
-              description = '';
-              await update();
+              const d = result.data as { storyId?: string; sceneId?: string };
+              if (d?.storyId && d?.sceneId) {
+                await goto(`/projects/${$page.params.id}/stories/${d.storyId}?scene=${d.sceneId}`);
+              } else {
+                showCreate = false;
+                title = '';
+                description = '';
+                await update();
+              }
             }
           };
         }}
