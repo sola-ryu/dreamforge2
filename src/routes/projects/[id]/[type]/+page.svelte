@@ -75,11 +75,17 @@
     window.open(`/projects/${$page.params.id}/${route}/export-csv`, '_blank');
   }
 
-  let entities = $state<any[]>($page.data?.entities || []);
+  let allEntities = $state<any[]>($page.data?.entities || []);
 
   $effect(() => {
-    entities = $page.data?.entities || [];
+    allEntities = $page.data?.entities || [];
   });
+
+  let entities = $derived(
+    searchQuery
+      ? allEntities.filter((e) => e.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      : allEntities
+  );
 
   function startCellEdit(entityId: string, field: string, currentValue: string) {
     if (!canEdit) return;
@@ -103,7 +109,7 @@
     });
 
     if (res.ok) {
-      entities = entities.map((e) =>
+      allEntities = allEntities.map((e) =>
         e.id === entityId
           ? { ...e, [field]: editingValue, frontmatter: { ...e.frontmatter, [field]: editingValue } }
           : e
@@ -124,7 +130,7 @@
     });
 
     if (res.ok) {
-      entities = entities.map((e) => (e.id === entityId ? { ...e, status: newStatus } : e));
+      allEntities = allEntities.map((e) => (e.id === entityId ? { ...e, status: newStatus } : e));
     }
   }
 
@@ -321,13 +327,7 @@
         type="search"
         placeholder="Search..."
         bind:value={searchQuery}
-        oninput={() => {
-          const q = searchQuery;
-          const url = new URL(window.location.href);
-          if (q) url.searchParams.set('q', q);
-          else url.searchParams.delete('q');
-          window.history.replaceState({}, '', url.toString());
-        }}
+        oninput={() => {}}
         class="w-full rounded-lg border border-input bg-background pl-9 pr-3 py-2 text-sm"
       />
     </div>
@@ -556,7 +556,7 @@
                             body.set('value', val);
                             const res = await fetch(`/projects/${$page.params.id}/${route}?/quickUpdate`, { method: 'POST', body });
                             if (res.ok) {
-                              entities = entities.map((en) =>
+                              allEntities = allEntities.map((en) =>
                                 en.id === entity.id ? { ...en, frontmatter: { ...en.frontmatter, [field.key]: val === 'true' } } : en
                               );
                             }

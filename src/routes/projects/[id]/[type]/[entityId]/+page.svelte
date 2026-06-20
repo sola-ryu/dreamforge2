@@ -10,11 +10,9 @@
     ArrowLeft,
     Save,
     Trash2,
-    Image,
     Bookmark,
     BookmarkMinus,
     SwitchCamera,
-    Undo2,
     Link2,
     Unlink,
     ImagePlus
@@ -32,11 +30,6 @@
   let fields = $state<Record<string, unknown>>({});
   let tags = $state('');
   let status = $state($page.data?.entity?.status || 'draft');
-  let toastMessage = $state('');
-  let toastTrashId = $state('');
-  let toastTimer: ReturnType<typeof setTimeout> | null = null;
-  let toastVisible = $state(false);
-
   $effect(() => {
     if ($page.data?.entity) {
       name = $page.data.entity.name;
@@ -50,25 +43,6 @@
       fields = f;
     }
   });
-
-  function showToast(message: string, trashId: string) {
-    toastMessage = message;
-    toastTrashId = trashId;
-    toastVisible = true;
-    if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => {
-      toastVisible = false;
-      const type = $page.data?.entityType;
-      if (type) {
-        goto(`/projects/${$page.params.id}/${entityTypeToRoute(type)}`);
-      }
-    }, 5000);
-  }
-
-  function cancelDelete() {
-    if (toastTimer) clearTimeout(toastTimer);
-    toastVisible = false;
-  }
 
   function toggleEdit() {
     editing = !editing;
@@ -376,9 +350,9 @@
         use:enhance={() => {
           return async ({ result }) => {
             if (result.type === 'success') {
-              const d = result.data as { trashItem?: { id: string } };
-              if (d?.trashItem) {
-                showToast('Entity moved to trash', d.trashItem.id);
+              const type = $page.data?.entityType;
+              if (type) {
+                goto(`/projects/${$page.params.id}/${entityTypeToRoute(type)}`);
               }
             }
           };
@@ -461,34 +435,3 @@
   </div>
 </div>
 
-{#if toastVisible}
-  <div
-    class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-lg"
-  >
-    <span class="text-sm">{toastMessage}</span>
-    <form
-      method="POST"
-      action="?/restore"
-      use:enhance={() => {
-        return async ({ result }) => {
-          if (result.type === 'success') {
-            cancelDelete();
-            goto(window.location.href);
-          }
-        };
-      }}
-    >
-      <input type="hidden" name="trashId" value={toastTrashId} />
-      <button
-        type="submit"
-        class="flex items-center gap-1 rounded bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
-      >
-        <Undo2 class="h-3 w-3" />
-        Undo
-      </button>
-    </form>
-    <button class="text-xs text-muted-foreground hover:text-foreground" onclick={cancelDelete}>
-      Dismiss
-    </button>
-  </div>
-{/if}

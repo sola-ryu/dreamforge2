@@ -28,11 +28,12 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
           .from(entities)
           .where(and(eq(entities.id, bm.entityId), eq(entities.projectId, projectId)))
           .get();
+        if (!entity) continue;
         bookmarks.push({
           id: bm.id,
           entityId: bm.entityId,
-          entityName: entity?.name || bm.entityId,
-          entityType: entity?.type || 'unknown'
+          entityName: entity.name,
+          entityType: entity.type
         });
       }
     }
