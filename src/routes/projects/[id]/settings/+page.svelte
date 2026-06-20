@@ -142,9 +142,10 @@
         method="POST"
         action="?/addField"
         use:enhance={() => {
-          return async ({ result }) => {
+          return async ({ result, update }) => {
             if (result.type === 'success') {
               resetForm();
+              await update();
             }
           };
         }}

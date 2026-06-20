@@ -15,8 +15,8 @@
 <ZenMode />
 <div
   class="flex h-screen overflow-hidden"
-  class:dark={theme === 'dark'}
-  class:monochrome={theme === 'monochrome'}
+  class:dark={theme.value === 'dark'}
+  class:monochrome={theme.value === 'monochrome'}
   class:zen-mode={zen.active}
 >
   {#if $page.data?.user && !zen.active}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { toggleTheme } from '$lib/stores/theme.svelte';
+  import { getZenMode } from '$lib/stores/zenMode.svelte';
   import {
     Home,
     BookMarked,
@@ -11,8 +12,11 @@
     Clock,
     LayoutDashboard,
     BookOpenText,
-    GitBranch
+    GitBranch,
+    Scan
   } from 'lucide-svelte';
+
+  const zen = getZenMode();
 </script>
 
 <aside class="flex w-64 flex-col border-r border-border bg-card">
@@ -82,7 +86,7 @@
             Bookmarks
           </div>
         </div>
-        {#each $page.data.bookmarks as bm}
+        {#each $page.data.bookmarks as bm (bm.entityId)}
           <a
             href="/projects/{$page.params.id}/{bm.entityType}s/{bm.entityId}"
             class="flex items-center gap-3 rounded-lg px-3 py-1.5 pl-6 text-sm hover:bg-secondary"
@@ -111,6 +115,13 @@
     >
       <SunMoon class="h-4 w-4" />
       Toggle Theme
+    </button>
+    <button
+      class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-secondary"
+      onclick={() => zen.toggle()}
+    >
+      <Scan class="h-4 w-4" />
+      {zen.active ? 'Exit Zen Mode' : 'Zen Mode'}
     </button>
     <a
       href="/logout"

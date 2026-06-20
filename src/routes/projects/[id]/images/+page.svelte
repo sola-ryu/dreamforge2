@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { enhance } from '$app/forms';
-  import { goto } from '$app/navigation';
+
   import { ArrowLeft, Upload, Image, X } from 'lucide-svelte';
 
   let uploadFiles = $state<File[]>([]);
@@ -47,12 +47,12 @@
       action="?/upload"
       enctype="multipart/form-data"
       use:enhance={() => {
-        return async ({ result }) => {
+        return async ({ result, update }) => {
           uploading = false;
           if (result.type === 'success') {
             uploadFiles = [];
             previewUrls = [];
-            goto(window.location.href);
+            await update();
           }
         };
       }}

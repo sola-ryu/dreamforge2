@@ -35,11 +35,12 @@
         method="POST"
         action="?/create"
         use:enhance={() => {
-          return async ({ result }) => {
+          return async ({ result, update }) => {
             if (result.type === 'success') {
               showCreate = false;
               newTitle = '';
               newStory = '';
+              await update();
             }
           };
         }}

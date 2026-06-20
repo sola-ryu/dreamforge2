@@ -3,7 +3,11 @@ import type { Theme } from '$lib/types';
 let _theme = $state<Theme>('dark');
 
 export function getTheme() {
-  return _theme;
+  return {
+    get value() {
+      return _theme;
+    }
+  };
 }
 
 export function toggleTheme() {

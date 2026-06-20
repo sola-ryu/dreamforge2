@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { enhance } from '$app/forms';
+  import { invalidateAll } from '$app/navigation';
   import {
     ArrowLeft,
     Plus,
@@ -120,7 +121,7 @@
     const form = new FormData();
     form.set('chapterIds', JSON.stringify(ids));
     await fetch('?/reorderChapters', { method: 'POST', body: form });
-    window.location.reload();
+    await invalidateAll();
   }
 
   async function submitSceneReorder(chapterId: string, ids: string[]) {
@@ -128,7 +129,7 @@
     form.set('chapterId', chapterId);
     form.set('sceneIds', JSON.stringify(ids));
     await fetch('?/reorderScenes', { method: 'POST', body: form });
-    window.location.reload();
+    await invalidateAll();
   }
 </script>
 
@@ -185,10 +186,11 @@
           method="POST"
           action="?/createChapter"
           use:enhance={() => {
-            return async ({ result }) => {
+            return async ({ result, update }) => {
               if (result.type === 'success') {
                 showCreateChapter = false;
                 chapterTitle = '';
+                await update();
               }
             };
           }}
@@ -295,8 +297,10 @@
                 action="?/createScene"
                 class="px-3 pt-1"
                 use:enhance={() => {
-                  return async () => {
-                    window.location.reload();
+                  return async ({ result, update }) => {
+                    if (result.type === 'success') {
+                      await update();
+                    }
                   };
                 }}
               >
@@ -322,8 +326,11 @@
         method="POST"
         action="?/updateScene"
         use:enhance={() => {
-          return async ({ result }) => {
-            if (result.type === 'success') isSaving = false;
+          return async ({ result, update }) => {
+            if (result.type === 'success') {
+              isSaving = false;
+              await update();
+            }
           };
         }}
         class="p-6"
@@ -360,7 +367,8 @@
                 f.set('chapterId', activeChapterId);
                 f.set('sceneId', activeSceneId || '');
                 await fetch('?/convertToNote', { method: 'POST', body: f });
-                window.location.reload();
+                await invalidateAll();
+                closeScene();
               }}
             >
               <SwitchCamera class="h-4 w-4" />
