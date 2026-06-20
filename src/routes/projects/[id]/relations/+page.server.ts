@@ -2,10 +2,11 @@ import { fail, redirect } from '@sveltejs/kit';
 import fs from 'node:fs';
 import path from 'node:path';
 import db from '$lib/server/db';
-import { projects, entities } from '$lib/server/schema';
-import { eq, and } from 'drizzle-orm';
+import { entities } from '$lib/server/schema';
+import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { generateId } from '$lib/utils';
+import { getProjectAccess } from '$lib/server/members';
 
 const drizzleDb = drizzle(db);
 
@@ -33,12 +34,9 @@ function saveRelations(projectPath: string, relations: RelationEntry[]): void {
 export const load = async ({ params, locals }) => {
   if (!locals.user) throw redirect(302, '/login');
 
-  const project = drizzleDb
-    .select()
-    .from(projects)
-    .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-    .get();
-  if (!project) throw redirect(302, '/projects');
+  const access = getProjectAccess(params.id, locals.user.id);
+  if (!access) throw redirect(302, '/projects');
+  const { project, role } = access;
 
   const relations = loadRelations(project.dataPath);
   const allEntities = drizzleDb
@@ -50,19 +48,18 @@ export const load = async ({ params, locals }) => {
   return {
     relations,
     entities: allEntities.map((e) => ({ id: e.id, name: e.name, type: e.type })),
-    projectName: project.name
+    projectName: project.name,
+    role
   };
 };
 
 export const actions = {
   create: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
 
     const form = await request.formData();
     const relations = loadRelations(project.dataPath);
@@ -79,12 +76,10 @@ export const actions = {
 
   delete: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
 
     const form = await request.formData();
     const relId = form.get('relId') as string;

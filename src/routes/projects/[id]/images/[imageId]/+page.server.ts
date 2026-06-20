@@ -8,24 +8,15 @@ import {
 } from '$lib/server/images';
 import { listEntities } from '$lib/server/entities';
 import { routeToEntityType } from '$lib/utils/entityTypes';
-import db from '$lib/server/db';
-import { projects } from '$lib/server/schema';
-import { eq, and } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { getProjectAccess } from '$lib/server/members';
 import type { EntityType } from '$lib/types';
-
-const drizzleDb = drizzle(db);
 
 export const load = async ({ params, locals }) => {
   if (!locals.user) throw redirect(302, '/login');
 
-  const project = drizzleDb
-    .select()
-    .from(projects)
-    .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-    .get();
-
-  if (!project) throw redirect(302, '/projects');
+  const access = getProjectAccess(params.id, locals.user.id);
+  if (!access) throw redirect(302, '/projects');
+  const { project, role } = access;
 
   const image = getProjectImage(params.id, project.dataPath, params.imageId);
   if (!image) throw redirect(302, `/projects/${params.id}/images`);
@@ -54,7 +45,8 @@ export const load = async ({ params, locals }) => {
     project: { ...project, pinned: Boolean(project.pinned) },
     image,
     allEntities,
-    linkedIds: Array.from(linkedIds)
+    linkedIds: Array.from(linkedIds),
+    role
   };
 };
 
@@ -62,13 +54,9 @@ export const actions = {
   update: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
 
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
 
     const form = await request.formData();
     const caption = (form.get('caption') as string) || null;
@@ -82,13 +70,10 @@ export const actions = {
   delete: async ({ params, locals }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
 
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
 
     deleteImage(params.id, project.dataPath, params.imageId);
 
@@ -98,13 +83,9 @@ export const actions = {
   linkEntity: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
 
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
 
     const form = await request.formData();
     const entityId = form.get('entityId') as string;
@@ -118,13 +99,9 @@ export const actions = {
   unlinkEntity: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
 
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
 
     const form = await request.formData();
     const entityId = form.get('entityId') as string;

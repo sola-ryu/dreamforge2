@@ -4,6 +4,7 @@ import { projects } from '$lib/server/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { generateId } from '$lib/utils';
+import { getMemberProjects } from '$lib/server/members';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -14,18 +15,21 @@ export const load = async ({ locals }) => {
     throw redirect(302, '/login');
   }
 
-  const userProjects = drizzleDb
+  const ownedProjects = drizzleDb
     .select()
     .from(projects)
     .where(eq(projects.userId, locals.user.id))
     .orderBy(desc(projects.pinned), desc(projects.modifiedAt))
     .all();
 
+  const memberProjects = getMemberProjects(locals.user.id);
+
+  const allProjectIds = new Set(ownedProjects.map((p) => p.id));
+  const sharedProjects = memberProjects.filter((p) => !allProjectIds.has(p.id));
+
   return {
-    projects: userProjects.map((p) => ({
-      ...p,
-      pinned: Boolean(p.pinned)
-    }))
+    projects: ownedProjects.map((p) => ({ ...p, pinned: Boolean(p.pinned), isOwner: true })),
+    sharedProjects: sharedProjects.map((p) => ({ ...p, pinned: Boolean(p.pinned), isOwner: false }))
   };
 };
 

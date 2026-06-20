@@ -84,7 +84,7 @@
   {/if}
 
   <div class="space-y-3">
-    {#if $page.data?.projects?.length === 0}
+    {#if ($page.data?.projects?.length ?? 0) === 0 && ($page.data?.sharedProjects?.length ?? 0) === 0}
       <p class="text-center text-muted-foreground py-12">
         No projects yet. Create one to get started.
       </p>
@@ -130,5 +130,29 @@
         </div>
       </div>
     {/each}
+
+    {#if ($page.data?.sharedProjects?.length ?? 0) > 0}
+      <div class="mt-6">
+        <h2 class="mb-3 text-sm font-medium text-muted-foreground">Shared with me</h2>
+        {#each $page.data.sharedProjects as project}
+          <div class="flex items-center justify-between rounded-lg border border-border bg-card p-4 mb-2">
+            <div class="flex-1">
+              <a href="/projects/{project.id}" class="font-semibold hover:underline">
+                {project.name}
+              </a>
+              {#if project.description}
+                <p class="mt-1 text-sm text-muted-foreground">{project.description}</p>
+              {/if}
+              <p class="mt-1 text-xs text-muted-foreground">
+                Modified {formatDate(project.modifiedAt)}
+              </p>
+            </div>
+            <a href="/projects/{project.id}" class="rounded p-2 hover:bg-secondary" aria-label="Open project">
+              <ExternalLink class="h-4 w-4" />
+            </a>
+          </div>
+        {/each}
+      </div>
+    {/if}
   </div>
 </div>

@@ -3,7 +3,7 @@
   import { enhance } from '$app/forms';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import { ENTITY_LABELS } from '$lib/entityFields';
-  import { ArrowLeft, Plus, Trash2, Settings } from 'lucide-svelte';
+  import { ArrowLeft, Plus, Trash2, Settings, Users, UserPlus } from 'lucide-svelte';
   import type { EntityType } from '$lib/types';
 
   let selectedType = $state<EntityType>('character');
@@ -55,6 +55,10 @@
   let typeFields = $derived(
     ($page.data?.customFields || []).filter((f: any) => f.entityType === selectedType)
   );
+
+  let addMemberQuery = $state('');
+  let addMemberRole = $state<'editor' | 'commenter'>('editor');
+  let isOwner = $derived($page.data?.role === 'owner');
 </script>
 
 <svelte:head>
@@ -244,4 +248,106 @@
       </form>
     </div>
   </div>
+
+  {#if isOwner}
+    <div class="mb-8 rounded-lg border border-border bg-card p-4">
+      <h2 class="mb-4 flex items-center gap-2 text-lg font-semibold">
+        <Users class="h-4 w-4" />
+        Members
+      </h2>
+
+      {#if ($page.data?.members || []).length === 0}
+        <p class="mb-4 text-sm text-muted-foreground">No members added yet. Only you have access.</p>
+      {:else}
+        <div class="mb-4 space-y-2">
+          {#each $page.data.members as member}
+            <div class="flex items-center justify-between rounded border border-border px-3 py-2">
+              <div class="flex items-center gap-3">
+                <div>
+                  <span class="font-medium text-sm">{member.username}</span>
+                  <span class="ml-2 text-xs text-muted-foreground">{member.email}</span>
+                </div>
+                <form method="POST" action="?/updateMemberRole" use:enhance>
+                  <input type="hidden" name="userId" value={member.userId} />
+                  <select
+                    name="role"
+                    value={member.role}
+                    onchange={(e) => (e.target as HTMLSelectElement).form?.requestSubmit()}
+                    class="rounded border border-input bg-background px-2 py-0.5 text-xs"
+                  >
+                    <option value="editor">Editor</option>
+                    <option value="commenter">Commenter</option>
+                  </select>
+                </form>
+              </div>
+              <form method="POST" action="?/removeMember" use:enhance>
+                <input type="hidden" name="userId" value={member.userId} />
+                <button
+                  type="submit"
+                  class="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
+                  aria-label="Remove member"
+                >
+                  <Trash2 class="h-4 w-4" />
+                </button>
+              </form>
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      <div class="border-t border-border pt-4">
+        <h3 class="mb-3 text-sm font-medium">Add Member</h3>
+        <form
+          method="POST"
+          action="?/addMember"
+          use:enhance={() => {
+            return async ({ result, update }) => {
+              if (result.type === 'success') {
+                addMemberQuery = '';
+                update();
+              }
+            };
+          }}
+          class="flex flex-col gap-3 sm:flex-row sm:items-end"
+        >
+          <div class="flex-1">
+            <label for="member-query" class="block text-xs text-muted-foreground mb-1"
+              >Email or username</label
+            >
+            <input
+              id="member-query"
+              name="query"
+              type="text"
+              required
+              bind:value={addMemberQuery}
+              placeholder="user@example.com or username"
+              class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+            />
+          </div>
+          <div>
+            <label for="member-role" class="block text-xs text-muted-foreground mb-1">Role</label>
+            <select
+              id="member-role"
+              name="role"
+              bind:value={addMemberRole}
+              class="rounded border border-input bg-background px-2 py-1.5 text-sm"
+            >
+              <option value="editor">Editor</option>
+              <option value="commenter">Commenter</option>
+            </select>
+          </div>
+          <button
+            type="submit"
+            class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
+            <UserPlus class="h-4 w-4" />
+            Add
+          </button>
+        </form>
+        <p class="mt-2 text-xs text-muted-foreground">
+          Editors can view and edit content. Commenters can view and leave comments.
+        </p>
+      </div>
+    </div>
+  {/if}
 </div>

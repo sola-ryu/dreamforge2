@@ -15,23 +15,14 @@ import {
 } from '$lib/server/stories';
 import { searchEntities } from '$lib/server/entities';
 import { sceneToNote } from '$lib/server/conversion';
-import db from '$lib/server/db';
-import { projects } from '$lib/server/schema';
-import { eq, and } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-
-const drizzleDb = drizzle(db);
+import { getProjectAccess } from '$lib/server/members';
 
 export const load = async ({ params, locals }) => {
   if (!locals.user) throw redirect(302, '/login');
 
-  const project = drizzleDb
-    .select()
-    .from(projects)
-    .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-    .get();
-
-  if (!project) throw redirect(302, '/projects');
+  const access = getProjectAccess(params.id, locals.user.id);
+  if (!access) throw redirect(302, '/projects');
+  const { project, role } = access;
 
   const story = getStoryMeta(project.dataPath, params.storyId);
   if (!story) throw redirect(302, `/projects/${params.id}/stories`);
@@ -50,18 +41,16 @@ export const load = async ({ params, locals }) => {
     status: e.status
   }));
 
-  return { story, chapters: chaptersWithScenes, projectName: project.name, entities: allEntities };
+  return { story, chapters: chaptersWithScenes, projectName: project.name, entities: allEntities, role };
 };
 
 export const actions = {
   updateStory: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
     const form = await request.formData();
     updateStory(project.dataPath, params.storyId, {
       title: form.get('title') as string,
@@ -72,12 +61,10 @@ export const actions = {
 
   createChapter: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
     const form = await request.formData();
     const title = form.get('title') as string;
     if (!title) return fail(400, { error: 'Title is required' });
@@ -87,12 +74,10 @@ export const actions = {
 
   deleteChapter: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
     const form = await request.formData();
     deleteChapter(project.dataPath, params.storyId, form.get('chapterId') as string);
     return { success: true };
@@ -100,12 +85,10 @@ export const actions = {
 
   createScene: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
     const form = await request.formData();
     const chapterId = form.get('chapterId') as string;
     createScene(project.dataPath, params.storyId, chapterId);
@@ -114,12 +97,10 @@ export const actions = {
 
   updateScene: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
     const form = await request.formData();
     const chapterId = form.get('chapterId') as string;
     const sceneId = form.get('sceneId') as string;
@@ -138,12 +119,10 @@ export const actions = {
 
   deleteScene: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
     const form = await request.formData();
     deleteScene(
       project.dataPath,
@@ -156,12 +135,10 @@ export const actions = {
 
   reorderChapters: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
     const form = await request.formData();
     const chapterIds = JSON.parse(form.get('chapterIds') as string);
     reorderChapters(project.dataPath, params.storyId, chapterIds);
@@ -170,12 +147,10 @@ export const actions = {
 
   convertToNote: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
     const form = await request.formData();
     const chapterId = form.get('chapterId') as string;
     const sceneId = form.get('sceneId') as string;
@@ -186,12 +161,10 @@ export const actions = {
 
   reorderScenes: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
     const form = await request.formData();
     const chapterId = form.get('chapterId') as string;
     const sceneIds = JSON.parse(form.get('sceneIds') as string);

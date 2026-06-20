@@ -1,23 +1,14 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { getPlotline, updatePlotline, reorderBeats } from '$lib/server/plots';
-import { listStories, listChapters, listScenes } from '$lib/server/stories';
-import db from '$lib/server/db';
-import { projects } from '$lib/server/schema';
-import { eq, and } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-
-const drizzleDb = drizzle(db);
+import { listChapters, listScenes } from '$lib/server/stories';
+import { getProjectAccess } from '$lib/server/members';
 
 export const load = async ({ params, locals }) => {
   if (!locals.user) throw redirect(302, '/login');
 
-  const project = drizzleDb
-    .select()
-    .from(projects)
-    .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-    .get();
-
-  if (!project) throw redirect(302, '/projects');
+  const access = getProjectAccess(params.id, locals.user.id);
+  if (!access) throw redirect(302, '/projects');
+  const { project, role } = access;
 
   const plotline = getPlotline(project.dataPath, params.plotlineId);
   if (!plotline) throw redirect(302, `/projects/${params.id}/plots`);
@@ -28,20 +19,17 @@ export const load = async ({ params, locals }) => {
     scenes: listScenes(project.dataPath, plotline.storyId, ch.id)
   }));
 
-  return { plotline, chapters: chaptersWithScenes, projectName: project.name };
+  return { plotline, chapters: chaptersWithScenes, projectName: project.name, role };
 };
 
 export const actions = {
   update: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
 
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
 
     const form = await request.formData();
     const title = form.get('title') as string;
@@ -54,13 +42,10 @@ export const actions = {
   linkScene: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
 
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
 
     const form = await request.formData();
     const beatTitle = form.get('beatTitle') as string;
@@ -78,13 +63,10 @@ export const actions = {
   reorderBeats: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
 
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
 
     const form = await request.formData();
     const beatTitles = JSON.parse(form.get('beatTitles') as string) as string[];

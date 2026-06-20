@@ -1,22 +1,19 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { loadTimeline, addEvent, updateEvent, deleteEvent, updateCalendar } from '$lib/server/timelines';
 import db from '$lib/server/db';
-import { projects, entities as entitiesTable } from '$lib/server/schema';
-import { eq, and } from 'drizzle-orm';
+import { entities as entitiesTable } from '$lib/server/schema';
+import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { getProjectAccess } from '$lib/server/members';
 
 const drizzleDb = drizzle(db);
 
 export const load = async ({ params, locals }) => {
   if (!locals.user) throw redirect(302, '/login');
 
-  const project = drizzleDb
-    .select()
-    .from(projects)
-    .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-    .get();
-
-  if (!project) throw redirect(302, '/projects');
+  const access = getProjectAccess(params.id, locals.user.id);
+  if (!access) throw redirect(302, '/projects');
+  const { project, role } = access;
 
   const timeline = loadTimeline(project.dataPath);
   const allEntities = drizzleDb
@@ -28,7 +25,8 @@ export const load = async ({ params, locals }) => {
   return {
     timeline,
     entities: allEntities,
-    projectName: project.name
+    projectName: project.name,
+    role
   };
 };
 
@@ -36,13 +34,10 @@ export const actions = {
   createEvent: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
 
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
 
     const form = await request.formData();
     const year = parseInt(form.get('year') as string);
@@ -71,13 +66,10 @@ export const actions = {
   updateEvent: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
 
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
 
     const form = await request.formData();
     const eventId = form.get('eventId') as string;
@@ -108,13 +100,10 @@ export const actions = {
   deleteEvent: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
 
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
 
     const form = await request.formData();
     const eventId = form.get('eventId') as string;
@@ -127,13 +116,10 @@ export const actions = {
   updateCalendar: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
 
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
 
     const form = await request.formData();
     const monthsRaw = form.get('months') as string;

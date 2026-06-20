@@ -14,12 +14,7 @@ import {
 } from '$lib/server/images';
 import { mergeFields } from '$lib/entityFields';
 import { ENTITY_FIELDS } from '$lib/entityFields';
-import db from '$lib/server/db';
-import { projects } from '$lib/server/schema';
-import { eq, and } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-
-const drizzleDb = drizzle(db);
+import { getProjectAccess } from '$lib/server/members';
 
 export const load = async ({ params, locals }) => {
   if (!locals.user) throw redirect(302, '/login');
@@ -27,13 +22,9 @@ export const load = async ({ params, locals }) => {
   const entityType = routeToEntityType(params.type);
   if (!entityType) throw redirect(302, `/projects/${params.id}`);
 
-  const project = drizzleDb
-    .select()
-    .from(projects)
-    .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-    .get();
-
-  if (!project) throw redirect(302, '/projects');
+  const access = getProjectAccess(params.id, locals.user.id);
+  if (!access) throw redirect(302, '/projects');
+  const { project, role } = access;
 
   const entity = getEntity(params.id, project.dataPath, entityType, params.entityId);
   if (!entity) throw redirect(302, `/projects/${params.id}/${params.type}`);
@@ -67,7 +58,10 @@ export const load = async ({ params, locals }) => {
     stories: storiesWithChapters,
     customFields: mergedFields,
     entityImages,
-    projectImages
+    projectImages,
+    role,
+    currentUserId: locals.user.id,
+    projectOwnerId: project.userId
   };
 };
 
@@ -76,12 +70,10 @@ export const actions = {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
     const entityType = routeToEntityType(params.type);
     if (!entityType) return fail(400, { error: 'Invalid entity type' });
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
 
     const form = await request.formData();
     const data: Record<string, unknown> = {};
@@ -103,12 +95,10 @@ export const actions = {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
     const entityType = routeToEntityType(params.type);
     if (!entityType) return fail(400, { error: 'Invalid entity type' });
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
     const trashItem = softDeleteEntity(params.id, project.dataPath, entityType, params.entityId);
     if (!trashItem) return fail(500, { error: 'Failed to delete entity' });
     return { success: true, trashItem };
@@ -118,12 +108,10 @@ export const actions = {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
     const entityType = routeToEntityType(params.type);
     if (entityType !== 'note') return fail(400, { error: 'Only notes can be converted' });
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
 
     const form = await request.formData();
     const storyId = form.get('storyId') as string;
@@ -154,12 +142,10 @@ export const actions = {
 
   restore: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
     const form = await request.formData();
     const trashId = form.get('trashId') as string;
     if (!trashId) return fail(400, { error: 'Trash ID required' });
@@ -172,12 +158,9 @@ export const actions = {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
     const entityType = routeToEntityType(params.type);
     if (!entityType) return fail(400, { error: 'Invalid entity type' });
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
     const form = await request.formData();
     const imageId = form.get('imageId') as string;
     if (!imageId) return fail(400, { error: 'Image ID required' });
@@ -189,12 +172,9 @@ export const actions = {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
     const entityType = routeToEntityType(params.type);
     if (!entityType) return fail(400, { error: 'Invalid entity type' });
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
     const form = await request.formData();
     const imageId = form.get('imageId') as string;
     if (!imageId) return fail(400, { error: 'Image ID required' });

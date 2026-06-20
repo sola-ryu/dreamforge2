@@ -1,11 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { getStoryMeta, listChapters, listScenes } from '$lib/server/stories';
-import db from '$lib/server/db';
-import { projects } from '$lib/server/schema';
-import { eq, and } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-
-const drizzleDb = drizzle(db);
+import { getProjectAccess } from '$lib/server/members';
 
 function stripHtml(html: string): string {
   return html
@@ -79,13 +74,9 @@ function renderScene(
 export const GET = async ({ params, locals, url }) => {
   if (!locals.user) throw error(401, 'Unauthorized');
 
-  const project = drizzleDb
-    .select()
-    .from(projects)
-    .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-    .get();
-
-  if (!project) throw error(404, 'Project not found');
+  const access = getProjectAccess(params.id, locals.user.id);
+  if (!access) throw error(404, 'Project not found');
+  const { project } = access;
 
   const story = getStoryMeta(project.dataPath, params.storyId);
   if (!story) throw error(404, 'Story not found');

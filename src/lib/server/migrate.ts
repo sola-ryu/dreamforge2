@@ -149,6 +149,25 @@ export function migrate() {
       required INTEGER NOT NULL DEFAULT 0,
       sort_order INTEGER NOT NULL DEFAULT 0
     );
+
+    CREATE TABLE IF NOT EXISTS project_members (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL REFERENCES projects(id),
+      user_id TEXT NOT NULL REFERENCES users(id),
+      role TEXT NOT NULL CHECK(role IN ('editor', 'commenter')),
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS comments (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL REFERENCES projects(id),
+      target_type TEXT NOT NULL,
+      target_id TEXT NOT NULL,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      body TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      resolved INTEGER NOT NULL DEFAULT 0
+    );
   `);
 
   try {

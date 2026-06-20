@@ -5,6 +5,7 @@
   import { ENTITY_LABELS } from '$lib/entityFields';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import type { EntityType } from '$lib/types';
+  import Comments from '$lib/components/Comments.svelte';
   import {
     ArrowLeft,
     Save,
@@ -18,6 +19,9 @@
     Unlink,
     ImagePlus
   } from 'lucide-svelte';
+
+  let role = $derived($page.data?.role || 'owner');
+  let canEdit = $derived(role !== 'commenter');
 
   let editing = $state(false);
   let showConvert = $state(false);
@@ -117,7 +121,7 @@
             Cancel
           </button>
         {:else}
-          {#if $page.data?.entityType === 'note'}
+          {#if canEdit && $page.data?.entityType === 'note'}
             <button
               class="flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary"
               onclick={() => (showConvert = !showConvert)}
@@ -140,12 +144,14 @@
               {/if}
             </button>
           </form>
-          <button
-            class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-            onclick={toggleEdit}
-          >
-            Edit
-          </button>
+          {#if canEdit}
+            <button
+              class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              onclick={toggleEdit}
+            >
+              Edit
+            </button>
+          {/if}
         {/if}
       </div>
     </div>
@@ -352,6 +358,15 @@
       {/if}
     </div>
   </form>
+
+  <Comments
+    projectId={$page.params.id}
+    targetType="entity"
+    targetId={$page.params.entityId}
+    currentUserId={$page.data?.currentUserId || ''}
+    projectOwnerId={$page.data?.projectOwnerId || ''}
+    role={role}
+  />
 
   {#if editing}
     <div class="mt-6 border-t border-border pt-4">

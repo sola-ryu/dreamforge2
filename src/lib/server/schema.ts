@@ -167,3 +167,30 @@ export const customFieldDefs = sqliteTable('custom_field_defs', {
   required: integer('required', { mode: 'boolean' }).notNull().default(false),
   sortOrder: integer('sort_order').notNull().default(0)
 });
+
+export const projectMembers = sqliteTable('project_members', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id')
+    .notNull()
+    .references(() => projects.id),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id),
+  role: text('role').notNull(),
+  createdAt: text('created_at').notNull()
+});
+
+export const comments = sqliteTable('comments', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id')
+    .notNull()
+    .references(() => projects.id),
+  targetType: text('target_type').notNull(),
+  targetId: text('target_id').notNull(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id),
+  body: text('body').notNull(),
+  createdAt: text('created_at').notNull(),
+  resolved: integer('resolved', { mode: 'boolean' }).notNull().default(false)
+});

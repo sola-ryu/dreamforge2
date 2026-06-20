@@ -1,28 +1,20 @@
 import { fail, redirect } from '@sveltejs/kit';
-import db from '$lib/server/db';
-import { projects } from '$lib/server/schema';
-import { eq, and } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { listTrashItems, restoreEntity, permanentDeleteEntity } from '$lib/server/trash';
-
-const drizzleDb = drizzle(db);
+import { getProjectAccess } from '$lib/server/members';
 
 export const load = async ({ params, locals }) => {
   if (!locals.user) throw redirect(302, '/login');
 
-  const project = drizzleDb
-    .select()
-    .from(projects)
-    .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-    .get();
-
-  if (!project) throw redirect(302, '/projects');
+  const access = getProjectAccess(params.id, locals.user.id);
+  if (!access) throw redirect(302, '/projects');
+  const { project, role } = access;
 
   const items = listTrashItems(params.id, project.dataPath);
 
   return {
     project: { ...project, pinned: Boolean(project.pinned) },
-    items
+    items,
+    role
   };
 };
 
@@ -30,13 +22,10 @@ export const actions = {
   restore: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
 
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
 
     const form = await request.formData();
     const trashId = form.get('trashId') as string;
@@ -51,13 +40,10 @@ export const actions = {
   permanentDelete: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
 
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
 
     const form = await request.formData();
     const trashId = form.get('trashId') as string;
@@ -71,13 +57,10 @@ export const actions = {
   emptyTrash: async ({ params, locals }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
 
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
 
     const items = listTrashItems(params.id, project.dataPath);
     for (const item of items) {

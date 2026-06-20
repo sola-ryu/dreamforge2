@@ -4,12 +4,7 @@ import { getCustomFieldDefs } from '$lib/server/customFields';
 import { routeToEntityType } from '$lib/utils/entityTypes';
 import { ENTITY_FIELDS, mergeFields } from '$lib/entityFields';
 import { serializeCSV } from '$lib/server/csv';
-import db from '$lib/server/db';
-import { projects } from '$lib/server/schema';
-import { eq, and } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-
-const drizzleDb = drizzle(db);
+import { getProjectAccess } from '$lib/server/members';
 
 export async function GET({ params, locals }) {
   if (!locals.user) throw redirect(302, '/login');
@@ -17,13 +12,9 @@ export async function GET({ params, locals }) {
   const entityType = routeToEntityType(params.type);
   if (!entityType) throw redirect(302, `/projects/${params.id}`);
 
-  const project = drizzleDb
-    .select()
-    .from(projects)
-    .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-    .get();
-
-  if (!project) throw redirect(302, '/projects');
+  const access = getProjectAccess(params.id, locals.user.id);
+  if (!access) throw redirect(302, '/projects');
+  const { project } = access;
 
   const entities = listEntities(params.id, project.dataPath, entityType);
 

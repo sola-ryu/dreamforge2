@@ -3,13 +3,8 @@ import { listEntities, createEntity, updateEntity } from '$lib/server/entities';
 import { getCustomFieldDefs } from '$lib/server/customFields';
 import { routeToEntityType } from '$lib/utils/entityTypes';
 import { ENTITY_FIELDS, mergeFields } from '$lib/entityFields';
-import { parseCSVWithHeaders, serializeCSV } from '$lib/server/csv';
-import db from '$lib/server/db';
-import { projects } from '$lib/server/schema';
-import { eq, and } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-
-const drizzleDb = drizzle(db);
+import { parseCSVWithHeaders } from '$lib/server/csv';
+import { getProjectAccess } from '$lib/server/members';
 
 export const load = async ({ params, locals }) => {
   if (!locals.user) throw redirect(302, '/login');
@@ -17,13 +12,11 @@ export const load = async ({ params, locals }) => {
   const entityType = routeToEntityType(params.type);
   if (!entityType) throw redirect(302, `/projects/${params.id}`);
 
-  const project = drizzleDb
-    .select()
-    .from(projects)
-    .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-    .get();
+  const access = getProjectAccess(params.id, locals.user.id);
+  if (!access) throw redirect(302, '/projects');
+  const { project, role } = access;
 
-  if (!project) throw redirect(302, '/projects');
+  if (role === 'commenter') throw redirect(302, `/projects/${params.id}/${params.type}`);
 
   const customFieldDefs = getCustomFieldDefs(params.id, entityType).map((f) => ({
     key: f.key,
@@ -59,13 +52,9 @@ export const actions = {
     const entityType = routeToEntityType(params.type);
     if (!entityType) return fail(400, { error: 'Invalid entity type' });
 
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
 
     const form = await request.formData();
     const file = form.get('file') as File;
@@ -93,13 +82,10 @@ export const actions = {
     const entityType = routeToEntityType(params.type);
     if (!entityType) return fail(400, { error: 'Invalid entity type' });
 
-    const project = drizzleDb
-      .select()
-      .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-      .get();
-
-    if (!project) return fail(404, { error: 'Project not found' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
 
     const form = await request.formData();
     const rawData = form.get('data') as string;

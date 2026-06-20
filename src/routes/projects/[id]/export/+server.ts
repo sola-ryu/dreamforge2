@@ -1,24 +1,13 @@
 import { redirect } from '@sveltejs/kit';
-import fs from 'node:fs';
-import path from 'node:path';
 import archiver from 'archiver';
-import db from '$lib/server/db';
-import { projects } from '$lib/server/schema';
-import { eq, and } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-
-const drizzleDb = drizzle(db);
+import { getProjectAccess } from '$lib/server/members';
 
 export async function GET({ params, locals }) {
   if (!locals.user) throw redirect(302, '/login');
 
-  const project = drizzleDb
-    .select()
-    .from(projects)
-    .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-    .get();
-
-  if (!project) throw redirect(302, '/projects');
+  const access = getProjectAccess(params.id, locals.user.id);
+  if (!access) throw redirect(302, '/projects');
+  const { project } = access;
 
   const archive = archiver('zip', { zlib: { level: 9 } });
   const chunks: Buffer[] = [];
