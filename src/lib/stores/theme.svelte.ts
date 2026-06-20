@@ -1,9 +1,13 @@
 import type { Theme } from '$lib/types';
 
-export let theme = $state<Theme>('dark');
+let _theme = $state<Theme>('dark');
+
+export function getTheme() {
+  return _theme;
+}
 
 export function toggleTheme() {
-  if (theme === 'dark') theme = 'light';
-  else if (theme === 'light') theme = 'monochrome';
-  else theme = 'dark';
+  if (_theme === 'dark') _theme = 'light';
+  else if (_theme === 'light') _theme = 'monochrome';
+  else _theme = 'dark';
 }
