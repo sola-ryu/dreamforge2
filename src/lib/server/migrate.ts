@@ -102,7 +102,7 @@ export function migrate() {
 
     CREATE TABLE IF NOT EXISTS bookmarks (
       id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES projects(id),
+      user_id TEXT NOT NULL REFERENCES users(id),
       project_id TEXT NOT NULL REFERENCES projects(id),
       entity_id TEXT NOT NULL,
       created_at TEXT NOT NULL
