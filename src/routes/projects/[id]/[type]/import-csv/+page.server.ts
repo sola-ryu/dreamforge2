@@ -1,10 +1,11 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { listEntities, createEntity, updateEntity } from '$lib/server/entities';
-import { getCustomFieldDefs } from '$lib/server/customFields';
+import { getCustomFieldDefs, addCustomFieldDef } from '$lib/server/customFields';
 import { routeToEntityType } from '$lib/utils/entityTypes';
 import { ENTITY_FIELDS, mergeFields } from '$lib/entityFields';
 import { parseCSVWithHeaders } from '$lib/server/csv';
 import { getProjectAccess } from '$lib/server/members';
+import { slugify } from '$lib/utils';
 
 export const load = async ({ params, locals }) => {
   if (!locals.user) throw redirect(302, '/login');
@@ -90,11 +91,23 @@ export const actions = {
     const form = await request.formData();
     const rawData = form.get('data') as string;
     const mappingJson = form.get('mapping') as string;
+    const newFieldDefsJson = form.get('newFieldDefs') as string;
 
     if (!rawData || !mappingJson) return fail(400, { error: 'No data or mapping provided' });
 
     const data: Record<string, string>[] = JSON.parse(rawData);
     const mapping: Record<string, string> = JSON.parse(mappingJson);
+
+    if (newFieldDefsJson) {
+      const newFieldDefs: Record<string, { label: string; type: string }> = JSON.parse(newFieldDefsJson);
+      for (const [csvCol, def] of Object.entries(newFieldDefs)) {
+        if (!def.label.trim()) continue;
+        const key = slugify(def.label);
+        const fieldType = def.type as Parameters<typeof addCustomFieldDef>[2]['fieldType'];
+        addCustomFieldDef(params.id, entityType, { key, label: def.label.trim(), fieldType });
+        mapping[csvCol] = key;
+      }
+    }
 
     let created = 0;
     let updated = 0;

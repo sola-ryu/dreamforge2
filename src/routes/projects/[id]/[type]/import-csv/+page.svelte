@@ -5,12 +5,23 @@
   import { ENTITY_PLURAL } from '$lib/entityFields';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import type { EntityType } from '$lib/types';
-  import { ArrowLeft, Upload, Download } from 'lucide-svelte';
+  import { ArrowLeft, Upload } from 'lucide-svelte';
+
+  const FIELD_TYPE_OPTIONS = [
+    { value: 'text', label: 'Text' },
+    { value: 'textarea', label: 'Text (long)' },
+    { value: 'number', label: 'Number' },
+    { value: 'tags', label: 'Tags' },
+    { value: 'boolean', label: 'Boolean' },
+    { value: 'date', label: 'Date' },
+    { value: 'markdown', label: 'Markdown' }
+  ];
 
   let csvHeaders = $state<string[]>([]);
   let preview = $state<Record<string, string>[]>([]);
   let rawData = $state('');
   let mapping = $state<Record<string, string>>({});
+  let newFields = $state<Record<string, { label: string; type: string }>>({});
   let importResult = $state<{ created: number; updated: number; errors?: string[] } | null>(null);
   let uploading = $state(false);
 
@@ -19,11 +30,7 @@
     for (const h of headers) {
       const hLower = h.toLowerCase().trim();
       const match = targetKeys.find((k) => k.toLowerCase() === hLower);
-      if (match) {
-        m[h] = match;
-      } else {
-        m[h] = '';
-      }
+      m[h] = match ?? '';
     }
     return m;
   }
@@ -31,6 +38,17 @@
   function downloadCsv() {
     const route = entityTypeToRoute($page.data?.entityType || 'character');
     window.open(`/projects/${$page.params.id}/${route}/export-csv`, '_blank');
+  }
+
+  function onMappingChange(header: string, value: string) {
+    mapping = { ...mapping, [header]: value };
+    if (value === '__new__' && !newFields[header]) {
+      newFields = { ...newFields, [header]: { label: header, type: 'text' } };
+    } else if (value !== '__new__') {
+      const updated = { ...newFields };
+      delete updated[header];
+      newFields = updated;
+    }
   }
 </script>
 
@@ -86,6 +104,7 @@
             preview = [];
             rawData = '';
             mapping = {};
+            newFields = {};
           }}
         >
           Import Another File
@@ -105,13 +124,15 @@
     <div class="mb-6 rounded-lg border border-border bg-card p-4">
       <h2 class="mb-4 text-lg font-semibold">Map Columns</h2>
       <p class="mb-4 text-xs text-muted-foreground">
-        Map CSV columns to entity fields. Leave blank to skip a column.
+        Map CSV columns to entity fields. Choose "New field..." to create a new field from a column.
+        Leave blank to skip.
       </p>
 
       <form
         method="POST"
         action="?/execute"
         use:enhance={() => {
+          uploading = true;
           return async ({ result }) => {
             uploading = false;
             if (result.type === 'success') {
@@ -124,6 +145,7 @@
       >
         <input type="hidden" name="data" value={rawData} />
         <input type="hidden" name="mapping" value={JSON.stringify(mapping)} />
+        <input type="hidden" name="newFieldDefs" value={JSON.stringify(newFields)} />
 
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
@@ -135,37 +157,71 @@
                 <th class="px-2 py-1 text-left text-xs text-muted-foreground font-medium"
                   >Map to Field</th
                 >
-                {#each preview[0] ? Object.keys(preview[0]) : [] as col}
-                  <th
-                    class="px-2 py-1 text-xs text-muted-foreground font-medium max-w-[120px] truncate"
-                    >{col}</th
-                  >
-                {/each}
+                <th class="px-2 py-1 text-left text-xs text-muted-foreground font-medium"
+                  >Preview</th
+                >
               </tr>
             </thead>
             <tbody>
-              {#each csvHeaders as header, i}
+              {#each csvHeaders as header}
                 <tr class="border-b border-border/50">
-                  <td class="px-2 py-1.5 font-mono text-xs">{header}</td>
-                  <td class="px-2 py-1.5">
+                  <td class="px-2 py-1.5 font-mono text-xs align-top pt-3">{header}</td>
+                  <td class="px-2 py-1.5 align-top">
                     <select
                       class="w-full rounded border border-input bg-background px-2 py-1 text-xs"
                       value={mapping[header] || ''}
-                      onchange={(e) => {
-                        mapping = { ...mapping, [header]: (e.target as HTMLSelectElement).value };
-                      }}
+                      onchange={(e) => onMappingChange(header, (e.target as HTMLSelectElement).value)}
                     >
                       <option value="">— Skip —</option>
+                      <option value="__new__">— New field... —</option>
                       {#each $page.data?.targetFields || [] as field}
                         <option value={field.key}>{field.label}</option>
                       {/each}
                     </select>
+                    {#if mapping[header] === '__new__'}
+                      <div class="mt-1.5 space-y-1">
+                        <input
+                          type="text"
+                          class="w-full rounded border border-input bg-background px-2 py-1 text-xs"
+                          placeholder="Field label"
+                          value={newFields[header]?.label ?? header}
+                          oninput={(e) => {
+                            newFields = {
+                              ...newFields,
+                              [header]: {
+                                ...newFields[header],
+                                label: (e.target as HTMLInputElement).value
+                              }
+                            };
+                          }}
+                        />
+                        <select
+                          class="w-full rounded border border-input bg-background px-2 py-1 text-xs"
+                          value={newFields[header]?.type ?? 'text'}
+                          onchange={(e) => {
+                            newFields = {
+                              ...newFields,
+                              [header]: {
+                                ...newFields[header],
+                                type: (e.target as HTMLSelectElement).value
+                              }
+                            };
+                          }}
+                        >
+                          {#each FIELD_TYPE_OPTIONS as opt}
+                            <option value={opt.value}>{opt.label}</option>
+                          {/each}
+                        </select>
+                      </div>
+                    {/if}
                   </td>
-                  {#each preview[0] ? Object.keys(preview[0]) : [] as col}
-                    <td class="px-2 py-1.5 text-xs max-w-[120px] truncate"
-                      >{preview[i]?.[col] || ''}</td
-                    >
-                  {/each}
+                  <td class="px-2 py-1.5 text-xs text-muted-foreground align-top pt-3 max-w-[200px]">
+                    <div class="space-y-0.5">
+                      {#each preview.slice(0, 3) as row}
+                        <div class="truncate">{row[header] || ''}</div>
+                      {/each}
+                    </div>
+                  </td>
                 </tr>
               {/each}
             </tbody>
@@ -173,7 +229,7 @@
         </div>
 
         <p class="text-xs text-muted-foreground">
-          Showing {preview.length} of {JSON.parse(rawData || '[]').length} rows.
+          Showing {preview.length} preview rows of {JSON.parse(rawData || '[]').length} total.
         </p>
 
         <div class="flex gap-2">
@@ -192,6 +248,7 @@
               preview = [];
               rawData = '';
               mapping = {};
+              newFields = {};
             }}
           >
             Cancel
@@ -201,7 +258,7 @@
     </div>
 
     <div class="rounded-lg border border-border bg-card p-4">
-      <h3 class="mb-2 text-sm font-medium">Preview</h3>
+      <h3 class="mb-2 text-sm font-medium">Data Preview</h3>
       <div class="overflow-x-auto">
         <table class="w-full text-xs">
           <thead>
@@ -230,6 +287,7 @@
         action="?/preview"
         enctype="multipart/form-data"
         use:enhance={() => {
+          uploading = true;
           return async ({ result }) => {
             uploading = false;
             if (result.type === 'success') {
@@ -241,38 +299,38 @@
               csvHeaders = d.csvHeaders;
               preview = d.preview;
               rawData = d.data;
-              const targetKeys = ($page.data?.targetFields || []).map((f: any) => f.key);
+              const targetKeys = ($page.data?.targetFields || []).map((f: { key: string }) => f.key);
               mapping = buildAutoMapping(d.csvHeaders, targetKeys);
             }
           };
         }}
         class="space-y-4"
       >
-        <div
-          class="flex items-center justify-center border-2 border-dashed border-border rounded-lg p-8"
-        >
-          <label class="flex cursor-pointer flex-col items-center gap-2">
+        {#if uploading}
+          <div class="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 gap-2">
+            <div class="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+            <span class="text-sm text-muted-foreground">Uploading...</span>
+          </div>
+        {:else}
+          <label
+            class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border p-8 hover:border-primary/50 transition-colors"
+          >
             <Upload class="h-8 w-8 text-muted-foreground" />
             <span class="text-sm text-muted-foreground">Click to upload a CSV file</span>
+            <span class="text-xs text-muted-foreground/60">.csv files only</span>
             <input
               type="file"
               name="file"
               accept=".csv"
               required
               class="hidden"
-              onchange={() => {
-                uploading = true;
+              onchange={(e) => {
+                const form = (e.target as HTMLInputElement).form;
+                if (form) form.requestSubmit();
               }}
             />
           </label>
-        </div>
-        <button
-          type="submit"
-          disabled={uploading}
-          class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-        >
-          {uploading ? 'Uploading...' : 'Upload & Preview'}
-        </button>
+        {/if}
       </form>
     </div>
   {/if}
