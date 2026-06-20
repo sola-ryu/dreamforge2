@@ -26,7 +26,9 @@
 </script>
 
 <svelte:head>
-  <title>{$page.data?.image?.originalName || 'Image'} — {$page.data?.project?.name || 'Project'} — DreamForge</title>
+  <title
+    >{$page.data?.image?.originalName || 'Image'} — {$page.data?.project?.name || 'Project'} — DreamForge</title
+  >
 </svelte:head>
 
 <div class="mx-auto max-w-4xl p-6">
@@ -222,13 +224,13 @@
               }}
             >
               <input type="hidden" name="entityId" value={entity.id} />
-                <button
-                  type="submit"
-                  class="rounded p-0.5 text-muted-foreground hover:text-destructive"
-                  aria-label="Unlink entity"
-                >
-                  <Unlink class="h-3 w-3" />
-                </button>
+              <button
+                type="submit"
+                class="rounded p-0.5 text-muted-foreground hover:text-destructive"
+                aria-label="Unlink entity"
+              >
+                <Unlink class="h-3 w-3" />
+              </button>
             </form>
           </div>
         {/each}

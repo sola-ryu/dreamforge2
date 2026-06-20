@@ -123,7 +123,11 @@
             </div>
             <form method="POST" action="?/deleteField" use:enhance>
               <input type="hidden" name="fieldId" value={field.id} />
-              <button type="submit" class="rounded p-1 text-destructive hover:bg-destructive/10" aria-label="Delete field">
+              <button
+                type="submit"
+                class="rounded p-1 text-destructive hover:bg-destructive/10"
+                aria-label="Delete field"
+              >
                 <Trash2 class="h-4 w-4" />
               </button>
             </form>
@@ -257,7 +261,9 @@
       </h2>
 
       {#if ($page.data?.members || []).length === 0}
-        <p class="mb-4 text-sm text-muted-foreground">No members added yet. Only you have access.</p>
+        <p class="mb-4 text-sm text-muted-foreground">
+          No members added yet. Only you have access.
+        </p>
       {:else}
         <div class="mb-4 space-y-2">
           {#each $page.data.members as member}

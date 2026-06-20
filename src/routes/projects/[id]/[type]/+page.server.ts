@@ -104,7 +104,8 @@ export const actions = {
     const customFieldKeys = new Set(customFieldDefs.map((f) => f.key));
     const allowedFields = new Set(['name', 'status', ...customFieldKeys]);
 
-    if (!allowedFields.has(field)) return fail(400, { error: 'Field not allowed for quick update' });
+    if (!allowedFields.has(field))
+      return fail(400, { error: 'Field not allowed for quick update' });
 
     updateEntity(params.id, project.dataPath, entityType, entityId, { [field]: value });
 

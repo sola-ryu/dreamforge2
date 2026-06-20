@@ -99,7 +99,8 @@ export const actions = {
     const mapping: Record<string, string> = JSON.parse(mappingJson);
 
     if (newFieldDefsJson) {
-      const newFieldDefs: Record<string, { label: string; type: string }> = JSON.parse(newFieldDefsJson);
+      const newFieldDefs: Record<string, { label: string; type: string }> =
+        JSON.parse(newFieldDefsJson);
       for (const [csvCol, def] of Object.entries(newFieldDefs)) {
         if (!def.label.trim()) continue;
         const key = slugify(def.label);
@@ -127,7 +128,10 @@ export const actions = {
           if (!fieldKey || row[csvCol] === undefined) continue;
           const val = row[csvCol];
           if (fieldKey === 'tags') {
-            const incoming = val.split(',').map((s) => s.trim()).filter(Boolean);
+            const incoming = val
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean);
             const existing = Array.isArray(mapped[fieldKey]) ? (mapped[fieldKey] as string[]) : [];
             mapped[fieldKey] = [...existing, ...incoming];
           } else if (mapped[fieldKey] !== undefined) {

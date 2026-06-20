@@ -36,9 +36,7 @@ describe('mergeFields', () => {
   });
 
   it('preserves static fields when no custom fields provided', () => {
-    const staticFields: FieldDef[] = [
-      { key: 'name', label: 'Name', type: 'text' }
-    ];
+    const staticFields: FieldDef[] = [{ key: 'name', label: 'Name', type: 'text' }];
 
     const result = mergeFields(staticFields, []);
     expect(result).toHaveLength(1);
@@ -65,9 +63,7 @@ describe('mergeFields', () => {
   });
 
   it('handles empty static fields', () => {
-    const customFields: FieldDef[] = [
-      { key: 'custom', label: 'Custom', type: 'text' }
-    ];
+    const customFields: FieldDef[] = [{ key: 'custom', label: 'Custom', type: 'text' }];
     const result = mergeFields([], customFields);
     expect(result).toEqual(customFields);
   });
@@ -79,9 +75,7 @@ describe('mergeFields', () => {
 
   it('works with actual ENTITY_FIELDS data', () => {
     const characterFields = ENTITY_FIELDS.character;
-    const customFields: FieldDef[] = [
-      { key: 'newField', label: 'New Field', type: 'text' }
-    ];
+    const customFields: FieldDef[] = [{ key: 'newField', label: 'New Field', type: 'text' }];
     const result = mergeFields(characterFields, customFields);
     expect(result).toHaveLength(characterFields.length + 1);
     expect(result[result.length - 1].key).toBe('newField');

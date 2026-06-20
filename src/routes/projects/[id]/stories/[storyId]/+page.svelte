@@ -133,7 +133,9 @@
 </script>
 
 <svelte:head>
-  <title>{$page.data?.story?.title || 'Story'} — {$page.data?.projectName || 'Project'} — DreamForge</title>
+  <title
+    >{$page.data?.story?.title || 'Story'} — {$page.data?.projectName || 'Project'} — DreamForge</title
+  >
 </svelte:head>
 
 <div class="flex h-[calc(100vh-4rem)]">
@@ -149,8 +151,8 @@
       </a>
       <div class="mt-2 flex items-center justify-between">
         <h2 class="text-lg font-semibold">{$page.data?.story?.title || 'Story'}</h2>
-          <div class="flex flex-wrap items-center gap-1">
-            <a
+        <div class="flex flex-wrap items-center gap-1">
+          <a
             href="/projects/{$page.params.id}/stories/{$page.params.storyId}/export"
             target="_blank"
             class="flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs hover:bg-secondary"
@@ -278,7 +280,10 @@
                     <form method="POST" action="?/deleteScene">
                       <input type="hidden" name="chapterId" value={chapter.id} />
                       <input type="hidden" name="sceneId" value={scene.id} />
-                      <button type="submit" class="rounded p-0.5 hover:bg-secondary" aria-label="Delete scene"
+                      <button
+                        type="submit"
+                        class="rounded p-0.5 hover:bg-secondary"
+                        aria-label="Delete scene"
                         ><Trash2 class="h-3 w-3 text-destructive" /></button
                       >
                     </form>

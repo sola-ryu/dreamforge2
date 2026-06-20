@@ -30,7 +30,13 @@ export const POST = async ({ params, locals, request }) => {
     throw error(400, 'targetType, targetId, and commentBody are required');
   }
 
-  const comment = createComment(params.id, targetType, targetId, locals.user.id, commentBody.trim());
+  const comment = createComment(
+    params.id,
+    targetType,
+    targetId,
+    locals.user.id,
+    commentBody.trim()
+  );
   return json(comment);
 };
 

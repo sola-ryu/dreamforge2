@@ -1,5 +1,11 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { loadTimeline, addEvent, updateEvent, deleteEvent, updateCalendar } from '$lib/server/timelines';
+import {
+  loadTimeline,
+  addEvent,
+  updateEvent,
+  deleteEvent,
+  updateCalendar
+} from '$lib/server/timelines';
 import db from '$lib/server/db';
 import { entities as entitiesTable } from '$lib/server/schema';
 import { eq } from 'drizzle-orm';
@@ -126,7 +132,12 @@ export const actions = {
 
     updateCalendar(project.dataPath, {
       name: (form.get('calendarName') as string) || 'Custom',
-      months: monthsRaw ? monthsRaw.split(',').map((m) => m.trim()).filter(Boolean) : undefined
+      months: monthsRaw
+        ? monthsRaw
+            .split(',')
+            .map((m) => m.trim())
+            .filter(Boolean)
+        : undefined
     } as any);
 
     return { success: true };

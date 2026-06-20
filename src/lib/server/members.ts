@@ -14,11 +14,7 @@ export interface ProjectAccess {
 }
 
 export function getProjectAccess(projectId: string, userId: string): ProjectAccess | null {
-  const project = drizzleDb
-    .select()
-    .from(projects)
-    .where(eq(projects.id, projectId))
-    .get();
+  const project = drizzleDb.select().from(projects).where(eq(projects.id, projectId)).get();
 
   if (!project) return null;
 
@@ -72,11 +68,7 @@ export function addMember(projectId: string, userId: string, role: 'editor' | 'c
     .get();
 
   if (existing) {
-    drizzleDb
-      .update(projectMembers)
-      .set({ role })
-      .where(eq(projectMembers.id, existing.id))
-      .run();
+    drizzleDb.update(projectMembers).set({ role }).where(eq(projectMembers.id, existing.id)).run();
   } else {
     drizzleDb
       .insert(projectMembers)
@@ -115,16 +107,16 @@ export function updateMemberRole(
 export function getUserByEmailOrUsername(
   query: string
 ): { id: string; email: string; username: string } | null {
-  return drizzleDb
-    .select({ id: users.id, email: users.email, username: users.username })
-    .from(users)
-    .where(or(eq(users.email, query), eq(users.username, query)))
-    .get() ?? null;
+  return (
+    drizzleDb
+      .select({ id: users.id, email: users.email, username: users.username })
+      .from(users)
+      .where(or(eq(users.email, query), eq(users.username, query)))
+      .get() ?? null
+  );
 }
 
-export function getMemberProjects(
-  userId: string
-): (typeof projects.$inferSelect)[] {
+export function getMemberProjects(userId: string): (typeof projects.$inferSelect)[] {
   const rows = drizzleDb
     .select({ project: projects })
     .from(projectMembers)

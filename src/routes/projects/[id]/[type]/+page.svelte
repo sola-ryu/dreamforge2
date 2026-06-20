@@ -111,7 +111,11 @@
     if (res.ok) {
       allEntities = allEntities.map((e) =>
         e.id === entityId
-          ? { ...e, [field]: editingValue, frontmatter: { ...e.frontmatter, [field]: editingValue } }
+          ? {
+              ...e,
+              [field]: editingValue,
+              frontmatter: { ...e.frontmatter, [field]: editingValue }
+            }
           : e
       );
     }
@@ -136,15 +140,18 @@
 
   let simpleCustomFields = $derived(
     ($page.data?.customFields || []).filter(
-      (f: any) => ['text', 'number', 'date', 'boolean'].includes(f.type) && !['name', 'status', 'tags'].includes(f.key)
+      (f: any) =>
+        ['text', 'number', 'date', 'boolean'].includes(f.type) &&
+        !['name', 'status', 'tags'].includes(f.key)
     )
   );
 </script>
 
 <svelte:head>
-  <title>{$page.data?.entityType
-    ? ENTITY_PLURAL[$page.data.entityType as EntityType]
-    : 'Entities'} — {$page.data?.projectName || 'Project'} — DreamForge</title>
+  <title
+    >{$page.data?.entityType ? ENTITY_PLURAL[$page.data.entityType as EntityType] : 'Entities'} — {$page
+      .data?.projectName || 'Project'} — DreamForge</title
+  >
 </svelte:head>
 
 <div class="mx-auto max-w-5xl p-6">
@@ -364,7 +371,9 @@
                 <span class="font-medium truncate">{entity.name}</span>
                 {#if entity.tags?.length}
                   {#each entity.tags.slice(0, 3) as tag}
-                    <span class="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
+                    <span
+                      class="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground"
+                    >
                       {tag}
                     </span>
                   {/each}
@@ -473,7 +482,9 @@
                   {:else}
                     <div class="flex items-center gap-1 group/cell">
                       <a
-                        href="/projects/{$page.params.id}/{entityTypeToRoute(entity.type)}/{entity.id}"
+                        href="/projects/{$page.params.id}/{entityTypeToRoute(
+                          entity.type
+                        )}/{entity.id}"
                         class="truncate hover:underline"
                       >
                         {entity.name}
@@ -484,7 +495,18 @@
                           onclick={() => startCellEdit(entity.id, 'name', entity.name)}
                           aria-label="Edit name"
                         >
-                          <svg class="h-3 w-3 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                          <svg
+                            class="h-3 w-3 text-muted-foreground"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            ><path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                            /></svg
+                          >
                         </button>
                       {/if}
                     </div>
@@ -495,11 +517,14 @@
                   {#if canEdit}
                     <select
                       value={entity.status}
-                      onchange={(e) => commitStatusChange(entity.id, (e.target as HTMLSelectElement).value)}
+                      onchange={(e) =>
+                        commitStatusChange(entity.id, (e.target as HTMLSelectElement).value)}
                       class={cn(
                         'rounded border px-1.5 py-0.5 text-xs bg-background',
-                        entity.status === 'complete' && 'border-green-500/40 text-green-600 dark:text-green-400',
-                        entity.status === 'wip' && 'border-yellow-500/40 text-yellow-600 dark:text-yellow-400',
+                        entity.status === 'complete' &&
+                          'border-green-500/40 text-green-600 dark:text-green-400',
+                        entity.status === 'wip' &&
+                          'border-yellow-500/40 text-yellow-600 dark:text-yellow-400',
                         entity.status === 'draft' && 'border-border text-muted-foreground'
                       )}
                     >
@@ -508,13 +533,19 @@
                       <option value="complete">Complete</option>
                     </select>
                   {:else}
-                    <span class={cn(
-                      'text-xs',
-                      entity.status === 'complete' && 'text-green-600 dark:text-green-400',
-                      entity.status === 'wip' && 'text-yellow-600 dark:text-yellow-400',
-                      entity.status === 'draft' && 'text-muted-foreground'
-                    )}>
-                      {entity.status === 'complete' ? 'Complete' : entity.status === 'wip' ? 'In Progress' : 'Draft'}
+                    <span
+                      class={cn(
+                        'text-xs',
+                        entity.status === 'complete' && 'text-green-600 dark:text-green-400',
+                        entity.status === 'wip' && 'text-yellow-600 dark:text-yellow-400',
+                        entity.status === 'draft' && 'text-muted-foreground'
+                      )}
+                    >
+                      {entity.status === 'complete'
+                        ? 'Complete'
+                        : entity.status === 'wip'
+                          ? 'In Progress'
+                          : 'Draft'}
                     </span>
                   {/if}
                 </td>
@@ -532,7 +563,11 @@
                   <td class="px-3 py-2 max-w-36">
                     {#if canEdit && field.type !== 'boolean' && editingCell?.entityId === entity.id && editingCell?.field === field.key}
                       <input
-                        type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                        type={field.type === 'number'
+                          ? 'number'
+                          : field.type === 'date'
+                            ? 'date'
+                            : 'text'}
                         bind:value={editingValue}
                         class="w-full rounded border border-primary bg-background px-1.5 py-0.5 text-sm focus:outline-none"
                         autofocus
@@ -546,7 +581,8 @@
                       {#if canEdit}
                         <input
                           type="checkbox"
-                          checked={entity.frontmatter?.[field.key] === true || entity.frontmatter?.[field.key] === 'true'}
+                          checked={entity.frontmatter?.[field.key] === true ||
+                            entity.frontmatter?.[field.key] === 'true'}
                           onchange={async (e) => {
                             const val = (e.target as HTMLInputElement).checked ? 'true' : 'false';
                             const route = entityTypeToRoute($page.data?.entityType || 'character');
@@ -554,10 +590,21 @@
                             body.set('entityId', entity.id);
                             body.set('field', field.key);
                             body.set('value', val);
-                            const res = await fetch(`/projects/${$page.params.id}/${route}?/quickUpdate`, { method: 'POST', body });
+                            const res = await fetch(
+                              `/projects/${$page.params.id}/${route}?/quickUpdate`,
+                              { method: 'POST', body }
+                            );
                             if (res.ok) {
                               allEntities = allEntities.map((en) =>
-                                en.id === entity.id ? { ...en, frontmatter: { ...en.frontmatter, [field.key]: val === 'true' } } : en
+                                en.id === entity.id
+                                  ? {
+                                      ...en,
+                                      frontmatter: {
+                                        ...en.frontmatter,
+                                        [field.key]: val === 'true'
+                                      }
+                                    }
+                                  : en
                               );
                             }
                           }}
@@ -576,10 +623,26 @@
                         {#if canEdit}
                           <button
                             class="opacity-0 group-hover/cell:opacity-100 ml-1 shrink-0"
-                            onclick={() => startCellEdit(entity.id, field.key, String(entity.frontmatter?.[field.key] ?? ''))}
+                            onclick={() =>
+                              startCellEdit(
+                                entity.id,
+                                field.key,
+                                String(entity.frontmatter?.[field.key] ?? '')
+                              )}
                             aria-label="Edit {field.label}"
                           >
-                            <svg class="h-3 w-3 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                            <svg
+                              class="h-3 w-3 text-muted-foreground"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              ><path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                              /></svg
+                            >
                           </button>
                         {/if}
                       </div>

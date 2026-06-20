@@ -191,8 +191,16 @@ describe('listEntities', () => {
 
   it('returns entities sorted by modifiedAt descending', () => {
     const dir = path.join(tmpDir, 'characters');
-    writeEntityFile(dir, 'old', { id: generateId(), name: 'Old', modified: '2023-01-01T00:00:00.000Z' });
-    writeEntityFile(dir, 'new', { id: generateId(), name: 'New', modified: '2024-01-01T00:00:00.000Z' });
+    writeEntityFile(dir, 'old', {
+      id: generateId(),
+      name: 'Old',
+      modified: '2023-01-01T00:00:00.000Z'
+    });
+    writeEntityFile(dir, 'new', {
+      id: generateId(),
+      name: 'New',
+      modified: '2024-01-01T00:00:00.000Z'
+    });
 
     const result = listEntities(TEST_PROJECT_ID, tmpDir, 'character');
     expect(result[0].name).toBe('New');
@@ -347,7 +355,9 @@ describe('updateEntity', () => {
   });
 
   it('returns null for non-existent entity', () => {
-    const result = updateEntity(TEST_PROJECT_ID, tmpDir, 'character', 'nonexistent', { name: 'Nope' });
+    const result = updateEntity(TEST_PROJECT_ID, tmpDir, 'character', 'nonexistent', {
+      name: 'Nope'
+    });
     expect(result).toBeNull();
   });
 });

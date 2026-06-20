@@ -48,10 +48,14 @@
 
   let timelineEl = $state<HTMLDivElement | undefined>(undefined);
 
-  const timeline = $derived($page.data?.timeline as { calendar: CalendarConfig; events: TimelineEvent[] } | undefined);
+  const timeline = $derived(
+    $page.data?.timeline as { calendar: CalendarConfig; events: TimelineEvent[] } | undefined
+  );
   const events = $derived(timeline?.events || []);
   const calendar = $derived(timeline?.calendar || { name: 'Gregorian', months: [], epoch: 0 });
-  const entities = $derived<Array<{ id: string; name: string; type: string }>>($page.data?.entities || []);
+  const entities = $derived<Array<{ id: string; name: string; type: string }>>(
+    $page.data?.entities || []
+  );
 
   const entityMap = $derived(new Map(entities.map((e) => [e.id, e])));
 
@@ -64,14 +68,22 @@
         parts.push(`${cal.months[event.month - 1]},`);
       }
     }
-    const yearStr = event.year < 0 ? `${Math.abs(event.year)} ${event.era || 'BCE'}` : `${event.year} ${event.era || 'CE'}`;
+    const yearStr =
+      event.year < 0
+        ? `${Math.abs(event.year)} ${event.era || 'BCE'}`
+        : `${event.year} ${event.era || 'CE'}`;
     parts.push(yearStr.trim());
     return parts.join(' ');
   }
 
   const filteredEvents = $derived(
     events.filter((e) => {
-      if (searchQuery && !e.title.toLowerCase().includes(searchQuery.toLowerCase()) && !e.description.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      if (
+        searchQuery &&
+        !e.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !e.description.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+        return false;
       if (filterSignificance && e.significance !== filterSignificance) return false;
       if (filterEra && e.era !== filterEra) return false;
       if (filterEntity && !e.entityIds.includes(filterEntity)) return false;
@@ -81,8 +93,12 @@
 
   const eras = $derived([...new Set(events.map((e) => e.era))].sort());
 
-  const minYear = $derived(filteredEvents.length > 0 ? Math.min(...filteredEvents.map((e) => e.year)) : 0);
-  const maxYear = $derived(filteredEvents.length > 0 ? Math.max(...filteredEvents.map((e) => e.year)) : 100);
+  const minYear = $derived(
+    filteredEvents.length > 0 ? Math.min(...filteredEvents.map((e) => e.year)) : 0
+  );
+  const maxYear = $derived(
+    filteredEvents.length > 0 ? Math.max(...filteredEvents.map((e) => e.year)) : 100
+  );
   const yearSpan = $derived(Math.max(maxYear - minYear, 1));
 
   const YEAR_PADDING = 50;
@@ -90,21 +106,29 @@
   const AXIS_Y = SVG_HEIGHT - 50;
 
   const pxPerYear = $derived(
-    yearSpan <= 50 ? 16 :
-    yearSpan <= 200 ? 6 :
-    yearSpan <= 1000 ? 2.5 :
-    yearSpan <= 5000 ? 0.8 :
-    0.3
+    yearSpan <= 50
+      ? 16
+      : yearSpan <= 200
+        ? 6
+        : yearSpan <= 1000
+          ? 2.5
+          : yearSpan <= 5000
+            ? 0.8
+            : 0.3
   );
 
   const svgWidth = $derived(yearSpan * pxPerYear + YEAR_PADDING * 2);
 
   const TICK_INTERVAL = $derived(
-    yearSpan <= 50 ? 10 :
-    yearSpan <= 200 ? 25 :
-    yearSpan <= 1000 ? 100 :
-    yearSpan <= 5000 ? 500 :
-    1000
+    yearSpan <= 50
+      ? 10
+      : yearSpan <= 200
+        ? 25
+        : yearSpan <= 1000
+          ? 100
+          : yearSpan <= 5000
+            ? 500
+            : 1000
   );
 
   const tickYears = $derived(() => {
@@ -122,7 +146,12 @@
   }
 
   const eventPositions = $derived(() => {
-    const positioned: Array<{ event: TimelineEvent; x: number; y: number; label: 'above' | 'below' }> = [];
+    const positioned: Array<{
+      event: TimelineEvent;
+      x: number;
+      y: number;
+      label: 'above' | 'below';
+    }> = [];
     const yearCounts = new Map<number, number>();
 
     for (const event of filteredEvents) {
@@ -166,9 +195,12 @@
 
   function significanceColor(sig: string): string {
     switch (sig) {
-      case 'major': return '#f59e0b';
-      case 'minor': return '#3b82f6';
-      default: return '#6b7280';
+      case 'major':
+        return '#f59e0b';
+      case 'minor':
+        return '#3b82f6';
+      default:
+        return '#6b7280';
     }
   }
 
@@ -222,7 +254,9 @@
       <form method="POST" action="?/updateCalendar" use:enhance class="space-y-3">
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <label for="calendarName" class="block text-xs text-muted-foreground mb-1">Calendar Name</label>
+            <label for="calendarName" class="block text-xs text-muted-foreground mb-1"
+              >Calendar Name</label
+            >
             <input
               id="calendarName"
               name="calendarName"
@@ -232,7 +266,9 @@
             />
           </div>
           <div>
-            <label for="months" class="block text-xs text-muted-foreground mb-1">Month Names (comma-separated)</label>
+            <label for="months" class="block text-xs text-muted-foreground mb-1"
+              >Month Names (comma-separated)</label
+            >
             <input
               id="months"
               name="months"
@@ -332,19 +368,22 @@
           />
         </div>
         <div>
-          <label for="new-description" class="block text-xs text-muted-foreground mb-1">Description</label>
+          <label for="new-description" class="block text-xs text-muted-foreground mb-1"
+            >Description</label
+          >
           <textarea
             id="new-description"
             name="description"
             rows="3"
             bind:value={newDescription}
             class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-            placeholder="Event description..."
-          ></textarea>
+            placeholder="Event description..."></textarea>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label for="new-significance" class="block text-xs text-muted-foreground mb-1">Significance</label>
+            <label for="new-significance" class="block text-xs text-muted-foreground mb-1"
+              >Significance</label
+            >
             <select
               id="new-significance"
               name="significance"
@@ -357,7 +396,9 @@
             </select>
           </div>
           <div>
-            <label for="new-entities" class="block text-xs text-muted-foreground mb-1">Linked Entities</label>
+            <label for="new-entities" class="block text-xs text-muted-foreground mb-1"
+              >Linked Entities</label
+            >
             <select
               id="new-entities"
               class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
@@ -378,7 +419,9 @@
                 {#each newEntityIds as eid}
                   {@const entity = entityMap.get(eid)}
                   {#if entity}
-                    <span class="flex items-center gap-1 rounded bg-secondary px-1.5 py-0.5 text-xs">
+                    <span
+                      class="flex items-center gap-1 rounded bg-secondary px-1.5 py-0.5 text-xs"
+                    >
                       {entity.name}
                       <button
                         type="button"
@@ -421,7 +464,9 @@
   {#if showCalendarSettings || showCreate || events.length > 0}
     <div class="mb-4 flex flex-wrap items-center gap-3">
       <div class="relative flex-1 min-w-[200px] max-w-xs">
-        <Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+        <Search
+          class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
+        />
         <input
           type="search"
           placeholder="Search events..."
@@ -438,13 +483,19 @@
         <option value="minor">Minor</option>
         <option value="trivial">Trivial</option>
       </select>
-      <select class="rounded border border-input bg-background px-2 py-2 text-sm" bind:value={filterEra}>
+      <select
+        class="rounded border border-input bg-background px-2 py-2 text-sm"
+        bind:value={filterEra}
+      >
         <option value="">All eras</option>
         {#each eras as era}
           <option value={era}>{era}</option>
         {/each}
       </select>
-      <select class="rounded border border-input bg-background px-2 py-2 text-sm" bind:value={filterEntity}>
+      <select
+        class="rounded border border-input bg-background px-2 py-2 text-sm"
+        bind:value={filterEntity}
+      >
         <option value="">All entities</option>
         {#each entities as entity}
           <option value={entity.id}>{entity.name}</option>
@@ -456,7 +507,9 @@
   {#if events.length === 0}
     <div class="flex flex-col items-center gap-3 py-16 text-muted-foreground">
       <Clock class="h-12 w-12 opacity-30" />
-      <p class="text-sm">No timeline events yet. Add your first one to start building a chronology.</p>
+      <p class="text-sm">
+        No timeline events yet. Add your first one to start building a chronology.
+      </p>
     </div>
   {:else if filteredEvents.length === 0}
     <div class="flex flex-col items-center gap-3 py-16 text-muted-foreground">
@@ -510,18 +563,61 @@
               if (e.key === 'Enter') openEdit(event);
             }}
           >
-            <circle cx={x} cy={y} r={event.significance === 'major' ? 6 : event.significance === 'minor' ? 4.5 : 3} fill={significanceColor(event.significance)} stroke="hsl(var(--card))" stroke-width="2" />
+            <circle
+              cx={x}
+              cy={y}
+              r={event.significance === 'major' ? 6 : event.significance === 'minor' ? 4.5 : 3}
+              fill={significanceColor(event.significance)}
+              stroke="hsl(var(--card))"
+              stroke-width="2"
+            />
             {#if label === 'above'}
-              <line x1={x} y1={y + (event.significance === 'major' ? 6 : event.significance === 'minor' ? 4.5 : 3)} x2={x} y2={y - 18} stroke="hsl(var(--border))" stroke-width="1" />
-              <text x={x} y={y - 22} text-anchor="middle" fill="hsl(var(--foreground))" font-size="11" font-weight="500">
+              <line
+                x1={x}
+                y1={y +
+                  (event.significance === 'major' ? 6 : event.significance === 'minor' ? 4.5 : 3)}
+                x2={x}
+                y2={y - 18}
+                stroke="hsl(var(--border))"
+                stroke-width="1"
+              />
+              <text
+                {x}
+                y={y - 22}
+                text-anchor="middle"
+                fill="hsl(var(--foreground))"
+                font-size="11"
+                font-weight="500"
+              >
                 {event.title.length > 30 ? event.title.slice(0, 30) + '...' : event.title}
               </text>
-              <text x={x} y={y - 10} text-anchor="middle" fill="hsl(var(--muted-foreground))" font-size="9">
+              <text
+                {x}
+                y={y - 10}
+                text-anchor="middle"
+                fill="hsl(var(--muted-foreground))"
+                font-size="9"
+              >
                 {formatDateStr(event, calendar)}
               </text>
             {:else}
-              <line x1={x} y1={y + (event.significance === 'major' ? 6 : event.significance === 'minor' ? 4.5 : 3)} x2={x} y2={AXIS_Y - 14} stroke="hsl(var(--border))" stroke-width="1" />
-              <text x={x} y={AXIS_Y - 18} text-anchor="middle" fill="hsl(var(--foreground))" font-size="11" font-weight="500">
+              <line
+                x1={x}
+                y1={y +
+                  (event.significance === 'major' ? 6 : event.significance === 'minor' ? 4.5 : 3)}
+                x2={x}
+                y2={AXIS_Y - 14}
+                stroke="hsl(var(--border))"
+                stroke-width="1"
+              />
+              <text
+                {x}
+                y={AXIS_Y - 18}
+                text-anchor="middle"
+                fill="hsl(var(--foreground))"
+                font-size="11"
+                font-weight="500"
+              >
                 {event.title.length > 30 ? event.title.slice(0, 30) + '...' : event.title}
               </text>
             {/if}
@@ -550,7 +646,9 @@
               <input type="hidden" name="eventId" value={event.id} />
               <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <div>
-                  <label for="edit-year" class="block text-xs text-muted-foreground mb-1">Year</label>
+                  <label for="edit-year" class="block text-xs text-muted-foreground mb-1"
+                    >Year</label
+                  >
                   <input
                     id="edit-year"
                     name="year"
@@ -561,7 +659,9 @@
                   />
                 </div>
                 <div>
-                  <label for="edit-month" class="block text-xs text-muted-foreground mb-1">Month</label>
+                  <label for="edit-month" class="block text-xs text-muted-foreground mb-1"
+                    >Month</label
+                  >
                   <select
                     id="edit-month"
                     name="month"
@@ -598,7 +698,9 @@
                 </div>
               </div>
               <div>
-                <label for="edit-title" class="block text-xs text-muted-foreground mb-1">Title</label>
+                <label for="edit-title" class="block text-xs text-muted-foreground mb-1"
+                  >Title</label
+                >
                 <input
                   id="edit-title"
                   name="title"
@@ -609,7 +711,9 @@
                 />
               </div>
               <div>
-                <label for="edit-description" class="block text-xs text-muted-foreground mb-1">Description</label>
+                <label for="edit-description" class="block text-xs text-muted-foreground mb-1"
+                  >Description</label
+                >
                 <textarea
                   id="edit-description"
                   name="description"
@@ -620,7 +724,9 @@
               </div>
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label for="edit-significance" class="block text-xs text-muted-foreground mb-1">Significance</label>
+                  <label for="edit-significance" class="block text-xs text-muted-foreground mb-1"
+                    >Significance</label
+                  >
                   <select
                     id="edit-significance"
                     name="significance"
@@ -633,7 +739,9 @@
                   </select>
                 </div>
                 <div>
-                  <label for="edit-entities" class="block text-xs text-muted-foreground mb-1">Linked Entities</label>
+                  <label for="edit-entities" class="block text-xs text-muted-foreground mb-1"
+                    >Linked Entities</label
+                  >
                   <select
                     id="edit-entities"
                     class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
@@ -654,12 +762,15 @@
                       {#each editEntityIds as eid}
                         {@const entity = entityMap.get(eid)}
                         {#if entity}
-                          <span class="flex items-center gap-1 rounded bg-secondary px-1.5 py-0.5 text-xs">
+                          <span
+                            class="flex items-center gap-1 rounded bg-secondary px-1.5 py-0.5 text-xs"
+                          >
                             {entity.name}
                             <button
                               type="button"
                               class="hover:text-destructive"
-                              onclick={() => (editEntityIds = editEntityIds.filter((id) => id !== eid))}
+                              onclick={() =>
+                                (editEntityIds = editEntityIds.filter((id) => id !== eid))}
                               aria-label="Remove {entity.name}"
                             >
                               <X class="h-3 w-3" />
@@ -714,8 +825,10 @@
                   <span
                     class={cn(
                       'shrink-0 rounded px-1.5 py-0.5 text-xs font-medium',
-                      event.significance === 'major' && 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-                      event.significance === 'minor' && 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+                      event.significance === 'major' &&
+                        'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+                      event.significance === 'minor' &&
+                        'bg-blue-500/10 text-blue-600 dark:text-blue-400',
                       event.significance === 'trivial' && 'bg-gray-500/10 text-gray-500'
                     )}
                   >
@@ -733,7 +846,9 @@
                     {#each event.entityIds as eid}
                       {@const entity = entityMap.get(eid)}
                       {#if entity}
-                        <span class="rounded bg-secondary px-1.5 py-0.5 text-xs text-muted-foreground">
+                        <span
+                          class="rounded bg-secondary px-1.5 py-0.5 text-xs text-muted-foreground"
+                        >
                           {entity.name}
                         </span>
                       {/if}

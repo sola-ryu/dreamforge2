@@ -83,9 +83,7 @@
       }
     );
     if (res.ok) {
-      comments = comments.map((c) =>
-        c.id === comment.id ? { ...c, resolved: !c.resolved } : c
-      );
+      comments = comments.map((c) => (c.id === comment.id ? { ...c, resolved: !c.resolved } : c));
     }
   }
 
@@ -98,7 +96,9 @@
   <div class="mb-4 flex items-center gap-2">
     <MessageSquare class="h-4 w-4 text-muted-foreground" />
     <h3 class="text-sm font-semibold">
-      Comments {#if comments.length > 0}<span class="text-muted-foreground">({comments.length})</span>{/if}
+      Comments {#if comments.length > 0}<span class="text-muted-foreground"
+          >({comments.length})</span
+        >{/if}
     </h3>
   </div>
 
@@ -164,8 +164,7 @@
             e.preventDefault();
             submit();
           }
-        }}
-      ></textarea>
+        }}></textarea>
       <div class="mt-2 flex items-center justify-between">
         <span class="text-xs text-muted-foreground">Ctrl+Enter to submit</span>
         <button

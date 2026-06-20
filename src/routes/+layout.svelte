@@ -1,7 +1,7 @@
 <script lang="ts">
   import '../app.css';
   import { page } from '$app/stores';
-  import { theme } from '$lib/stores/theme';
+  import { theme } from '$lib/stores/theme.svelte';
   import { getZenMode } from '$lib/stores/zenMode.svelte';
   import ZenMode from '$lib/components/ZenMode.svelte';
   import Sidebar from '$lib/components/Sidebar.svelte';
@@ -14,7 +14,8 @@
 <ZenMode />
 <div
   class="flex h-screen overflow-hidden"
-  class:dark={$theme === 'dark' || ($theme === undefined && $page.data?.theme === 'dark')}
+  class:dark={theme === 'dark'}
+  class:monochrome={theme === 'monochrome'}
   class:zen-mode={zen.active}
 >
   {#if $page.data?.user && !zen.active}

@@ -29,7 +29,9 @@
 </script>
 
 <svelte:head>
-  <title>{$page.data?.plotline?.title || 'Plotline'} — {$page.data?.projectName || 'Project'} — DreamForge</title>
+  <title
+    >{$page.data?.plotline?.title || 'Plotline'} — {$page.data?.projectName || 'Project'} — DreamForge</title
+  >
 </svelte:head>
 
 <div class="mx-auto max-w-4xl p-6">

@@ -37,7 +37,9 @@
 </script>
 
 <svelte:head>
-  <title>Summaries — {$page.data?.story?.title || 'Story'} — {$page.data?.projectName || 'Project'} — DreamForge</title>
+  <title
+    >Summaries — {$page.data?.story?.title || 'Story'} — {$page.data?.projectName || 'Project'} — DreamForge</title
+  >
 </svelte:head>
 
 <div class="mx-auto max-w-4xl p-6">

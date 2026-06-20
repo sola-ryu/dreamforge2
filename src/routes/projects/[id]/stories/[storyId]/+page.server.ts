@@ -41,7 +41,13 @@ export const load = async ({ params, locals }) => {
     status: e.status
   }));
 
-  return { story, chapters: chaptersWithScenes, projectName: project.name, entities: allEntities, role };
+  return {
+    story,
+    chapters: chaptersWithScenes,
+    projectName: project.name,
+    entities: allEntities,
+    role
+  };
 };
 
 export const actions = {

@@ -40,7 +40,8 @@ export const actions = {
 
     const access = getProjectAccess(params.id, locals.user.id);
     if (!access) return fail(404, { error: 'Project not found' });
-    if (access.role !== 'owner') return fail(403, { error: 'Only the project owner can manage fields' });
+    if (access.role !== 'owner')
+      return fail(403, { error: 'Only the project owner can manage fields' });
 
     const form = await request.formData();
     const entityType = form.get('entityType') as string;
@@ -91,7 +92,8 @@ export const actions = {
 
     const access = getProjectAccess(params.id, locals.user.id);
     if (!access) return fail(404, { error: 'Project not found' });
-    if (access.role !== 'owner') return fail(403, { error: 'Only the project owner can manage fields' });
+    if (access.role !== 'owner')
+      return fail(403, { error: 'Only the project owner can manage fields' });
 
     const form = await request.formData();
     const fieldId = form.get('fieldId') as string;
@@ -108,7 +110,8 @@ export const actions = {
 
     const access = getProjectAccess(params.id, locals.user.id);
     if (!access) return fail(404, { error: 'Project not found' });
-    if (access.role !== 'owner') return fail(403, { error: 'Only the project owner can manage members' });
+    if (access.role !== 'owner')
+      return fail(403, { error: 'Only the project owner can manage members' });
 
     const form = await request.formData();
     const query = form.get('query') as string;
@@ -131,7 +134,8 @@ export const actions = {
 
     const access = getProjectAccess(params.id, locals.user.id);
     if (!access) return fail(404, { error: 'Project not found' });
-    if (access.role !== 'owner') return fail(403, { error: 'Only the project owner can manage members' });
+    if (access.role !== 'owner')
+      return fail(403, { error: 'Only the project owner can manage members' });
 
     const form = await request.formData();
     const userId = form.get('userId') as string;
@@ -147,7 +151,8 @@ export const actions = {
 
     const access = getProjectAccess(params.id, locals.user.id);
     if (!access) return fail(404, { error: 'Project not found' });
-    if (access.role !== 'owner') return fail(403, { error: 'Only the project owner can manage members' });
+    if (access.role !== 'owner')
+      return fail(403, { error: 'Only the project owner can manage members' });
 
     const form = await request.formData();
     const userId = form.get('userId') as string;

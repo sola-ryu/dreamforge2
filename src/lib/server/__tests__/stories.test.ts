@@ -218,7 +218,9 @@ describe('deleteChapter', () => {
     const story = createStory(tmpDir, 'Story');
     const chapter = createChapter(tmpDir, story.id, 'Delete Me');
     expect(deleteChapter(tmpDir, story.id, chapter.id)).toBe(true);
-    expect(fs.existsSync(path.join(tmpDir, 'stories', story.id, 'chapters', chapter.id))).toBe(false);
+    expect(fs.existsSync(path.join(tmpDir, 'stories', story.id, 'chapters', chapter.id))).toBe(
+      false
+    );
   });
 
   it('returns false for non-existent chapter', () => {
@@ -246,7 +248,15 @@ describe('createScene', () => {
     const story = createStory(tmpDir, 'Story');
     const chapter = createChapter(tmpDir, story.id, 'Ch 1');
     const scene = createScene(tmpDir, story.id, chapter.id);
-    const filePath = path.join(tmpDir, 'stories', story.id, 'chapters', chapter.id, 'scenes', `${scene.id}.md`);
+    const filePath = path.join(
+      tmpDir,
+      'stories',
+      story.id,
+      'chapters',
+      chapter.id,
+      'scenes',
+      `${scene.id}.md`
+    );
     expect(fs.existsSync(filePath)).toBe(true);
   });
 
@@ -344,7 +354,15 @@ describe('deleteScene', () => {
     const scene = createScene(tmpDir, story.id, chapter.id, 'Delete Me');
     const deleted = deleteScene(tmpDir, story.id, chapter.id, scene.id);
     expect(deleted).toBe(true);
-    const filePath = path.join(tmpDir, 'stories', story.id, 'chapters', chapter.id, 'scenes', `${scene.id}.md`);
+    const filePath = path.join(
+      tmpDir,
+      'stories',
+      story.id,
+      'chapters',
+      chapter.id,
+      'scenes',
+      `${scene.id}.md`
+    );
     expect(fs.existsSync(filePath)).toBe(false);
   });
 

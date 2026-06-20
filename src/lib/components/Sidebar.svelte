@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { toggleTheme } from '$lib/stores/theme';
+  import { toggleTheme } from '$lib/stores/theme.svelte';
   import { Home, BookMarked, SunMoon, LogOut, Download, Search, Clock } from 'lucide-svelte';
 </script>
 

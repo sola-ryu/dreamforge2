@@ -50,9 +50,11 @@
 </script>
 
 <svelte:head>
-  <title>{$page.data?.entity?.name || 'Entity'} — {$page.data?.entityType
-    ? ENTITY_LABELS[$page.data.entityType as EntityType]
-    : ''} — {$page.data?.project?.name || 'Project'} — DreamForge</title>
+  <title
+    >{$page.data?.entity?.name || 'Entity'} — {$page.data?.entityType
+      ? ENTITY_LABELS[$page.data.entityType as EntityType]
+      : ''} — {$page.data?.project?.name || 'Project'} — DreamForge</title
+  >
 </svelte:head>
 
 <div class="mx-auto max-w-4xl p-6">
@@ -339,7 +341,7 @@
     targetId={$page.params.entityId || ''}
     currentUserId={$page.data?.currentUserId || ''}
     projectOwnerId={$page.data?.projectOwnerId || ''}
-    role={role}
+    {role}
   />
 
   {#if editing}
@@ -407,7 +409,7 @@
             {/each}
           </select>
         </div>
-      <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-2">
           <button
             type="submit"
             class="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:opacity-90"
@@ -434,4 +436,3 @@
     </p>
   </div>
 </div>
-

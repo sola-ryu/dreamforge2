@@ -18,11 +18,7 @@ export interface Comment {
   resolved: boolean;
 }
 
-export function getComments(
-  projectId: string,
-  targetType: string,
-  targetId: string
-): Comment[] {
+export function getComments(projectId: string, targetType: string, targetId: string): Comment[] {
   const rows = drizzleDb
     .select({
       id: comments.id,
@@ -64,7 +60,11 @@ export function createComment(
     .values({ id, projectId, targetType, targetId, userId, body, createdAt, resolved: false })
     .run();
 
-  const user = drizzleDb.select({ username: users.username }).from(users).where(eq(users.id, userId)).get();
+  const user = drizzleDb
+    .select({ username: users.username })
+    .from(users)
+    .where(eq(users.id, userId))
+    .get();
 
   return {
     id,

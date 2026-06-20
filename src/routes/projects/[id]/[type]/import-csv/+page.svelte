@@ -53,9 +53,11 @@
 </script>
 
 <svelte:head>
-  <title>Import CSV — {$page.data?.entityType
-    ? ENTITY_PLURAL[$page.data.entityType as EntityType]
-    : 'Entities'} — {$page.data?.projectName || 'Project'} — DreamForge</title>
+  <title
+    >Import CSV — {$page.data?.entityType
+      ? ENTITY_PLURAL[$page.data.entityType as EntityType]
+      : 'Entities'} — {$page.data?.projectName || 'Project'} — DreamForge</title
+  >
 </svelte:head>
 
 <div class="mx-auto max-w-4xl p-6">
@@ -170,7 +172,8 @@
                     <select
                       class="w-full rounded border border-input bg-background px-2 py-1 text-xs"
                       value={mapping[header] || ''}
-                      onchange={(e) => onMappingChange(header, (e.target as HTMLSelectElement).value)}
+                      onchange={(e) =>
+                        onMappingChange(header, (e.target as HTMLSelectElement).value)}
                     >
                       <option value="">— Skip —</option>
                       <option value="__new__">— New field... —</option>
@@ -215,7 +218,9 @@
                       </div>
                     {/if}
                   </td>
-                  <td class="px-2 py-1.5 text-xs text-muted-foreground align-top pt-3 max-w-[200px]">
+                  <td
+                    class="px-2 py-1.5 text-xs text-muted-foreground align-top pt-3 max-w-[200px]"
+                  >
                     <div class="space-y-0.5">
                       {#each preview.slice(0, 3) as row}
                         <div class="truncate">{row[header] || ''}</div>
@@ -299,7 +304,9 @@
               csvHeaders = d.csvHeaders;
               preview = d.preview;
               rawData = d.data;
-              const targetKeys = ($page.data?.targetFields || []).map((f: { key: string }) => f.key);
+              const targetKeys = ($page.data?.targetFields || []).map(
+                (f: { key: string }) => f.key
+              );
               mapping = buildAutoMapping(d.csvHeaders, targetKeys);
             }
           };
@@ -307,8 +314,12 @@
         class="space-y-4"
       >
         {#if uploading}
-          <div class="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 gap-2">
-            <div class="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+          <div
+            class="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 gap-2"
+          >
+            <div
+              class="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"
+            ></div>
             <span class="text-sm text-muted-foreground">Uploading...</span>
           </div>
         {:else}

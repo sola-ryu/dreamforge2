@@ -2,13 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import {
-  loadTimeline,
-  addEvent,
-  updateEvent,
-  deleteEvent,
-  updateCalendar
-} from '../timelines';
+import { loadTimeline, addEvent, updateEvent, deleteEvent, updateCalendar } from '../timelines';
 
 let tmpDir: string;
 
@@ -47,9 +41,17 @@ describe('loadTimeline', () => {
       calendar: { name: 'Gregorian', months: ['Jan'], epoch: 0 },
       events: [
         {
-          id: 'evt-1', year: 100, month: 1, day: 1, era: 'AD',
-          title: 'Event', description: 'Desc', significance: 'major' as const,
-          entityIds: [], createdAt: 'now', modifiedAt: 'now'
+          id: 'evt-1',
+          year: 100,
+          month: 1,
+          day: 1,
+          era: 'AD',
+          title: 'Event',
+          description: 'Desc',
+          significance: 'major' as const,
+          entityIds: [],
+          createdAt: 'now',
+          modifiedAt: 'now'
         }
       ]
     };
@@ -64,8 +66,13 @@ describe('loadTimeline', () => {
 describe('addEvent', () => {
   it('adds and returns a new event', () => {
     const event = addEvent(tmpDir, {
-      year: 100, month: 1, day: 1, era: 'AD',
-      title: 'Battle', description: 'Great battle', significance: 'major',
+      year: 100,
+      month: 1,
+      day: 1,
+      era: 'AD',
+      title: 'Battle',
+      description: 'Great battle',
+      significance: 'major',
       entityIds: ['ent-1']
     });
 
@@ -77,8 +84,13 @@ describe('addEvent', () => {
 
   it('persists event to disk', () => {
     addEvent(tmpDir, {
-      year: 200, month: null, day: null, era: 'AD',
-      title: 'Persisted', description: '', significance: 'minor',
+      year: 200,
+      month: null,
+      day: null,
+      era: 'AD',
+      title: 'Persisted',
+      description: '',
+      significance: 'minor',
       entityIds: []
     });
 
@@ -88,18 +100,72 @@ describe('addEvent', () => {
   });
 
   it('sorts events by year, month, day', () => {
-    addEvent(tmpDir, { year: 300, month: 6, day: 1, era: 'AD', title: 'Mid', description: '', significance: 'trivial', entityIds: [] });
-    addEvent(tmpDir, { year: 100, month: 1, day: 1, era: 'AD', title: 'Early', description: '', significance: 'major', entityIds: [] });
-    addEvent(tmpDir, { year: 500, month: 1, day: 1, era: 'AD', title: 'Late', description: '', significance: 'major', entityIds: [] });
+    addEvent(tmpDir, {
+      year: 300,
+      month: 6,
+      day: 1,
+      era: 'AD',
+      title: 'Mid',
+      description: '',
+      significance: 'trivial',
+      entityIds: []
+    });
+    addEvent(tmpDir, {
+      year: 100,
+      month: 1,
+      day: 1,
+      era: 'AD',
+      title: 'Early',
+      description: '',
+      significance: 'major',
+      entityIds: []
+    });
+    addEvent(tmpDir, {
+      year: 500,
+      month: 1,
+      day: 1,
+      era: 'AD',
+      title: 'Late',
+      description: '',
+      significance: 'major',
+      entityIds: []
+    });
 
     const result = loadTimeline(tmpDir);
     expect(result.events.map((e) => e.title)).toEqual(['Early', 'Mid', 'Late']);
   });
 
   it('sorts events with same year by month and day', () => {
-    addEvent(tmpDir, { year: 100, month: 3, day: 15, era: 'AD', title: 'C', description: '', significance: 'minor', entityIds: [] });
-    addEvent(tmpDir, { year: 100, month: 1, day: 1, era: 'AD', title: 'A', description: '', significance: 'major', entityIds: [] });
-    addEvent(tmpDir, { year: 100, month: 2, day: 10, era: 'AD', title: 'B', description: '', significance: 'major', entityIds: [] });
+    addEvent(tmpDir, {
+      year: 100,
+      month: 3,
+      day: 15,
+      era: 'AD',
+      title: 'C',
+      description: '',
+      significance: 'minor',
+      entityIds: []
+    });
+    addEvent(tmpDir, {
+      year: 100,
+      month: 1,
+      day: 1,
+      era: 'AD',
+      title: 'A',
+      description: '',
+      significance: 'major',
+      entityIds: []
+    });
+    addEvent(tmpDir, {
+      year: 100,
+      month: 2,
+      day: 10,
+      era: 'AD',
+      title: 'B',
+      description: '',
+      significance: 'major',
+      entityIds: []
+    });
 
     const result = loadTimeline(tmpDir);
     expect(result.events.map((e) => e.title)).toEqual(['A', 'B', 'C']);
@@ -109,8 +175,13 @@ describe('addEvent', () => {
 describe('updateEvent', () => {
   it('updates an existing event', async () => {
     const added = addEvent(tmpDir, {
-      year: 100, month: 1, day: 1, era: 'AD',
-      title: 'Old Title', description: 'Old', significance: 'minor',
+      year: 100,
+      month: 1,
+      day: 1,
+      era: 'AD',
+      title: 'Old Title',
+      description: 'Old',
+      significance: 'minor',
       entityIds: []
     });
 
@@ -132,8 +203,13 @@ describe('updateEvent', () => {
 describe('deleteEvent', () => {
   it('deletes an existing event', () => {
     const added = addEvent(tmpDir, {
-      year: 100, month: 1, day: 1, era: 'AD',
-      title: 'ToDelete', description: '', significance: 'major',
+      year: 100,
+      month: 1,
+      day: 1,
+      era: 'AD',
+      title: 'ToDelete',
+      description: '',
+      significance: 'major',
       entityIds: []
     });
 
