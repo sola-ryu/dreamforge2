@@ -124,15 +124,16 @@ export const actions = {
         const mapped: Record<string, unknown> = {};
 
         for (const [csvCol, fieldKey] of Object.entries(mapping)) {
-          if (fieldKey && row[csvCol] !== undefined) {
-            if (fieldKey === 'tags') {
-              mapped[fieldKey] = row[csvCol]
-                .split(',')
-                .map((s) => s.trim())
-                .filter(Boolean);
-            } else {
-              mapped[fieldKey] = row[csvCol];
-            }
+          if (!fieldKey || row[csvCol] === undefined) continue;
+          const val = row[csvCol];
+          if (fieldKey === 'tags') {
+            const incoming = val.split(',').map((s) => s.trim()).filter(Boolean);
+            const existing = Array.isArray(mapped[fieldKey]) ? (mapped[fieldKey] as string[]) : [];
+            mapped[fieldKey] = [...existing, ...incoming];
+          } else if (mapped[fieldKey] !== undefined) {
+            mapped[fieldKey] = `${mapped[fieldKey]} ${val}`.trim();
+          } else {
+            mapped[fieldKey] = val;
           }
         }
 
