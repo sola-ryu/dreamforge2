@@ -9,8 +9,12 @@
   import { ArrowLeft, Trash2, RotateCcw, AlertTriangle } from 'lucide-svelte';
 
   function goToEntity(item: any) {
-    const route = entityTypeToRoute(item.entityType);
-    goto(`/projects/${$page.params.id}/${route}/${item.entityId}`);
+    if (item.entityType === 'image') {
+      goto(`/projects/${$page.params.id}/images/${item.entityId}`);
+    } else {
+      const route = entityTypeToRoute(item.entityType);
+      goto(`/projects/${$page.params.id}/${route}/${item.entityId}`);
+    }
   }
 </script>
 
@@ -69,7 +73,9 @@
                 <span
                   class="shrink-0 rounded bg-secondary px-1.5 py-0.5 text-xs text-muted-foreground"
                 >
-                  {ENTITY_LABELS[item.entityType as EntityType] || item.entityType}
+                  {item.entityType === 'image'
+                    ? 'Image'
+                    : ENTITY_LABELS[item.entityType as EntityType] || item.entityType}
                 </span>
               </div>
               <p class="mt-1 text-xs text-muted-foreground">
@@ -78,7 +84,14 @@
                   &middot; Expires {formatDate(item.expiresAt)}
                 {/if}
               </p>
-              {#if item.body}
+              {#if item.kind === 'image'}
+                <p class="mt-2 text-xs text-muted-foreground">
+                  {item.metadata?.originalName || ''} &middot; {item.metadata?.mimeType || ''}
+                  {#if item.metadata?.size}
+                    &middot; {Math.round(item.metadata.size / 1024)} KB
+                  {/if}
+                </p>
+              {:else if item.body}
                 <p class="mt-2 line-clamp-2 text-xs text-muted-foreground">
                   {item.body.slice(0, 200)}
                 </p>

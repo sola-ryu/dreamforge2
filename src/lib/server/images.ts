@@ -5,6 +5,7 @@ import { projectImages, imageEntityLinks } from './schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { generateId } from '$lib/utils';
+import { softDeleteImage } from '$lib/server/trash';
 import type { EntityType } from '$lib/types';
 
 const drizzleDb = drizzle(db);
@@ -186,30 +187,8 @@ export function updateImage(
 }
 
 export function deleteImage(projectId: string, projectPath: string, imageId: string): boolean {
-  const row = drizzleDb
-    .select()
-    .from(projectImages)
-    .where(and(eq(projectImages.id, imageId), eq(projectImages.projectId, projectId)))
-    .get();
-
-  if (!row) return false;
-
-  const filePath = path.join(getImageDir(projectPath), row.filename);
-  if (fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath);
-  }
-
-  drizzleDb
-    .delete(imageEntityLinks)
-    .where(and(eq(imageEntityLinks.imageId, imageId), eq(imageEntityLinks.projectId, projectId)))
-    .run();
-
-  drizzleDb
-    .delete(projectImages)
-    .where(and(eq(projectImages.id, imageId), eq(projectImages.projectId, projectId)))
-    .run();
-
-  return true;
+  const result = softDeleteImage(projectId, projectPath, imageId);
+  return result !== null;
 }
 
 export function linkEntityToImage(projectId: string, imageId: string, entityId: string): boolean {

@@ -123,7 +123,9 @@ export const trashItems = sqliteTable('trash_items', {
   entityType: text('entity_type').notNull(),
   originalPath: text('original_path').notNull(),
   deletedAt: text('deleted_at').notNull(),
-  expiresAt: text('expires_at').notNull()
+  expiresAt: text('expires_at').notNull(),
+  kind: text('kind').notNull().default('entity'),
+  metadata: text('metadata')
 });
 
 export const projectImages = sqliteTable('project_images', {

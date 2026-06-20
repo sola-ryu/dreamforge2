@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import db from './db';
-import { trashItems as trashTable, entities } from './schema';
+import { trashItems as trashTable, entities, projectImages, imageEntityLinks } from './schema';
 import { eq, and, lt } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { readMarkdownFile } from './markdown';
@@ -18,13 +18,15 @@ export interface TrashItem {
   id: string;
   projectId: string;
   entityId: string;
-  entityType: EntityType;
+  entityType: string;
   originalPath: string;
   deletedAt: string;
   expiresAt: string;
   name: string;
   body: string;
   frontmatter: Record<string, unknown>;
+  kind: 'entity' | 'image';
+  metadata: Record<string, unknown> | null;
 }
 
 function getEntityDir(projectPath: string, type: EntityType): string {
@@ -40,6 +42,10 @@ function getTrashDir(projectPath: string): string {
 
 function getTrashEntityPath(projectPath: string, type: EntityType, id: string): string {
   return path.join(getTrashDir(projectPath), ENTITY_DIRS[type], `${id}.md`);
+}
+
+function getTrashImagePath(projectPath: string, filename: string): string {
+  return path.join(getTrashDir(projectPath), 'images', filename);
 }
 
 export function softDeleteEntity(
@@ -80,7 +86,8 @@ export function softDeleteEntity(
       entityType: type,
       originalPath: path.relative(projectPath, sourcePath),
       deletedAt: now,
-      expiresAt
+      expiresAt,
+      kind: 'entity'
     })
     .run();
 
@@ -94,8 +101,142 @@ export function softDeleteEntity(
     expiresAt,
     name: (md.frontmatter.name as string) || id,
     body: md.body,
-    frontmatter: md.frontmatter as Record<string, unknown>
+    frontmatter: md.frontmatter as Record<string, unknown>,
+    kind: 'entity',
+    metadata: null
   };
+}
+
+export function softDeleteImage(
+  projectId: string,
+  projectPath: string,
+  imageId: string
+): TrashItem | null {
+  const row = drizzleDb
+    .select()
+    .from(projectImages)
+    .where(and(eq(projectImages.id, imageId), eq(projectImages.projectId, projectId)))
+    .get();
+
+  if (!row) return null;
+
+  const imageDir = path.join(projectPath, 'images');
+  const sourcePath = path.join(imageDir, row.filename);
+  const trashDir = path.join(getTrashDir(projectPath), 'images');
+  const destPath = path.join(trashDir, row.filename);
+
+  if (fs.existsSync(sourcePath)) {
+    fs.mkdirSync(trashDir, { recursive: true });
+    fs.renameSync(sourcePath, destPath);
+  }
+
+  drizzleDb
+    .delete(imageEntityLinks)
+    .where(and(eq(imageEntityLinks.imageId, imageId), eq(imageEntityLinks.projectId, projectId)))
+    .run();
+
+  drizzleDb
+    .delete(projectImages)
+    .where(and(eq(projectImages.id, imageId), eq(projectImages.projectId, projectId)))
+    .run();
+
+  const now = new Date().toISOString();
+  const expiresAt = new Date(Date.now() + TRASH_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const trashId = generateId();
+
+  const metadata = {
+    filename: row.filename,
+    originalName: row.originalName,
+    mimeType: row.mimeType,
+    size: row.size,
+    caption: row.caption,
+    altText: row.altText
+  };
+
+  drizzleDb
+    .insert(trashTable)
+    .values({
+      id: trashId,
+      projectId,
+      entityId: imageId,
+      entityType: 'image',
+      originalPath: path.join('images', row.filename),
+      deletedAt: now,
+      expiresAt,
+      kind: 'image',
+      metadata: JSON.stringify(metadata)
+    })
+    .run();
+
+  return {
+    id: trashId,
+    projectId,
+    entityId: imageId,
+    entityType: 'image',
+    originalPath: path.join('images', row.filename),
+    deletedAt: now,
+    expiresAt,
+    name: row.originalName,
+    body: '',
+    frontmatter: {},
+    kind: 'image',
+    metadata
+  };
+}
+
+function restoreImage(
+  projectId: string,
+  projectPath: string,
+  item: typeof trashTable.$inferSelect
+): boolean {
+  const metadata = JSON.parse(item.metadata || '{}');
+
+  const trashPath = getTrashImagePath(projectPath, metadata.filename || item.entityId);
+  const destDir = path.join(projectPath, 'images');
+  const destPath = path.join(destDir, metadata.filename || item.entityId);
+
+  if (fs.existsSync(trashPath)) {
+    if (!fs.existsSync(destDir)) {
+      fs.mkdirSync(destDir, { recursive: true });
+    }
+    fs.renameSync(trashPath, destPath);
+  }
+
+  drizzleDb
+    .insert(projectImages)
+    .values({
+      id: item.entityId,
+      projectId,
+      filename: metadata.filename || item.entityId,
+      originalName: metadata.originalName || 'Unknown',
+      mimeType: metadata.mimeType || 'application/octet-stream',
+      size: metadata.size || 0,
+      caption: metadata.caption || null,
+      altText: metadata.altText || null,
+      createdAt: item.deletedAt
+    })
+    .run();
+
+  drizzleDb.delete(trashTable).where(eq(trashTable.id, item.id)).run();
+
+  return true;
+}
+
+function permanentDeleteImage(
+  projectId: string,
+  projectPath: string,
+  item: typeof trashTable.$inferSelect
+): boolean {
+  const metadata = JSON.parse(item.metadata || '{}');
+  const trashPath = getTrashImagePath(projectPath, metadata.filename || item.entityId);
+
+  if (fs.existsSync(trashPath)) {
+    fs.unlinkSync(trashPath);
+  }
+
+  drizzleDb.delete(trashTable).where(eq(trashTable.id, item.id)).run();
+
+  return true;
 }
 
 export function restoreEntity(projectId: string, projectPath: string, trashId: string): boolean {
@@ -106,6 +247,10 @@ export function restoreEntity(projectId: string, projectPath: string, trashId: s
     .get();
 
   if (!item) return false;
+
+  if (item.kind === 'image') {
+    return restoreImage(projectId, projectPath, item);
+  }
 
   const trashPath = getTrashEntityPath(projectPath, item.entityType as EntityType, item.entityId);
 
@@ -145,6 +290,10 @@ export function permanentDeleteEntity(
 
   if (!item) return false;
 
+  if (item.kind === 'image') {
+    return permanentDeleteImage(projectId, projectPath, item);
+  }
+
   const trashPath = getTrashEntityPath(projectPath, item.entityType as EntityType, item.entityId);
   if (fs.existsSync(trashPath)) {
     fs.unlinkSync(trashPath);
@@ -164,6 +313,24 @@ export function listTrashItems(projectId: string, projectPath: string): TrashIte
     .all();
 
   return items.map((item) => {
+    if (item.kind === 'image') {
+      const metadata = JSON.parse(item.metadata || '{}');
+      return {
+        id: item.id,
+        projectId: item.projectId,
+        entityId: item.entityId,
+        entityType: 'image',
+        originalPath: item.originalPath,
+        deletedAt: item.deletedAt,
+        expiresAt: item.expiresAt,
+        name: metadata.originalName || item.entityId,
+        body: '',
+        frontmatter: {},
+        kind: 'image' as const,
+        metadata
+      };
+    }
+
     const trashPath = getTrashEntityPath(projectPath, item.entityType as EntityType, item.entityId);
     const md = readMarkdownFile(trashPath);
 
@@ -171,13 +338,15 @@ export function listTrashItems(projectId: string, projectPath: string): TrashIte
       id: item.id,
       projectId: item.projectId,
       entityId: item.entityId,
-      entityType: item.entityType as EntityType,
+      entityType: item.entityType,
       originalPath: item.originalPath,
       deletedAt: item.deletedAt,
       expiresAt: item.expiresAt,
       name: md ? (md.frontmatter.name as string) || item.entityId : item.entityId,
       body: md?.body || '',
-      frontmatter: (md?.frontmatter as Record<string, unknown>) || {}
+      frontmatter: (md?.frontmatter as Record<string, unknown>) || {},
+      kind: 'entity' as const,
+      metadata: null
     };
   });
 }

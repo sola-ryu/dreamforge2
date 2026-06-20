@@ -156,4 +156,16 @@ export function migrate() {
   } catch {
     // Column already exists — ignore
   }
+
+  try {
+    db.exec(`ALTER TABLE trash_items ADD COLUMN kind TEXT NOT NULL DEFAULT 'entity'`);
+  } catch {
+    // Column already exists — ignore
+  }
+
+  try {
+    db.exec(`ALTER TABLE trash_items ADD COLUMN metadata TEXT`);
+  } catch {
+    // Column already exists — ignore
+  }
 }
