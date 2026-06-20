@@ -1,22 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import db from '$lib/server/db';
-import { projects } from '$lib/server/schema';
-import { eq, and } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-
-const drizzleDb = drizzle(db);
+import { getProjectAccess } from '$lib/server/members';
 
 export async function GET({ params, locals }) {
   if (!locals.user) return new Response('Unauthorized', { status: 401 });
 
-  const project = drizzleDb
-    .select()
-    .from(projects)
-    .where(and(eq(projects.id, params.id), eq(projects.userId, locals.user.id)))
-    .get();
-
-  if (!project) return new Response('Not found', { status: 404 });
+  const access = getProjectAccess(params.id, locals.user.id);
+  if (!access) return new Response('Not found', { status: 404 });
+  const { project } = access;
 
   const filePath = path.join(project.dataPath, 'images', params.file);
   if (!fs.existsSync(filePath)) return new Response('Not found', { status: 404 });

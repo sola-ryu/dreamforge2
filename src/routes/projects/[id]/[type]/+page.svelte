@@ -11,17 +11,17 @@
     Search,
     MoreHorizontal,
     FileText,
-    Edit,
     Trash2,
     Undo2,
     Download,
-    Upload
+    Upload,
+    LayoutList,
+    Table2
   } from 'lucide-svelte';
 
   let showCreate = $state(false);
   let newName = $state('');
   let newBody = $state('');
-  let newFields = $state<Record<string, unknown>>({});
   let selectedTemplate = $state('');
   let searchQuery = $state('');
   let showMenu = $state<string | null>(null);
@@ -29,6 +29,24 @@
   let toastTrashId = $state('');
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
   let toastVisible = $state(false);
+  let layout = $state<'cards' | 'table'>('cards');
+  let editingCell = $state<{ entityId: string; field: string } | null>(null);
+  let editingValue = $state('');
+
+  let role = $derived($page.data?.role || 'owner');
+  let canEdit = $derived(role !== 'commenter');
+
+  const LAYOUT_KEY = $derived(`entity-layout-${$page.data?.entityType || 'entity'}`);
+
+  $effect(() => {
+    const stored = localStorage.getItem(LAYOUT_KEY);
+    if (stored === 'table' || stored === 'cards') layout = stored;
+  });
+
+  function setLayout(l: 'cards' | 'table') {
+    layout = l;
+    localStorage.setItem(LAYOUT_KEY, l);
+  }
 
   function showToast(message: string, trashId: string) {
     toastMessage = message;
@@ -56,6 +74,65 @@
     const route = entityTypeToRoute($page.data?.entityType || 'character');
     window.open(`/projects/${$page.params.id}/${route}/export-csv`, '_blank');
   }
+
+  let entities = $state<any[]>($page.data?.entities || []);
+
+  $effect(() => {
+    entities = $page.data?.entities || [];
+  });
+
+  function startCellEdit(entityId: string, field: string, currentValue: string) {
+    if (!canEdit) return;
+    editingCell = { entityId, field };
+    editingValue = currentValue ?? '';
+  }
+
+  async function commitCellEdit(entityId: string, field: string) {
+    if (!editingCell || editingCell.entityId !== entityId || editingCell.field !== field) return;
+    editingCell = null;
+
+    const route = entityTypeToRoute($page.data?.entityType || 'character');
+    const body = new FormData();
+    body.set('entityId', entityId);
+    body.set('field', field);
+    body.set('value', editingValue);
+
+    const res = await fetch(`/projects/${$page.params.id}/${route}?/quickUpdate`, {
+      method: 'POST',
+      body
+    });
+
+    if (res.ok) {
+      entities = entities.map((e) =>
+        e.id === entityId
+          ? { ...e, [field]: editingValue, frontmatter: { ...e.frontmatter, [field]: editingValue } }
+          : e
+      );
+    }
+  }
+
+  async function commitStatusChange(entityId: string, newStatus: string) {
+    const route = entityTypeToRoute($page.data?.entityType || 'character');
+    const body = new FormData();
+    body.set('entityId', entityId);
+    body.set('field', 'status');
+    body.set('value', newStatus);
+
+    const res = await fetch(`/projects/${$page.params.id}/${route}?/quickUpdate`, {
+      method: 'POST',
+      body
+    });
+
+    if (res.ok) {
+      entities = entities.map((e) => (e.id === entityId ? { ...e, status: newStatus } : e));
+    }
+  }
+
+  let simpleCustomFields = $derived(
+    ($page.data?.customFields || []).filter(
+      (f: any) => ['text', 'number', 'date', 'boolean'].includes(f.type) && !['name', 'status', 'tags'].includes(f.key)
+    )
+  );
 </script>
 
 <svelte:head>
@@ -64,7 +141,7 @@
     : 'Entities'} — {$page.data?.projectName || 'Project'} — DreamForge</title>
 </svelte:head>
 
-<div class="mx-auto max-w-4xl p-6">
+<div class="mx-auto max-w-5xl p-6">
   <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <h1 class="text-2xl font-bold">
@@ -75,6 +152,22 @@
       </p>
     </div>
     <div class="flex items-center gap-2">
+      <div class="flex rounded-lg border border-border overflow-hidden">
+        <button
+          onclick={() => setLayout('cards')}
+          class="px-2.5 py-2 hover:bg-secondary {layout === 'cards' ? 'bg-secondary' : ''}"
+          aria-label="Card layout"
+        >
+          <LayoutList class="h-4 w-4" />
+        </button>
+        <button
+          onclick={() => setLayout('table')}
+          class="px-2.5 py-2 hover:bg-secondary {layout === 'table' ? 'bg-secondary' : ''}"
+          aria-label="Table layout"
+        >
+          <Table2 class="h-4 w-4" />
+        </button>
+      </div>
       <button
         class="flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary"
         onclick={downloadCsv}
@@ -82,26 +175,28 @@
         <Download class="h-4 w-4" />
         Export CSV
       </button>
-      <a
-        href="/projects/{$page.params.id}/{entityTypeToRoute(
-          $page.data?.entityType || 'character'
-        )}/import-csv"
-        class="flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary"
-      >
-        <Upload class="h-4 w-4" />
-        Import CSV
-      </a>
-      <button
-        class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-        onclick={() => (showCreate = !showCreate)}
-      >
-        <Plus class="h-4 w-4" />
-        New {$page.data?.entityType ? ENTITY_LABELS[$page.data.entityType as EntityType] : ''}
-      </button>
+      {#if canEdit}
+        <a
+          href="/projects/{$page.params.id}/{entityTypeToRoute(
+            $page.data?.entityType || 'character'
+          )}/import-csv"
+          class="flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary"
+        >
+          <Upload class="h-4 w-4" />
+          Import CSV
+        </a>
+        <button
+          class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+          onclick={() => (showCreate = !showCreate)}
+        >
+          <Plus class="h-4 w-4" />
+          New {$page.data?.entityType ? ENTITY_LABELS[$page.data.entityType as EntityType] : ''}
+        </button>
+      {/if}
     </div>
   </div>
 
-  {#if showCreate}
+  {#if showCreate && canEdit}
     <div class="mb-6 rounded-lg border border-border bg-card p-4">
       <form
         method="POST"
@@ -238,101 +333,270 @@
     </div>
   </div>
 
-  <div class="space-y-2">
-    {#if ($page.data?.entities || []).length === 0}
-      <p class="py-12 text-center text-muted-foreground">
-        No {$page.data?.entityType
-          ? ENTITY_PLURAL[$page.data.entityType as EntityType].toLowerCase()
-          : 'entities'} yet. Create one to get started.
-      </p>
-    {/if}
+  {#if layout === 'cards'}
+    <div class="space-y-2">
+      {#if entities.length === 0}
+        <p class="py-12 text-center text-muted-foreground">
+          No {$page.data?.entityType
+            ? ENTITY_PLURAL[$page.data.entityType as EntityType].toLowerCase()
+            : 'entities'} yet. Create one to get started.
+        </p>
+      {/if}
 
-    {#each $page.data?.entities || [] as entity}
-      <div class="group relative rounded-lg border border-border bg-card hover:bg-secondary/50">
-        <a
-          href="/projects/{$page.params.id}/{entityTypeToRoute(entity.type)}/{entity.id}"
-          class="flex items-center gap-4 px-4 py-3"
-        >
-          <div
-            class={cn(
-              'flex-shrink-0 rounded-full border p-2',
-              entity.status === 'complete' && 'border-green-500/30',
-              entity.status === 'wip' && 'border-yellow-500/30',
-              entity.status === 'draft' && 'border-muted-foreground/30'
-            )}
+      {#each entities as entity}
+        <div class="group relative rounded-lg border border-border bg-card hover:bg-secondary/50">
+          <a
+            href="/projects/{$page.params.id}/{entityTypeToRoute(entity.type)}/{entity.id}"
+            class="flex items-center gap-4 px-4 py-3"
           >
-            <FileText class="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2">
-              <span class="font-medium truncate">{entity.name}</span>
-              {#if entity.tags?.length}
-                {#each entity.tags.slice(0, 3) as tag}
-                  <span class="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
-                    {tag}
-                  </span>
-                {/each}
-                {#if entity.tags.length > 3}
-                  <span class="text-xs text-muted-foreground">+{entity.tags.length - 3}</span>
-                {/if}
-              {/if}
-            </div>
-            <p class="text-xs text-muted-foreground">
-              Modified {formatDate(entity.modifiedAt)}
-              {#if entity.status === 'complete'}
-                <span class="text-green-500">&#9679; Complete</span>
-              {:else if entity.status === 'wip'}
-                <span class="text-yellow-500">&#9679; WIP</span>
-              {:else}
-                <span class="text-muted-foreground">&#9679; Draft</span>
-              {/if}
-            </p>
-          </div>
-        </a>
-        <div class="absolute right-2 top-1/2 -translate-y-1/2">
-          <button
-            class="rounded p-1.5 max-sm:opacity-100 opacity-0 group-hover:opacity-100 hover:bg-secondary"
-            onclick={(e) => {
-              e.preventDefault();
-              showMenu = showMenu === entity.id ? null : entity.id;
-            }}
-            aria-label="More actions"
-          >
-            <MoreHorizontal class="h-4 w-4" />
-          </button>
-          {#if showMenu === entity.id}
             <div
-              class="absolute right-0 top-full z-50 mt-1 w-36 rounded-lg border border-border bg-popover shadow-lg"
+              class={cn(
+                'flex-shrink-0 rounded-full border p-2',
+                entity.status === 'complete' && 'border-green-500/30',
+                entity.status === 'wip' && 'border-yellow-500/30',
+                entity.status === 'draft' && 'border-muted-foreground/30'
+              )}
             >
-              <form
-                method="POST"
-                action="?/delete"
-                use:enhance={() => {
-                  return async ({ result }) => {
-                    if (result.type === 'success') {
-                      const d = result.data as { trashItem?: { id: string } };
-                      if (d?.trashItem) {
-                        showToast('Entity moved to trash', d.trashItem.id);
-                      }
-                    }
-                  };
+              <FileText class="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-medium truncate">{entity.name}</span>
+                {#if entity.tags?.length}
+                  {#each entity.tags.slice(0, 3) as tag}
+                    <span class="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
+                      {tag}
+                    </span>
+                  {/each}
+                  {#if entity.tags.length > 3}
+                    <span class="text-xs text-muted-foreground">+{entity.tags.length - 3}</span>
+                  {/if}
+                {/if}
+              </div>
+              <p class="text-xs text-muted-foreground">
+                Modified {formatDate(entity.modifiedAt)}
+                {#if entity.status === 'complete'}
+                  <span class="text-green-500">&#9679; Complete</span>
+                {:else if entity.status === 'wip'}
+                  <span class="text-yellow-500">&#9679; WIP</span>
+                {:else}
+                  <span class="text-muted-foreground">&#9679; Draft</span>
+                {/if}
+              </p>
+            </div>
+          </a>
+          {#if canEdit}
+            <div class="absolute right-2 top-1/2 -translate-y-1/2">
+              <button
+                class="rounded p-1.5 max-sm:opacity-100 opacity-0 group-hover:opacity-100 hover:bg-secondary"
+                onclick={(e) => {
+                  e.preventDefault();
+                  showMenu = showMenu === entity.id ? null : entity.id;
                 }}
+                aria-label="More actions"
               >
-                <input type="hidden" name="entityId" value={entity.id} />
-                <button
-                  type="submit"
-                  class="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-secondary"
+                <MoreHorizontal class="h-4 w-4" />
+              </button>
+              {#if showMenu === entity.id}
+                <div
+                  class="absolute right-0 top-full z-50 mt-1 w-36 rounded-lg border border-border bg-popover shadow-lg"
                 >
-                  <Trash2 class="h-4 w-4" />
-                  Delete
-                </button>
-              </form>
+                  <form
+                    method="POST"
+                    action="?/delete"
+                    use:enhance={() => {
+                      return async ({ result }) => {
+                        if (result.type === 'success') {
+                          const d = result.data as { trashItem?: { id: string } };
+                          if (d?.trashItem) {
+                            showToast('Entity moved to trash', d.trashItem.id);
+                          }
+                        }
+                      };
+                    }}
+                  >
+                    <input type="hidden" name="entityId" value={entity.id} />
+                    <button
+                      type="submit"
+                      class="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-secondary"
+                    >
+                      <Trash2 class="h-4 w-4" />
+                      Delete
+                    </button>
+                  </form>
+                </div>
+              {/if}
             </div>
           {/if}
         </div>
-      </div>
-    {/each}
-  </div>
+      {/each}
+    </div>
+  {:else}
+    <!-- Table layout -->
+    <div class="overflow-x-auto rounded-lg border border-border">
+      {#if entities.length === 0}
+        <p class="py-12 text-center text-muted-foreground">
+          No {$page.data?.entityType
+            ? ENTITY_PLURAL[$page.data.entityType as EntityType].toLowerCase()
+            : 'entities'} yet.
+        </p>
+      {:else}
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-border bg-muted/40">
+              <th class="px-3 py-2 text-left font-medium">Name</th>
+              <th class="px-3 py-2 text-left font-medium">Status</th>
+              <th class="px-3 py-2 text-left font-medium">Tags</th>
+              {#each simpleCustomFields as field}
+                <th class="px-3 py-2 text-left font-medium">{field.label}</th>
+              {/each}
+              <th class="px-3 py-2 text-left font-medium text-muted-foreground">Modified</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each entities as entity}
+              <tr class="border-b border-border hover:bg-muted/20 last:border-0">
+                <!-- Name cell -->
+                <td class="px-3 py-2 font-medium max-w-48">
+                  {#if canEdit && editingCell?.entityId === entity.id && editingCell?.field === 'name'}
+                    <input
+                      type="text"
+                      bind:value={editingValue}
+                      class="w-full rounded border border-primary bg-background px-1.5 py-0.5 text-sm focus:outline-none"
+                      autofocus
+                      onblur={() => commitCellEdit(entity.id, 'name')}
+                      onkeydown={(e) => {
+                        if (e.key === 'Enter') commitCellEdit(entity.id, 'name');
+                        if (e.key === 'Escape') editingCell = null;
+                      }}
+                    />
+                  {:else}
+                    <div class="flex items-center gap-1 group/cell">
+                      <a
+                        href="/projects/{$page.params.id}/{entityTypeToRoute(entity.type)}/{entity.id}"
+                        class="truncate hover:underline"
+                      >
+                        {entity.name}
+                      </a>
+                      {#if canEdit}
+                        <button
+                          class="opacity-0 group-hover/cell:opacity-100 ml-1 shrink-0"
+                          onclick={() => startCellEdit(entity.id, 'name', entity.name)}
+                          aria-label="Edit name"
+                        >
+                          <svg class="h-3 w-3 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                        </button>
+                      {/if}
+                    </div>
+                  {/if}
+                </td>
+                <!-- Status cell -->
+                <td class="px-3 py-2">
+                  {#if canEdit}
+                    <select
+                      value={entity.status}
+                      onchange={(e) => commitStatusChange(entity.id, (e.target as HTMLSelectElement).value)}
+                      class={cn(
+                        'rounded border px-1.5 py-0.5 text-xs bg-background',
+                        entity.status === 'complete' && 'border-green-500/40 text-green-600 dark:text-green-400',
+                        entity.status === 'wip' && 'border-yellow-500/40 text-yellow-600 dark:text-yellow-400',
+                        entity.status === 'draft' && 'border-border text-muted-foreground'
+                      )}
+                    >
+                      <option value="draft">Draft</option>
+                      <option value="wip">In Progress</option>
+                      <option value="complete">Complete</option>
+                    </select>
+                  {:else}
+                    <span class={cn(
+                      'text-xs',
+                      entity.status === 'complete' && 'text-green-600 dark:text-green-400',
+                      entity.status === 'wip' && 'text-yellow-600 dark:text-yellow-400',
+                      entity.status === 'draft' && 'text-muted-foreground'
+                    )}>
+                      {entity.status === 'complete' ? 'Complete' : entity.status === 'wip' ? 'In Progress' : 'Draft'}
+                    </span>
+                  {/if}
+                </td>
+                <!-- Tags cell -->
+                <td class="px-3 py-2 max-w-32">
+                  <a
+                    href="/projects/{$page.params.id}/{entityTypeToRoute(entity.type)}/{entity.id}"
+                    class="text-xs text-muted-foreground hover:text-foreground truncate block"
+                  >
+                    {(entity.tags || []).join(', ') || '—'}
+                  </a>
+                </td>
+                <!-- Custom field cells -->
+                {#each simpleCustomFields as field}
+                  <td class="px-3 py-2 max-w-36">
+                    {#if canEdit && field.type !== 'boolean' && editingCell?.entityId === entity.id && editingCell?.field === field.key}
+                      <input
+                        type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                        bind:value={editingValue}
+                        class="w-full rounded border border-primary bg-background px-1.5 py-0.5 text-sm focus:outline-none"
+                        autofocus
+                        onblur={() => commitCellEdit(entity.id, field.key)}
+                        onkeydown={(e) => {
+                          if (e.key === 'Enter') commitCellEdit(entity.id, field.key);
+                          if (e.key === 'Escape') editingCell = null;
+                        }}
+                      />
+                    {:else if field.type === 'boolean'}
+                      {#if canEdit}
+                        <input
+                          type="checkbox"
+                          checked={entity.frontmatter?.[field.key] === true || entity.frontmatter?.[field.key] === 'true'}
+                          onchange={async (e) => {
+                            const val = (e.target as HTMLInputElement).checked ? 'true' : 'false';
+                            const route = entityTypeToRoute($page.data?.entityType || 'character');
+                            const body = new FormData();
+                            body.set('entityId', entity.id);
+                            body.set('field', field.key);
+                            body.set('value', val);
+                            const res = await fetch(`/projects/${$page.params.id}/${route}?/quickUpdate`, { method: 'POST', body });
+                            if (res.ok) {
+                              entities = entities.map((en) =>
+                                en.id === entity.id ? { ...en, frontmatter: { ...en.frontmatter, [field.key]: val === 'true' } } : en
+                              );
+                            }
+                          }}
+                          class="rounded border-input"
+                        />
+                      {:else}
+                        <span class="text-xs text-muted-foreground">
+                          {entity.frontmatter?.[field.key] ? 'Yes' : 'No'}
+                        </span>
+                      {/if}
+                    {:else}
+                      <div class="flex items-center gap-1 group/cell">
+                        <span class="truncate text-sm text-muted-foreground">
+                          {entity.frontmatter?.[field.key] ?? '—'}
+                        </span>
+                        {#if canEdit}
+                          <button
+                            class="opacity-0 group-hover/cell:opacity-100 ml-1 shrink-0"
+                            onclick={() => startCellEdit(entity.id, field.key, String(entity.frontmatter?.[field.key] ?? ''))}
+                            aria-label="Edit {field.label}"
+                          >
+                            <svg class="h-3 w-3 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                          </button>
+                        {/if}
+                      </div>
+                    {/if}
+                  </td>
+                {/each}
+                <!-- Modified cell -->
+                <td class="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
+                  {formatDate(entity.modifiedAt)}
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      {/if}
+    </div>
+  {/if}
 </div>
 
 {#if toastVisible}

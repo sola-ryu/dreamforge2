@@ -360,9 +360,9 @@
   </form>
 
   <Comments
-    projectId={$page.params.id}
+    projectId={$page.params.id || ''}
     targetType="entity"
-    targetId={$page.params.entityId}
+    targetId={$page.params.entityId || ''}
     currentUserId={$page.data?.currentUserId || ''}
     projectOwnerId={$page.data?.projectOwnerId || ''}
     role={role}
