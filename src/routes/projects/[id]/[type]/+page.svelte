@@ -155,7 +155,7 @@
   >
 </svelte:head>
 
-<div class="mx-auto max-w-5xl p-6">
+<div class="mx-auto p-6" class:max-w-5xl={layout !== 'table'}>
   <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <h1 class="text-2xl font-bold">

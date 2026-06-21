@@ -2,6 +2,7 @@
   import { page } from '$app/stores';
   import { toggleTheme } from '$lib/stores/theme.svelte';
   import { getZenMode } from '$lib/stores/zenMode.svelte';
+  import { getCompactMode } from '$lib/stores/compactMode.svelte';
   import {
     Home,
     BookMarked,
@@ -13,13 +14,20 @@
     LayoutDashboard,
     BookOpenText,
     GitBranch,
-    Scan
+    Scan,
+    PanelRightClose,
+    PanelRightOpen
   } from 'lucide-svelte';
 
   const zen = getZenMode();
+  const compact = getCompactMode();
 </script>
 
-<aside class="flex w-64 flex-col border-r border-border bg-card">
+<aside
+  class="flex flex-col border-r border-border bg-card"
+  class:w-64={!compact.active}
+  class:w-44={compact.active}
+>
   <div class="flex items-center gap-2 border-b border-border px-4 py-3">
     <span class="text-lg font-bold">DreamForge</span>
   </div>
@@ -115,6 +123,17 @@
     >
       <SunMoon class="h-4 w-4" />
       Toggle Theme
+    </button>
+    <button
+      class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-secondary"
+      onclick={() => compact.toggle()}
+    >
+      {#if compact.active}
+        <PanelRightOpen class="h-4 w-4 shrink-0" />
+      {:else}
+        <PanelRightClose class="h-4 w-4 shrink-0" />
+      {/if}
+      Compact
     </button>
     <button
       class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-secondary"
