@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 import { getProjectAccess } from '$lib/server/members';
 
 export async function GET({ params, locals }) {
@@ -9,7 +9,7 @@ export async function GET({ params, locals }) {
   if (!access) throw redirect(302, '/projects');
   const { project } = access;
 
-  const archive = archiver('zip', { zlib: { level: 9 } });
+  const archive = new ZipArchive({ zlib: { level: 9 } });
   const chunks: Buffer[] = [];
 
   archive.on('data', (chunk: Buffer) => chunks.push(chunk));
