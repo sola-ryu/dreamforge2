@@ -1,2 +1,3 @@
 import Combobox from './combobox.svelte';
-export { Combobox };
+import ComboboxRich from './combobox-rich.svelte';
+export { Combobox, ComboboxRich };

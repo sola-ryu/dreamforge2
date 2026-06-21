@@ -9,7 +9,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
-  import { Combobox } from '$lib/components/ui/combobox';
+  import { ComboboxRich } from '$lib/components/ui/combobox';
 
   let showCreate = $state(false);
   let sourceId = $state('');
@@ -267,27 +267,39 @@
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div class="space-y-1.5">
             <Label for="sourceId">Source Entity</Label>
-            <Combobox
+            <ComboboxRich
               name="sourceId"
               bind:value={sourceId}
               options={($page.data?.entities || []).map((e: any) => ({
                 value: e.id,
-                label: `${e.name} (${e.type})`
+                label: `${e.name} (${e.type})`,
+                entity: e,
               }))}
               placeholder="Select..."
-            />
+            >
+              {#snippet children({ option })}
+                 <span class="text-[0.65rem] font-medium uppercase text-muted-foreground/80">{option.entity.type}</span>
+                 {option.entity.name}
+              {/snippet}
+            </ComboboxRich>
           </div>
           <div class="space-y-1.5">
             <Label for="targetId">Target Entity</Label>
-            <Combobox
+            <ComboboxRich
               name="targetId"
               bind:value={targetId}
               options={($page.data?.entities || []).map((e: any) => ({
                 value: e.id,
-                label: `${e.name} (${e.type})`
+                label: `${e.name} (${e.type})`,
+                entity: e,
               }))}
               placeholder="Select..."
-            />
+            >
+              {#snippet children({ option })}
+                 <span class="text-[0.65rem] font-medium uppercase text-muted-foreground/80">{option.entity.type}</span>
+                 {option.entity.name}
+              {/snippet}
+            </ComboboxRich>
           </div>
         </div>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
