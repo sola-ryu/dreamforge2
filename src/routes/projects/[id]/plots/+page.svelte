@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { enhance } from '$app/forms';
-  import { Plus, Trash2, Edit, GripVertical } from 'lucide-svelte';
+  import { Plus, Trash2, Edit, GripVertical } from '@lucide/svelte';
   import { formatDate } from '$lib/utils';
 
   let showCreate = $state(false);

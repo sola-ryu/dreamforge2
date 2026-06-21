@@ -6,7 +6,7 @@
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import { formatDate } from '$lib/utils';
   import type { EntityType } from '$lib/types';
-  import { ArrowLeft, Trash2, RotateCcw, AlertTriangle } from 'lucide-svelte';
+  import { ArrowLeft, Trash2, RotateCcw, AlertTriangle } from '@lucide/svelte';
 
   function goToEntity(item: any) {
     if (item.entityType === 'image') {

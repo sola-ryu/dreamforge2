@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MessageSquare, Trash2, Check } from 'lucide-svelte';
+  import { MessageSquare, Trash2, Check } from '@lucide/svelte';
   import { formatDate } from '$lib/utils';
 
   interface Comment {

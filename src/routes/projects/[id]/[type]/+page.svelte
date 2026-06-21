@@ -18,7 +18,7 @@
     Upload,
     LayoutList,
     Table2
-  } from 'lucide-svelte';
+  } from '@lucide/svelte';
 
   let showCreate = $state(false);
   let newName = $state('');

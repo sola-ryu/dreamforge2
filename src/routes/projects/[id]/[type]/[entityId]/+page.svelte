@@ -18,7 +18,7 @@
     Link2,
     Unlink,
     ImagePlus
-  } from 'lucide-svelte';
+  } from '@lucide/svelte';
 
   let role = $derived($page.data?.role || 'owner');
   let canEdit = $derived(role !== 'commenter');

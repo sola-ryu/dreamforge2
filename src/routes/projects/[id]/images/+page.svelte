@@ -2,7 +2,7 @@
   import { page } from '$app/stores';
   import { enhance } from '$app/forms';
 
-  import { ArrowLeft, Upload, Image, X } from 'lucide-svelte';
+  import { ArrowLeft, Upload, Image, X } from '@lucide/svelte';
 
   let uploadFiles = $state<File[]>([]);
   let uploading = $state(false);

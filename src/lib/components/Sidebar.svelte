@@ -16,7 +16,7 @@
     BookOpenText,
     GitBranch,
     Scan
-  } from 'lucide-svelte';
+  } from '@lucide/svelte';
 
   const zen = getZenMode();
 </script>

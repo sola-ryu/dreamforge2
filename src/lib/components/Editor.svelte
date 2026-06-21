@@ -10,7 +10,7 @@
   import Mention from '@tiptap/extension-mention';
   import { HighlightMarkdown } from './highlight';
 
-  import { Maximize2, Minimize2, SpellCheck } from 'lucide-svelte';
+  import { Maximize2, Minimize2, SpellCheck } from '@lucide/svelte';
   import { getZenMode } from '$lib/stores/zenMode.svelte';
 
   const zen = getZenMode();

@@ -15,7 +15,7 @@
     Calendar,
     ChevronDown,
     ChevronRight
-  } from 'lucide-svelte';
+  } from '@lucide/svelte';
   import { cn, formatDate } from '$lib/utils';
   import type { TimelineEvent, CalendarConfig } from '$lib/server/timelines';
 

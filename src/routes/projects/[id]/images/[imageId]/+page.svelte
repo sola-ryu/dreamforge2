@@ -2,7 +2,7 @@
   import { page } from '$app/stores';
   import { enhance } from '$app/forms';
   import { goto } from '$app/navigation';
-  import { ArrowLeft, Save, Trash2, Link2, Unlink, Image, ExternalLink } from 'lucide-svelte';
+  import { ArrowLeft, Save, Trash2, Link2, Unlink, Image, ExternalLink } from '@lucide/svelte';
   import { ENTITY_LABELS } from '$lib/entityFields';
 
   let editing = $state(false);

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { GripVertical, FileText, Circle, CheckCircle, Clock } from 'lucide-svelte';
+  import { GripVertical, FileText, Circle, CheckCircle, Clock } from '@lucide/svelte';
 
   interface SceneSummary {
     id: string;

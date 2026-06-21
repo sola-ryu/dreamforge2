@@ -13,7 +13,7 @@
     Settings,
     Trash2,
     Image as ImageIcon
-  } from 'lucide-svelte';
+  } from '@lucide/svelte';
   import type { EntityType } from '$lib/types';
 
   const modules: Array<{

@@ -16,7 +16,7 @@
     LayoutList,
     SwitchCamera,
     Download
-  } from 'lucide-svelte';
+  } from '@lucide/svelte';
   import { getZenMode } from '$lib/stores/zenMode.svelte';
   import Editor from '$lib/components/Editor.svelte';
 

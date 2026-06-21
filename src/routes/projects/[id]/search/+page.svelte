@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import { FileText, Search as SearchIcon } from 'lucide-svelte';
+  import { FileText, Search as SearchIcon } from '@lucide/svelte';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import { cn, formatDate } from '$lib/utils';
 

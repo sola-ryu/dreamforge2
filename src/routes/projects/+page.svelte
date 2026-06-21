@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { enhance } from '$app/forms';
-  import { Plus, Pin, PinOff, ExternalLink } from 'lucide-svelte';
+  import { Plus, Pin, PinOff, ExternalLink } from '@lucide/svelte';
   import { cn, formatDate } from '$lib/utils';
 
   let showCreate = $state(false);

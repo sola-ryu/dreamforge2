@@ -5,7 +5,7 @@
   import { ENTITY_PLURAL } from '$lib/entityFields';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import type { EntityType } from '$lib/types';
-  import { ArrowLeft, Upload } from 'lucide-svelte';
+  import { ArrowLeft, Upload } from '@lucide/svelte';
 
   const FIELD_TYPE_OPTIONS = [
     { value: 'text', label: 'Text' },

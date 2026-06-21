@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { GripVertical, Link2, Link2Off } from 'lucide-svelte';
+  import { GripVertical, Link2, Link2Off } from '@lucide/svelte';
 
   interface Beat {
     title: string;

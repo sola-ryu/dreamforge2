@@ -3,7 +3,7 @@
   import { enhance } from '$app/forms';
   import { onMount } from 'svelte';
   import type { EntityType } from '$lib/types';
-  import { Plus, Trash2, Share2 } from 'lucide-svelte';
+  import { Plus, Trash2, Share2 } from '@lucide/svelte';
 
   let showCreate = $state(false);
   let sourceId = $state('');

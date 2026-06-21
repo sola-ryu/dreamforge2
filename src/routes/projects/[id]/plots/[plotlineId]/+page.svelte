@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { enhance } from '$app/forms';
-  import { ArrowLeft, Save } from 'lucide-svelte';
+  import { ArrowLeft, Save } from '@lucide/svelte';
   import PlotTimeline from '$lib/components/PlotTimeline.svelte';
 
   let isSaving = $state(false);

@@ -2,7 +2,7 @@
   import { page } from '$app/stores';
   import { enhance } from '$app/forms';
   import { goto } from '$app/navigation';
-  import { Plus, BookOpen, Trash2 } from 'lucide-svelte';
+  import { Plus, BookOpen, Trash2 } from '@lucide/svelte';
 
   let showCreate = $state(false);
   let title = $state('');
