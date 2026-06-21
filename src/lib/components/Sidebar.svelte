@@ -1,8 +1,9 @@
 <script lang="ts">
   import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
   import { toggleTheme } from '$lib/stores/theme.svelte';
   import { getZenMode } from '$lib/stores/zenMode.svelte';
-  import { getCompactMode } from '$lib/stores/compactMode.svelte';
+  import * as Sidebar from '$lib/components/ui/sidebar/index.js';
   import {
     Home,
     BookMarked,
@@ -14,140 +15,174 @@
     LayoutDashboard,
     BookOpenText,
     GitBranch,
-    Scan,
-    PanelRightClose,
-    PanelRightOpen
+    Scan
   } from 'lucide-svelte';
 
   const zen = getZenMode();
-  const compact = getCompactMode();
 </script>
 
-<aside
-  class="flex flex-col border-r border-border bg-card"
-  class:w-64={!compact.active}
-  class:w-44={compact.active}
->
-  <div class="flex items-center gap-2 border-b border-border px-4 py-3">
-    <span class="text-lg font-bold">DreamForge</span>
-  </div>
+<Sidebar.Root collapsible="icon">
+  <Sidebar.Header>
+    <Sidebar.Menu>
+      <Sidebar.MenuItem>
+        <Sidebar.MenuButton
+          size="lg"
+          class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+        >
+          <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+            <span class="text-sm font-semibold">DF</span>
+          </div>
+          <span class="truncate font-semibold">DreamForge</span>
+        </Sidebar.MenuButton>
+      </Sidebar.MenuItem>
+    </Sidebar.Menu>
+  </Sidebar.Header>
 
-  <nav class="flex-1 space-y-1 overflow-y-auto p-2">
-    <a
-      href="/projects"
-      class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-secondary"
-      class:bg-secondary={$page.url.pathname === '/projects'}
-    >
-      <Home class="h-4 w-4" />
-      Projects
-    </a>
+  <Sidebar.Content>
+    <Sidebar.Group>
+      <Sidebar.GroupLabel>General</Sidebar.GroupLabel>
+      <Sidebar.GroupContent>
+        <Sidebar.Menu>
+          <Sidebar.MenuItem>
+            <Sidebar.MenuButton
+              isActive={$page.url.pathname === '/projects'}
+              onclick={() => goto('/projects')}
+              tooltipContent="Projects"
+            >
+              <Home class="h-4 w-4" />
+              <span>Projects</span>
+            </Sidebar.MenuButton>
+          </Sidebar.MenuItem>
+        </Sidebar.Menu>
+      </Sidebar.GroupContent>
+    </Sidebar.Group>
 
     {#if $page.params?.id}
-      <div class="mt-4 mb-1 px-3 text-xs font-semibold uppercase text-muted-foreground">
-        Current Project
-      </div>
+      <Sidebar.Group>
+        <Sidebar.GroupLabel>Current Project</Sidebar.GroupLabel>
+        <Sidebar.GroupContent>
+          <Sidebar.Menu>
+            <Sidebar.MenuItem>
+              <Sidebar.MenuButton
+                isActive={$page.url.pathname === `/projects/${$page.params.id}`}
+                onclick={() => goto(`/projects/${$page.params.id}`)}
+                tooltipContent="Dashboard"
+              >
+                <LayoutDashboard class="h-4 w-4" />
+                <span>Dashboard</span>
+              </Sidebar.MenuButton>
+            </Sidebar.MenuItem>
 
-      <a
-        href="/projects/{$page.params.id}"
-        class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-secondary"
-      >
-        <LayoutDashboard class="h-4 w-4" />
-        Dashboard
-      </a>
+            <Sidebar.MenuItem>
+              <Sidebar.MenuButton
+                onclick={() => goto(`/projects/${$page.params.id}/stories`)}
+                tooltipContent="Stories"
+              >
+                <BookOpenText class="h-4 w-4" />
+                <span>Stories</span>
+              </Sidebar.MenuButton>
+            </Sidebar.MenuItem>
 
-      <a
-        href="/projects/{$page.params.id}/stories"
-        class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-secondary"
-      >
-        <BookOpenText class="h-4 w-4" />
-        Stories
-      </a>
+            <Sidebar.MenuItem>
+              <Sidebar.MenuButton
+                onclick={() => goto(`/projects/${$page.params.id}/timelines`)}
+                tooltipContent="Timelines"
+              >
+                <Clock class="h-4 w-4" />
+                <span>Timelines</span>
+              </Sidebar.MenuButton>
+            </Sidebar.MenuItem>
 
-      <a
-        href="/projects/{$page.params.id}/timelines"
-        class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-secondary"
-      >
-        <Clock class="h-4 w-4" />
-        Timelines
-      </a>
+            <Sidebar.MenuItem>
+              <Sidebar.MenuButton
+                onclick={() => goto(`/projects/${$page.params.id}/relations`)}
+                tooltipContent="Relations"
+              >
+                <GitBranch class="h-4 w-4" />
+                <span>Relations</span>
+              </Sidebar.MenuButton>
+            </Sidebar.MenuItem>
 
-      <a
-        href="/projects/{$page.params.id}/relations"
-        class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-secondary"
-      >
-        <GitBranch class="h-4 w-4" />
-        Relations
-      </a>
-
-      <a
-        href="/projects/{$page.params.id}/search"
-        class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-secondary"
-      >
-        <Search class="h-4 w-4" />
-        Search
-      </a>
+            <Sidebar.MenuItem>
+              <Sidebar.MenuButton
+                onclick={() => goto(`/projects/${$page.params.id}/search`)}
+                tooltipContent="Search"
+              >
+                <Search class="h-4 w-4" />
+                <span>Search</span>
+              </Sidebar.MenuButton>
+            </Sidebar.MenuItem>
+          </Sidebar.Menu>
+        </Sidebar.GroupContent>
+      </Sidebar.Group>
 
       {#if $page.data?.bookmarks?.length > 0}
-        <div class="mt-4 mb-1 px-3 text-xs font-semibold uppercase text-muted-foreground">
-          <div class="flex items-center gap-2">
-            <BookMarked class="h-3 w-3" />
-            Bookmarks
-          </div>
-        </div>
-        {#each $page.data.bookmarks as bm (bm.entityId)}
-          <a
-            href="/projects/{$page.params.id}/{bm.entityType}s/{bm.entityId}"
-            class="flex items-center gap-3 rounded-lg px-3 py-1.5 pl-6 text-sm hover:bg-secondary"
-          >
-            <span class="truncate">{bm.entityName || bm.entityId}</span>
-          </a>
-        {/each}
+        <Sidebar.Group>
+          <Sidebar.GroupLabel>
+            <div class="flex items-center gap-2">
+              <BookMarked class="h-3 w-3" />
+              Bookmarks
+            </div>
+          </Sidebar.GroupLabel>
+          <Sidebar.GroupContent>
+            <Sidebar.Menu>
+              {#each $page.data.bookmarks as bm (bm.entityId)}
+                <Sidebar.MenuItem>
+                  <Sidebar.MenuButton
+                    onclick={() => goto(`/projects/${$page.params.id}/${bm.entityType}s/${bm.entityId}`)}
+                    tooltipContent={bm.entityName || bm.entityId}
+                  >
+                    <span class="truncate">{bm.entityName || bm.entityId}</span>
+                  </Sidebar.MenuButton>
+                </Sidebar.MenuItem>
+              {/each}
+            </Sidebar.Menu>
+          </Sidebar.GroupContent>
+        </Sidebar.Group>
       {/if}
     {/if}
-  </nav>
+  </Sidebar.Content>
 
-  <div class="border-t border-border p-2 space-y-1">
-    {#if $page.params?.id}
-      <a
-        href="/projects/{$page.params.id}/export"
-        class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-secondary"
-        target="_blank"
-      >
-        <Download class="h-4 w-4" />
-        Export Project
-      </a>
-    {/if}
-    <button
-      class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-secondary"
-      onclick={toggleTheme}
-    >
-      <SunMoon class="h-4 w-4" />
-      Toggle Theme
-    </button>
-    <button
-      class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-secondary"
-      onclick={() => compact.toggle()}
-    >
-      {#if compact.active}
-        <PanelRightOpen class="h-4 w-4 shrink-0" />
-      {:else}
-        <PanelRightClose class="h-4 w-4 shrink-0" />
+  <Sidebar.Footer>
+    <Sidebar.Menu>
+      {#if $page.params?.id}
+        <Sidebar.MenuItem>
+          <Sidebar.MenuButton tooltipContent="Export Project">
+            {#snippet child({ props }: { props: Record<string, unknown> })}
+              <a href="/projects/{$page.params.id}/export" {...props} target="_blank">
+                <Download class="h-4 w-4" />
+                <span>Export Project</span>
+              </a>
+            {/snippet}
+          </Sidebar.MenuButton>
+        </Sidebar.MenuItem>
       {/if}
-      Compact
-    </button>
-    <button
-      class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-secondary"
-      onclick={() => zen.toggle()}
-    >
-      <Scan class="h-4 w-4" />
-      {zen.active ? 'Exit Zen Mode' : 'Zen Mode'}
-    </button>
-    <a
-      href="/logout"
-      class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-secondary"
-    >
-      <LogOut class="h-4 w-4" />
-      Log Out
-    </a>
-  </div>
-</aside>
+      <Sidebar.MenuItem>
+        <Sidebar.MenuButton onclick={toggleTheme} tooltipContent="Toggle Theme">
+          <SunMoon class="h-4 w-4" />
+          <span>Toggle Theme</span>
+        </Sidebar.MenuButton>
+      </Sidebar.MenuItem>
+      <Sidebar.MenuItem>
+        <Sidebar.MenuButton
+          onclick={() => zen.toggle()}
+          tooltipContent={zen.active ? 'Exit Zen Mode' : 'Zen Mode'}
+        >
+          <Scan class="h-4 w-4" />
+          <span>{zen.active ? 'Exit Zen Mode' : 'Zen Mode'}</span>
+        </Sidebar.MenuButton>
+      </Sidebar.MenuItem>
+      <Sidebar.MenuItem>
+        <Sidebar.MenuButton
+          onclick={() => goto('/logout')}
+          tooltipContent="Log Out"
+        >
+          <LogOut class="h-4 w-4" />
+          <span>Log Out</span>
+        </Sidebar.MenuButton>
+      </Sidebar.MenuItem>
+    </Sidebar.Menu>
+  </Sidebar.Footer>
+
+  <Sidebar.Rail />
+</Sidebar.Root>
