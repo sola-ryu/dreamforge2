@@ -58,8 +58,7 @@
   function buildGraph() {
     if (!svgEl || !$page.data?.relations) return;
     const relations = $page.data.relations;
-    const allEntities: { id: string; name: string; type: EntityType }[] =
-      $page.data.entities || [];
+    const allEntities: { id: string; name: string; type: EntityType }[] = $page.data.entities || [];
     const entityMap = new Map(allEntities.map((e) => [e.id, e]));
     const projectId = $page.params.id;
 
@@ -146,8 +145,12 @@
     const nodeGroup = svg.append('g');
 
     for (const link of links) {
-      const src = nodeMap.get(typeof link.source === 'string' ? link.source : (link.source as SimNode).id);
-      const tgt = nodeMap.get(typeof link.target === 'string' ? link.target : (link.target as SimNode).id);
+      const src = nodeMap.get(
+        typeof link.source === 'string' ? link.source : (link.source as SimNode).id
+      );
+      const tgt = nodeMap.get(
+        typeof link.target === 'string' ? link.target : (link.target as SimNode).id
+      );
       if (!src || !tgt) continue;
 
       const x1 = (src.x ?? 0) + nodeW / 2;

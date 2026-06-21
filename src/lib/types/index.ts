@@ -101,4 +101,4 @@ export interface Tag {
   color: string | null;
 }
 
-export type Theme = 'light' | 'dark' | 'monochrome';
+export type Theme = 'light' | 'dark';

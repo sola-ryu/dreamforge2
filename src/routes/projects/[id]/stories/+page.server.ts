@@ -1,5 +1,11 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { listStories, createStory, createChapter, createScene, deleteStory } from '$lib/server/stories';
+import {
+  listStories,
+  createStory,
+  createChapter,
+  createScene,
+  deleteStory
+} from '$lib/server/stories';
 import { getProjectAccess } from '$lib/server/members';
 
 export const load = async ({ params, locals }) => {

@@ -13,15 +13,14 @@
   let { children } = $props();
 
   let hasSidebar = $derived(!!$page.data?.user && !zen.active);
+
+  $effect(() => {
+    document.documentElement.className = theme.value === 'dark' ? 'dark' : '';
+  });
 </script>
 
 <ZenMode />
-<div
-  class="flex h-screen overflow-hidden"
-  class:dark={theme.value === 'dark'}
-  class:monochrome={theme.value === 'monochrome'}
-  class:zen-mode={zen.active}
->
+<div class="flex h-screen overflow-hidden" class:zen-mode={zen.active}>
   {#if hasSidebar}
     <SidebarUI.Provider>
       <Sidebar />
@@ -31,7 +30,6 @@
           ? `background-image: url(${zen.backgroundImage}); background-size: cover; background-position: center; background-attachment: fixed;`
           : ''}
       >
-        <SidebarUI.Trigger class="fixed top-3 left-3 z-50" />
         {@render children()}
       </main>
     </SidebarUI.Provider>

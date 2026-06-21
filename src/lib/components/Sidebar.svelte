@@ -23,16 +23,10 @@
 
 <Sidebar.Root collapsible="icon">
   <Sidebar.Header>
-    <Sidebar.Menu>
-      <Sidebar.MenuItem>
-        <Sidebar.MenuButton
-          size="lg"
-          class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-        >
-          <span class="font-semibold">DreamForge</span>
-        </Sidebar.MenuButton>
-      </Sidebar.MenuItem>
-    </Sidebar.Menu>
+    <div class="flex items-center gap-2">
+      <Sidebar.Trigger />
+      <span class="font-semibold">DreamForge</span>
+    </div>
   </Sidebar.Header>
 
   <Sidebar.Content>

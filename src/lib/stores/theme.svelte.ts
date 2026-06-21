@@ -11,7 +11,5 @@ export function getTheme() {
 }
 
 export function toggleTheme() {
-  if (_theme === 'dark') _theme = 'light';
-  else if (_theme === 'light') _theme = 'monochrome';
-  else _theme = 'dark';
+  _theme = _theme === 'dark' ? 'light' : 'dark';
 }

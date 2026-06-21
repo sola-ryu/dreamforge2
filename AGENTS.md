@@ -82,7 +82,7 @@ Entity fields are declared declaratively in `src/lib/entityFields.ts` — routes
 
 - Editor component (`Editor.svelte`) uses svelte-tiptap wrapper — do NOT use Tiptap's Vue-only or React-only APIs
 - Sidebar component handles projects list, search, export, theme toggle, and bookmarks
-- Theme toggle uses CSS class on `<html>`: `light` / `dark` / `monochrome`
+- Theme toggle uses CSS class on `<html>`: `dark` or none (light)
 
 ### Testing
 

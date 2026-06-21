@@ -13,7 +13,11 @@ export const HighlightMarkdown = Highlight.extend({
     name: 'highlight',
     level: 'inline',
     start: (src: string) => src.indexOf('=='),
-    tokenize: (src: string, _tokens: unknown[], lexer: { inlineTokens: (s: string) => unknown[] }) => {
+    tokenize: (
+      src: string,
+      _tokens: unknown[],
+      lexer: { inlineTokens: (s: string) => unknown[] }
+    ) => {
       const match = /^==([^=]+)==/.exec(src);
       if (!match) {
         return undefined;
@@ -21,14 +25,17 @@ export const HighlightMarkdown = Highlight.extend({
       return {
         type: 'highlight',
         raw: match[0],
-        tokens: lexer.inlineTokens(match[1]),
+        tokens: lexer.inlineTokens(match[1])
       };
-    },
+    }
   },
 
   parseMarkdown: (token: unknown, helpers: Record<string, unknown>) => {
     const t = token as { tokens?: unknown[] };
-    const h = helpers as { applyMark: (n: string, c: unknown) => unknown; parseInline: (t: unknown[]) => unknown };
+    const h = helpers as {
+      applyMark: (n: string, c: unknown) => unknown;
+      parseInline: (t: unknown[]) => unknown;
+    };
     return h.applyMark('highlight', h.parseInline(t.tokens || []));
   },
 
@@ -36,5 +43,5 @@ export const HighlightMarkdown = Highlight.extend({
     const h = helpers as { renderChildren: (c: unknown[]) => string };
     const content = h.renderChildren((node.content || []) as unknown[]);
     return `==${content}==`;
-  },
+  }
 });
