@@ -19,6 +19,11 @@
     Unlink,
     ImagePlus
   } from '@lucide/svelte';
+  import { Button } from '$lib/components/ui/button';
+  import { Input } from '$lib/components/ui/input';
+  import { Label } from '$lib/components/ui/label';
+  import { Textarea } from '$lib/components/ui/textarea';
+  import { Combobox } from '$lib/components/ui/combobox';
 
   let role = $derived($page.data?.role || 'owner');
   let canEdit = $derived(role !== 'commenter');
@@ -27,6 +32,7 @@
   let showConvert = $state(false);
   let convertStoryId = $state('');
   let convertChapterId = $state('');
+  let selectedImageId = $state('');
   let name = $state($page.data?.entity?.name || '');
   let body = $state($page.data?.entity?.body || '');
   let fields = $state<Record<string, unknown>>({});
@@ -44,6 +50,10 @@
       }
       fields = f;
     }
+  });
+
+  $effect(() => {
+    if (convertStoryId) convertChapterId = '';
   });
 
   function toggleEdit() {
@@ -84,35 +94,20 @@
       {/if}
       <div class="flex gap-2">
         {#if editing}
-          <button
-            form="edit-form"
-            type="submit"
-            class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
+          <Button form="edit-form" type="submit">
             <Save class="h-4 w-4" />
             Save
-          </button>
-          <button
-            class="rounded-lg border border-border px-4 py-2 text-sm hover:bg-secondary"
-            onclick={toggleEdit}
-          >
-            Cancel
-          </button>
+          </Button>
+          <Button variant="outline" onclick={toggleEdit}>Cancel</Button>
         {:else}
           {#if canEdit && $page.data?.entityType === 'note'}
-            <button
-              class="flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary"
-              onclick={() => (showConvert = !showConvert)}
-            >
+            <Button variant="outline" onclick={() => (showConvert = !showConvert)}>
               <SwitchCamera class="h-4 w-4" />
               Convert to Scene
-            </button>
+            </Button>
           {/if}
           <form method="POST" action="?/toggleBookmark" use:enhance>
-            <button
-              type="submit"
-              class="flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary"
-            >
+            <Button type="submit" variant="outline">
               {#if $page.data?.bookmarked}
                 <BookmarkMinus class="h-4 w-4" />
                 Unbookmark
@@ -120,15 +115,10 @@
                 <Bookmark class="h-4 w-4" />
                 Bookmark
               {/if}
-            </button>
+            </Button>
           </form>
           {#if canEdit}
-            <button
-              class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-              onclick={toggleEdit}
-            >
-              Edit
-            </button>
+            <Button onclick={toggleEdit}>Edit</Button>
           {/if}
         {/if}
       </div>
@@ -186,28 +176,25 @@
         <div class="space-y-4">
           {#each $page.data.customFields as field}
             <div>
-              <label for={field.key} class="block text-sm font-medium mb-1">
+              <Label for={field.key} class="mb-1">
                 {field.label}
                 {#if field.required}<span class="text-destructive">*</span>{/if}
-              </label>
+              </Label>
               {#if field.type === 'textarea' || field.type === 'markdown'}
-                <textarea
+                <Textarea
                   id={field.key}
                   name={field.key}
-                  rows={4}
                   disabled={!editing}
-                  class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                   placeholder={field.placeholder || ''}
-                  >{(fields[field.key] as string) || ''}</textarea
-                >
+                  value={(fields[field.key] as string) || ''}
+                />
               {:else if field.type === 'tags'}
-                <input
+                <Input
                   id={field.key}
                   name={field.key}
                   type="text"
                   disabled={!editing}
                   value={((fields[field.key] as string[]) || []).join(', ')}
-                  class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                   placeholder="tag1, tag2, tag3"
                 />
               {:else if field.type === 'boolean'}
@@ -220,22 +207,20 @@
                   class="rounded border-input"
                 />
               {:else if field.type === 'date'}
-                <input
+                <Input
                   id={field.key}
                   name={field.key}
                   type="date"
                   disabled={!editing}
                   value={(fields[field.key] as string) || ''}
-                  class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                 />
               {:else}
-                <input
+                <Input
                   id={field.key}
                   name={field.key}
                   type={field.type === 'number' ? 'number' : 'text'}
                   disabled={!editing}
                   value={(fields[field.key] as string) || ''}
-                  class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                   placeholder={field.placeholder || ''}
                 />
               {/if}
@@ -272,18 +257,20 @@
                 />
               </a>
               {#if editing}
-                <button
+                <Button
+                  variant="destructive"
+                  size="icon-xs"
+                  class="absolute -right-1.5 -top-1.5 rounded-full opacity-0 group-hover:opacity-100"
                   onclick={() =>
                     fetch(window.location.href + '?/unlinkImage', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                       body: new URLSearchParams({ imageId: img.id })
                     }).then(() => invalidateAll())}
-                  class="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground opacity-0 group-hover:opacity-100"
                   aria-label="Unlink image"
                 >
                   <Unlink class="h-3 w-3" />
-                </button>
+                </Button>
               {/if}
             </div>
           {/each}
@@ -291,36 +278,35 @@
       {/if}
       {#if editing}
         <div class="mt-3 flex gap-2">
-          <select
-            id="image-select"
-            class="flex-1 rounded border border-input bg-background px-2 py-1.5 text-xs"
-          >
-            <option value="">Select an image...</option>
-            {#each $page.data?.projectImages || [] as img}
-              <option value={img.id}>{img.originalName}</option>
-            {/each}
-          </select>
-          <button
+          <Combobox
+            bind:value={selectedImageId}
+            options={($page.data?.projectImages || []).map((img: any) => ({
+              value: img.id,
+              label: img.originalName
+            }))}
+            placeholder="Select an image..."
+            class="flex-1"
+          />
+          <Button
+            size="sm"
             onclick={() => {
-              const select = document.getElementById('image-select') as HTMLSelectElement;
-              if (!select.value) return;
+              if (!selectedImageId) return;
               fetch(window.location.href + '?/linkImage', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ imageId: select.value })
+                body: new URLSearchParams({ imageId: selectedImageId })
               }).then(() => window.location.reload());
             }}
-            class="flex items-center gap-1 rounded bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
           >
             <Link2 class="h-3 w-3" />
             Link
-          </button>
+          </Button>
         </div>
       {/if}
     </div>
 
     <div class="rounded-lg border border-border bg-card p-4">
-      <label for="body" class="mb-2 block text-sm font-medium">Content</label>
+      <Label for="body" class="mb-2">Content</Label>
       {#if $page.data?.entityType === 'note'}
         <input type="hidden" name="body" value={body} />
         {#if editing}
@@ -335,14 +321,13 @@
           </div>
         {/if}
       {:else}
-        <textarea
+        <Textarea
           id="body"
           name="body"
-          rows={20}
           disabled={!editing}
-          class="w-full rounded-lg border border-input bg-background px-3 py-2 font-mono text-sm"
-          >{body}</textarea
-        >
+          class="min-h-[20rem] font-mono"
+          value={body}
+        />
         {#if !editing}
           <div class="mt-4 prose prose-sm max-w-none">
             {@html $page.data?.entity?.body || ''}
@@ -377,13 +362,10 @@
           };
         }}
       >
-        <button
-          type="submit"
-          class="flex items-center gap-2 rounded-lg border border-destructive/50 px-4 py-2 text-sm text-destructive hover:bg-destructive/10"
-        >
+        <Button type="submit" variant="destructive">
           <Trash2 class="h-4 w-4" />
           Delete Entity
-        </button>
+        </Button>
       </form>
     </div>
   {/if}
@@ -392,51 +374,30 @@
     <div class="mt-4 rounded-lg border border-border bg-card p-4">
       <h3 class="mb-3 text-sm font-medium">Convert Note to Scene</h3>
       <form method="POST" action="?/convertToScene" use:enhance class="space-y-3">
-        <div>
-          <label for="convertStory" class="block text-xs text-muted-foreground mb-1">Story</label>
-          <select
-            id="convertStory"
+        <div class="space-y-1">
+          <Label for="convertStory" class="text-xs text-muted-foreground">Story</Label>
+          <Combobox
             name="storyId"
-            required
             bind:value={convertStoryId}
-            class="w-full rounded border border-input bg-background px-2 py-1 text-sm"
-            onchange={() => {
-              convertChapterId = '';
-            }}
-          >
-            <option value="">Select a story...</option>
-            {#each $page.data?.stories || [] as story}
-              <option value={story.id}>{story.title}</option>
-            {/each}
-          </select>
+            options={($page.data?.stories || []).map((s: any) => ({ value: s.id, label: s.title }))}
+            placeholder="Select a story..."
+          />
         </div>
-        <div>
-          <label for="convertChapter" class="block text-xs text-muted-foreground mb-1"
-            >Chapter (optional)</label
-          >
-          <select
-            id="convertChapter"
+        <div class="space-y-1">
+          <Label for="convertChapter" class="text-xs text-muted-foreground">Chapter (optional)</Label>
+          <Combobox
             name="chapterId"
             bind:value={convertChapterId}
-            class="w-full rounded border border-input bg-background px-2 py-1 text-sm"
-          >
-            <option value="">New chapter...</option>
-            {#each ($page.data?.stories || []).find((s: any) => s.id === convertStoryId)?.chapters || [] as ch}
-              <option value={ch.id}>{ch.title}</option>
-            {/each}
-          </select>
+            options={[
+              { value: '', label: 'New chapter...' },
+              ...(($page.data?.stories || []).find((s: any) => s.id === convertStoryId)?.chapters || []).map((ch: any) => ({ value: ch.id, label: ch.title }))
+            ]}
+            placeholder="New chapter..."
+          />
         </div>
         <div class="flex flex-wrap gap-2">
-          <button
-            type="submit"
-            class="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:opacity-90"
-            >Convert</button
-          >
-          <button
-            type="button"
-            class="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-secondary"
-            onclick={() => (showConvert = false)}>Cancel</button
-          >
+          <Button type="submit">Convert</Button>
+          <Button type="button" variant="outline" onclick={() => (showConvert = false)}>Cancel</Button>
         </div>
       </form>
     </div>

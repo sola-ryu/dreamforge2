@@ -19,6 +19,12 @@
     LayoutList,
     Table2
   } from '@lucide/svelte';
+  import { Button } from '$lib/components/ui/button';
+  import { Input } from '$lib/components/ui/input';
+  import { Label } from '$lib/components/ui/label';
+  import { Badge } from '$lib/components/ui/badge';
+  import { Textarea } from '$lib/components/ui/textarea';
+  import { Combobox } from '$lib/components/ui/combobox';
 
   let showCreate = $state(false);
   let newName = $state('');
@@ -167,45 +173,43 @@
     </div>
     <div class="flex items-center gap-2">
       <div class="flex rounded-lg border border-border overflow-hidden">
-        <button
+        <Button
+          variant="ghost"
+          size="icon-sm"
           onclick={() => setLayout('cards')}
-          class="px-2.5 py-2 hover:bg-secondary {layout === 'cards' ? 'bg-secondary' : ''}"
+          class={cn('rounded-none', layout === 'cards' && 'bg-secondary')}
           aria-label="Card layout"
         >
           <LayoutList class="h-4 w-4" />
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
           onclick={() => setLayout('table')}
-          class="px-2.5 py-2 hover:bg-secondary {layout === 'table' ? 'bg-secondary' : ''}"
+          class={cn('rounded-none', layout === 'table' && 'bg-secondary')}
           aria-label="Table layout"
         >
           <Table2 class="h-4 w-4" />
-        </button>
+        </Button>
       </div>
-      <button
-        class="flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary"
-        onclick={downloadCsv}
-      >
+      <Button variant="outline" onclick={downloadCsv}>
         <Download class="h-4 w-4" />
         Export CSV
-      </button>
+      </Button>
       {#if canEdit}
-        <a
+        <Button
+          variant="outline"
           href="/projects/{$page.params.id}/{entityTypeToRoute(
             $page.data?.entityType || 'character'
           )}/import-csv"
-          class="flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary"
         >
           <Upload class="h-4 w-4" />
           Import CSV
-        </a>
-        <button
-          class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          onclick={() => (showCreate = !showCreate)}
-        >
+        </Button>
+        <Button onclick={() => (showCreate = !showCreate)}>
           <Plus class="h-4 w-4" />
           New {$page.data?.entityType ? ENTITY_LABELS[$page.data.entityType as EntityType] : ''}
-        </button>
+        </Button>
       {/if}
     </div>
   </div>
@@ -226,24 +230,23 @@
         }}
         class="space-y-4"
       >
-        <div>
-          <label for="name" class="block text-sm font-medium">Name</label>
-          <input
+        <div class="space-y-1.5">
+          <Label for="name">Name</Label>
+          <Input
             id="name"
             name="name"
             type="text"
             required
             bind:value={newName}
-            class="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
             placeholder="Enter name..."
           />
         </div>
         {#if $page.data?.entityType === 'note' && ($page.data?.templates || []).length > 0}
-          <div>
-            <label for="template" class="block text-sm font-medium">Template (optional)</label>
+          <div class="space-y-1.5">
+            <Label for="template">Template (optional)</Label>
             <select
               id="template"
-              class="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
               value={selectedTemplate}
               onchange={(e) => selectTemplate((e.target as HTMLSelectElement).value)}
             >
@@ -254,8 +257,8 @@
             </select>
           </div>
           {#if newBody}
-            <div>
-              <label for="body" class="block text-sm font-medium">Content (edit as needed)</label>
+            <div class="space-y-1.5">
+              <Label for="body">Content (edit as needed)</Label>
               <input type="hidden" name="body" value={newBody} />
               <Editor
                 content={newBody}
@@ -270,10 +273,10 @@
             <p class="mb-2 text-xs font-medium text-muted-foreground">Custom Fields</p>
             {#each $page.data.customFields as field}
               <div class="mb-2">
-                <label for="cf-{field.key}" class="block text-xs text-muted-foreground mb-0.5">
+                <Label for="cf-{field.key}" class="text-xs text-muted-foreground mb-0.5">
                   {field.label}
                   {#if field.required}<span class="text-destructive">*</span>{/if}
-                </label>
+                </Label>
                 {#if field.type === 'boolean'}
                   <input
                     id="cf-{field.key}"
@@ -282,25 +285,25 @@
                     class="rounded border-input"
                   />
                 {:else if field.type === 'date'}
-                  <input
+                  <Input
                     id="cf-{field.key}"
                     name={field.key}
                     type="date"
-                    class="mt-1 w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                    class="mt-1"
                   />
                 {:else if field.type === 'textarea' || field.type === 'markdown'}
-                  <textarea
+                  <Textarea
                     id="cf-{field.key}"
                     name={field.key}
-                    rows="3"
-                    class="mt-1 w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-                    placeholder={field.placeholder || ''}></textarea>
+                    class="mt-1"
+                    placeholder={field.placeholder || ''}
+                  />
                 {:else}
-                  <input
+                  <Input
                     id="cf-{field.key}"
                     name={field.key}
                     type={field.type === 'number' ? 'number' : 'text'}
-                    class="mt-1 w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
+                    class="mt-1"
                     placeholder={field.placeholder || ''}
                   />
                 {/if}
@@ -309,19 +312,8 @@
           </div>
         {/if}
         <div class="flex gap-2">
-          <button
-            type="submit"
-            class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            Create
-          </button>
-          <button
-            type="button"
-            class="rounded-lg border border-border px-4 py-2 text-sm hover:bg-secondary"
-            onclick={() => (showCreate = false)}
-          >
-            Cancel
-          </button>
+          <Button type="submit">Create</Button>
+          <Button type="button" variant="outline" onclick={() => (showCreate = false)}>Cancel</Button>
         </div>
       </form>
     </div>
@@ -371,11 +363,7 @@
                 <span class="font-medium truncate">{entity.name}</span>
                 {#if entity.tags?.length}
                   {#each entity.tags.slice(0, 3) as tag}
-                    <span
-                      class="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground"
-                    >
-                      {tag}
-                    </span>
+                    <Badge variant="secondary">{tag}</Badge>
                   {/each}
                   {#if entity.tags.length > 3}
                     <span class="text-xs text-muted-foreground">+{entity.tags.length - 3}</span>
@@ -396,8 +384,10 @@
           </a>
           {#if canEdit}
             <div class="absolute right-2 top-1/2 -translate-y-1/2">
-              <button
-                class="rounded p-1.5 max-sm:opacity-100 opacity-0 group-hover:opacity-100 hover:bg-secondary"
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                class="max-sm:opacity-100 opacity-0 group-hover:opacity-100"
                 onclick={(e) => {
                   e.preventDefault();
                   showMenu = showMenu === entity.id ? null : entity.id;
@@ -405,7 +395,7 @@
                 aria-label="More actions"
               >
                 <MoreHorizontal class="h-4 w-4" />
-              </button>
+              </Button>
               {#if showMenu === entity.id}
                 <div
                   class="absolute right-0 top-full z-50 mt-1 w-36 rounded-lg border border-border bg-popover shadow-lg"
@@ -680,13 +670,10 @@
       }}
     >
       <input type="hidden" name="trashId" value={toastTrashId} />
-      <button
-        type="submit"
-        class="flex items-center gap-1 rounded bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
-      >
+      <Button type="submit" size="sm">
         <Undo2 class="h-3 w-3" />
         Undo
-      </button>
+      </Button>
     </form>
     <button class="text-xs text-muted-foreground hover:text-foreground" onclick={cancelDelete}>
       Dismiss

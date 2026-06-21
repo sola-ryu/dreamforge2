@@ -3,6 +3,10 @@
   import { enhance } from '$app/forms';
   import { Plus, Pin, PinOff, ExternalLink } from '@lucide/svelte';
   import { cn, formatDate } from '$lib/utils';
+  import { Button } from '$lib/components/ui/button';
+  import { Input } from '$lib/components/ui/input';
+  import { Label } from '$lib/components/ui/label';
+  import { Textarea } from '$lib/components/ui/textarea';
 
   let showCreate = $state(false);
   let name = $state('');
@@ -16,13 +20,10 @@
 <div class="mx-auto max-w-4xl p-6">
   <div class="mb-6 flex items-center justify-between">
     <h1 class="text-2xl font-bold">Projects</h1>
-    <button
-      class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-      onclick={() => (showCreate = !showCreate)}
-    >
+    <Button onclick={() => (showCreate = !showCreate)}>
       <Plus class="h-4 w-4" />
       New Project
-    </button>
+    </Button>
   </div>
 
   {#if showCreate}
@@ -43,41 +44,17 @@
         }}
         class="space-y-4"
       >
-        <div>
-          <label for="name" class="block text-sm font-medium">Project Name</label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            required
-            bind:value={name}
-            class="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-          />
+        <div class="space-y-1.5">
+          <Label for="name">Project Name</Label>
+          <Input id="name" name="name" type="text" required bind:value={name} />
         </div>
-        <div>
-          <label for="description" class="block text-sm font-medium">Description</label>
-          <textarea
-            id="description"
-            name="description"
-            bind:value={description}
-            rows={3}
-            class="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-          ></textarea>
+        <div class="space-y-1.5">
+          <Label for="description">Description</Label>
+          <Textarea id="description" name="description" bind:value={description} />
         </div>
         <div class="flex gap-2">
-          <button
-            type="submit"
-            class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            Create
-          </button>
-          <button
-            type="button"
-            class="rounded-lg border border-border px-4 py-2 text-sm hover:bg-secondary"
-            onclick={() => (showCreate = false)}
-          >
-            Cancel
-          </button>
+          <Button type="submit">Create</Button>
+          <Button type="button" variant="outline" onclick={() => (showCreate = false)}>Cancel</Button>
         </div>
       </form>
     </div>
@@ -113,28 +90,25 @@
             Modified {formatDate(project.modifiedAt)}
           </p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1">
           <form method="POST" action="?/togglePin">
             <input type="hidden" name="projectId" value={project.id} />
-            <button
+            <Button
               type="submit"
+              variant="ghost"
+              size="icon-sm"
               aria-label={project.pinned ? 'Unpin project' : 'Pin project'}
-              class="rounded p-2 hover:bg-secondary"
             >
               {#if project.pinned}
                 <PinOff class="h-4 w-4" />
               {:else}
                 <Pin class="h-4 w-4" />
               {/if}
-            </button>
+            </Button>
           </form>
-          <a
-            href="/projects/{project.id}"
-            class="rounded p-2 hover:bg-secondary"
-            aria-label="Open project"
-          >
+          <Button href="/projects/{project.id}" variant="ghost" size="icon-sm" aria-label="Open project">
             <ExternalLink class="h-4 w-4" />
-          </a>
+          </Button>
         </div>
       </div>
     {/each}
@@ -157,13 +131,9 @@
                 Modified {formatDate(project.modifiedAt)}
               </p>
             </div>
-            <a
-              href="/projects/{project.id}"
-              class="rounded p-2 hover:bg-secondary"
-              aria-label="Open project"
-            >
+            <Button href="/projects/{project.id}" variant="ghost" size="icon-sm" aria-label="Open project">
               <ExternalLink class="h-4 w-4" />
-            </a>
+            </Button>
           </div>
         {/each}
       </div>

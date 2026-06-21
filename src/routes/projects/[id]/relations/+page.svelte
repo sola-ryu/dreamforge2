@@ -6,6 +6,10 @@
   import * as d3 from 'd3';
   import type { EntityType } from '$lib/types';
   import { Plus, Trash2, Share2 } from '@lucide/svelte';
+  import { Button } from '$lib/components/ui/button';
+  import { Input } from '$lib/components/ui/input';
+  import { Label } from '$lib/components/ui/label';
+  import { Combobox } from '$lib/components/ui/combobox';
 
   let showCreate = $state(false);
   let sourceId = $state('');
@@ -238,12 +242,9 @@
       <h1 class="text-2xl font-bold">Relations</h1>
       <p class="text-sm text-muted-foreground">{$page.data?.projectName || 'Project'}</p>
     </div>
-    <button
-      class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-      onclick={() => (showCreate = !showCreate)}
-    >
+    <Button onclick={() => (showCreate = !showCreate)}>
       <Plus class="h-4 w-4" /> Add Relation
-    </button>
+    </Button>
   </div>
 
   {#if showCreate}
@@ -263,88 +264,54 @@
         class="space-y-3"
       >
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label for="sourceId" class="block text-sm font-medium">Source Entity</label>
-            <select
-              id="sourceId"
+          <div class="space-y-1.5">
+            <Label for="sourceId">Source Entity</Label>
+            <Combobox
               name="sourceId"
-              required
               bind:value={sourceId}
-              class="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm"
-            >
-              <option value="">Select...</option>
-              {#each entityTypeOrder as type}
-                {@const group = entitiesByType($page.data?.entities || []).get(type) || []}
-                {#if group.length > 0}
-                  <optgroup label={type.charAt(0).toUpperCase() + type.slice(1) + 's'}>
-                    {#each group as entity}
-                      <option value={entity.id}>{entity.name}</option>
-                    {/each}
-                  </optgroup>
-                {/if}
-              {/each}
-            </select>
+              options={($page.data?.entities || []).map((e: any) => ({
+                value: e.id,
+                label: `${e.name} (${e.type})`
+              }))}
+              placeholder="Select..."
+            />
           </div>
-          <div>
-            <label for="targetId" class="block text-sm font-medium">Target Entity</label>
-            <select
-              id="targetId"
+          <div class="space-y-1.5">
+            <Label for="targetId">Target Entity</Label>
+            <Combobox
               name="targetId"
-              required
               bind:value={targetId}
-              class="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm"
-            >
-              <option value="">Select...</option>
-              {#each entityTypeOrder as type}
-                {@const group = entitiesByType($page.data?.entities || []).get(type) || []}
-                {#if group.length > 0}
-                  <optgroup label={type.charAt(0).toUpperCase() + type.slice(1) + 's'}>
-                    {#each group as entity}
-                      <option value={entity.id}>{entity.name}</option>
-                    {/each}
-                  </optgroup>
-                {/if}
-              {/each}
-            </select>
+              options={($page.data?.entities || []).map((e: any) => ({
+                value: e.id,
+                label: `${e.name} (${e.type})`
+              }))}
+              placeholder="Select..."
+            />
           </div>
         </div>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label for="relationType" class="block text-sm font-medium">Relation Type</label>
+          <div class="space-y-1.5">
+            <Label for="relationType">Relation Type</Label>
             <select
               id="relationType"
               name="relationType"
               required
               bind:value={relationType}
-              class="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm"
+              class="w-full rounded border border-input bg-background px-3 py-2 text-sm"
             >
               {#each relationTypes as rt}
                 <option value={rt}>{rt.replace(/_/g, ' ')}</option>
               {/each}
             </select>
           </div>
-          <div>
-            <label for="label" class="block text-sm font-medium">Label (optional)</label>
-            <input
-              id="label"
-              name="label"
-              type="text"
-              bind:value={label}
-              class="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm"
-            />
+          <div class="space-y-1.5">
+            <Label for="label">Label (optional)</Label>
+            <Input id="label" name="label" type="text" bind:value={label} />
           </div>
         </div>
         <div class="flex gap-2">
-          <button
-            type="submit"
-            class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-            >Create</button
-          >
-          <button
-            type="button"
-            class="rounded-lg border border-border px-4 py-2 text-sm hover:bg-secondary"
-            onclick={() => (showCreate = false)}>Cancel</button
-          >
+          <Button type="submit">Create</Button>
+          <Button type="button" variant="outline" onclick={() => (showCreate = false)}>Cancel</Button>
         </div>
       </form>
     </div>
@@ -387,9 +354,9 @@
         </div>
         <form method="POST" action="?/delete">
           <input type="hidden" name="relId" value={rel.id} />
-          <button type="submit" class="rounded p-1 hover:bg-secondary" aria-label="Delete relation"
-            ><Trash2 class="h-4 w-4 text-destructive" /></button
-          >
+          <Button type="submit" variant="ghost" size="icon-sm" aria-label="Delete relation">
+            <Trash2 class="h-4 w-4 text-destructive" />
+          </Button>
         </form>
       </div>
     {/each}

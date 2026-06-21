@@ -5,6 +5,9 @@
   import { ENTITY_LABELS } from '$lib/entityFields';
   import { ArrowLeft, Plus, Trash2, Settings, Users, UserPlus } from '@lucide/svelte';
   import type { EntityType } from '$lib/types';
+  import { Button } from '$lib/components/ui/button';
+  import { Input } from '$lib/components/ui/input';
+  import { Label } from '$lib/components/ui/label';
 
   let selectedType = $state<EntityType>('character');
   let newKey = $state('');
@@ -81,17 +84,16 @@
   </div>
 
   <div class="mb-6">
-    <label for="entity-type-select" class="mb-2 block text-sm font-medium">Entity Type</label>
+    <Label class="mb-2">Entity Type</Label>
     <div class="flex flex-wrap gap-2">
       {#each entityTypes as et}
-        <button
-          class="rounded-lg border px-3 py-1.5 text-sm {selectedType === et
-            ? 'border-primary bg-primary text-primary-foreground'
-            : 'border-border hover:bg-secondary'}"
+        <Button
+          variant={selectedType === et ? 'default' : 'outline'}
+          size="sm"
           onclick={() => (selectedType = et)}
         >
           {ENTITY_LABELS[et]}
-        </button>
+        </Button>
       {/each}
     </div>
   </div>
@@ -123,13 +125,9 @@
             </div>
             <form method="POST" action="?/deleteField" use:enhance>
               <input type="hidden" name="fieldId" value={field.id} />
-              <button
-                type="submit"
-                class="rounded p-1 text-destructive hover:bg-destructive/10"
-                aria-label="Delete field"
-              >
+              <Button type="submit" variant="ghost" size="icon-sm" class="text-destructive hover:text-destructive" aria-label="Delete field">
                 <Trash2 class="h-4 w-4" />
-              </button>
+              </Button>
             </form>
           </div>
         {/each}
@@ -154,38 +152,35 @@
         <input type="hidden" name="entityType" value={selectedType} />
 
         <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label for="field-label" class="block text-xs text-muted-foreground mb-1">Label</label>
-            <input
+          <div class="space-y-1">
+            <Label for="field-label" class="text-xs text-muted-foreground">Label</Label>
+            <Input
               id="field-label"
               name="label"
               type="text"
               required
               bind:value={newLabel}
               oninput={deriveKey}
-              class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
               placeholder="e.g. Age"
             />
           </div>
-          <div>
-            <label for="field-key" class="block text-xs text-muted-foreground mb-1">Key</label>
-            <input
+          <div class="space-y-1">
+            <Label for="field-key" class="text-xs text-muted-foreground">Key</Label>
+            <Input
               id="field-key"
               name="key"
               type="text"
               required
               bind:value={newKey}
-              class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm font-mono"
+              class="font-mono"
               placeholder="e.g. age"
             />
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label for="field-type" class="block text-xs text-muted-foreground mb-1"
-              >Field Type</label
-            >
+          <div class="space-y-1">
+            <Label for="field-type" class="text-xs text-muted-foreground">Field Type</Label>
             <select
               id="field-type"
               name="fieldType"
@@ -197,26 +192,21 @@
               {/each}
             </select>
           </div>
-          <div>
-            <label for="field-placeholder" class="block text-xs text-muted-foreground mb-1"
-              >Placeholder</label
-            >
-            <input
+          <div class="space-y-1">
+            <Label for="field-placeholder" class="text-xs text-muted-foreground">Placeholder</Label>
+            <Input
               id="field-placeholder"
               name="placeholder"
               type="text"
               bind:value={newPlaceholder}
-              class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
               placeholder="Optional placeholder"
             />
           </div>
         </div>
 
         {#if newFieldType === 'entityRef'}
-          <div>
-            <label for="ref-entity-type" class="block text-xs text-muted-foreground mb-1"
-              >Referenced Entity Type</label
-            >
+          <div class="space-y-1">
+            <Label for="ref-entity-type" class="text-xs text-muted-foreground">Referenced Entity Type</Label>
             <select
               id="ref-entity-type"
               name="refEntityType"
@@ -240,16 +230,13 @@
             bind:checked={newRequired}
             class="rounded border-input"
           />
-          <label for="field-required" class="text-sm">Required</label>
+          <Label for="field-required">Required</Label>
         </div>
 
-        <button
-          type="submit"
-          class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-        >
+        <Button type="submit">
           <Plus class="h-4 w-4" />
           Add Field
-        </button>
+        </Button>
       </form>
     </div>
   </div>
@@ -289,13 +276,9 @@
               </div>
               <form method="POST" action="?/removeMember" use:enhance>
                 <input type="hidden" name="userId" value={member.userId} />
-                <button
-                  type="submit"
-                  class="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
-                  aria-label="Remove member"
-                >
+                <Button type="submit" variant="ghost" size="icon-sm" aria-label="Remove member">
                   <Trash2 class="h-4 w-4" />
-                </button>
+                </Button>
               </form>
             </div>
           {/each}
@@ -317,22 +300,19 @@
           }}
           class="flex flex-col gap-3 sm:flex-row sm:items-end"
         >
-          <div class="flex-1">
-            <label for="member-query" class="block text-xs text-muted-foreground mb-1"
-              >Email or username</label
-            >
-            <input
+          <div class="flex-1 space-y-1">
+            <Label for="member-query" class="text-xs text-muted-foreground">Email or username</Label>
+            <Input
               id="member-query"
               name="query"
               type="text"
               required
               bind:value={addMemberQuery}
               placeholder="user@example.com or username"
-              class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
             />
           </div>
-          <div>
-            <label for="member-role" class="block text-xs text-muted-foreground mb-1">Role</label>
+          <div class="space-y-1">
+            <Label for="member-role" class="text-xs text-muted-foreground">Role</Label>
             <select
               id="member-role"
               name="role"
@@ -343,13 +323,10 @@
               <option value="commenter">Commenter</option>
             </select>
           </div>
-          <button
-            type="submit"
-            class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
+          <Button type="submit">
             <UserPlus class="h-4 w-4" />
             Add
-          </button>
+          </Button>
         </form>
         <p class="mt-2 text-xs text-muted-foreground">
           Editors can view and edit content. Commenters can view and leave comments.

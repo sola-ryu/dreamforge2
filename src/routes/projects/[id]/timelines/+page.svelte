@@ -17,6 +17,12 @@
     ChevronRight
   } from '@lucide/svelte';
   import { cn, formatDate } from '$lib/utils';
+  import { Button } from '$lib/components/ui/button';
+  import { Input } from '$lib/components/ui/input';
+  import { Label } from '$lib/components/ui/label';
+  import { Badge } from '$lib/components/ui/badge';
+  import { Textarea } from '$lib/components/ui/textarea';
+  import { Combobox } from '$lib/components/ui/combobox';
   import type { TimelineEvent, CalendarConfig } from '$lib/server/timelines';
 
   let showCreate = $state(false);
@@ -222,20 +228,14 @@
       <p class="text-sm text-muted-foreground">{$page.data?.projectName || 'Project'}</p>
     </div>
     <div class="flex flex-wrap gap-2">
-      <button
-        class="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary"
-        onclick={() => (showCalendarSettings = !showCalendarSettings)}
-      >
+      <Button variant="outline" onclick={() => (showCalendarSettings = !showCalendarSettings)}>
         <Calendar class="h-4 w-4" />
         Calendar
-      </button>
-      <button
-        class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-        onclick={() => (showCreate = !showCreate)}
-      >
+      </Button>
+      <Button onclick={() => (showCreate = !showCreate)}>
         <Plus class="h-4 w-4" />
         Add Event
-      </button>
+      </Button>
     </div>
   </div>
 
@@ -243,48 +243,25 @@
     <div class="mb-6 rounded-lg border border-border bg-card p-4">
       <div class="mb-3 flex items-center justify-between">
         <h2 class="text-sm font-semibold">Calendar Settings</h2>
-        <button
-          class="rounded p-1 hover:bg-secondary"
-          onclick={() => (showCalendarSettings = false)}
-          aria-label="Close calendar settings"
-        >
+        <Button variant="ghost" size="icon-sm" onclick={() => (showCalendarSettings = false)} aria-label="Close calendar settings">
           <X class="h-4 w-4" />
-        </button>
+        </Button>
       </div>
       <form method="POST" action="?/updateCalendar" use:enhance class="space-y-3">
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div>
-            <label for="calendarName" class="block text-xs text-muted-foreground mb-1"
-              >Calendar Name</label
-            >
-            <input
-              id="calendarName"
-              name="calendarName"
-              type="text"
-              value={calendar.name}
-              class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-            />
+          <div class="space-y-1">
+            <Label for="calendarName" class="text-xs text-muted-foreground">Calendar Name</Label>
+            <Input id="calendarName" name="calendarName" type="text" value={calendar.name} />
           </div>
-          <div>
-            <label for="months" class="block text-xs text-muted-foreground mb-1"
-              >Month Names (comma-separated)</label
-            >
-            <input
-              id="months"
-              name="months"
-              type="text"
-              value={calendar.months.join(', ')}
-              class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm font-mono"
-            />
+          <div class="space-y-1">
+            <Label for="months" class="text-xs text-muted-foreground">Month Names (comma-separated)</Label>
+            <Input id="months" name="months" type="text" value={calendar.months.join(', ')} class="font-mono" />
           </div>
         </div>
-        <button
-          type="submit"
-          class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-        >
-          <Save class="mr-1 inline h-4 w-4" />
+        <Button type="submit">
+          <Save class="h-4 w-4" />
           Save Calendar
-        </button>
+        </Button>
       </form>
     </div>
   {/if}
@@ -307,19 +284,12 @@
         class="space-y-3"
       >
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div>
-            <label for="new-year" class="block text-xs text-muted-foreground mb-1">Year</label>
-            <input
-              id="new-year"
-              name="year"
-              type="number"
-              required
-              bind:value={newYear}
-              class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-            />
+          <div class="space-y-1">
+            <Label for="new-year" class="text-xs text-muted-foreground">Year</Label>
+            <Input id="new-year" name="year" type="number" required bind:value={newYear} />
           </div>
-          <div>
-            <label for="new-month" class="block text-xs text-muted-foreground mb-1">Month</label>
+          <div class="space-y-1">
+            <Label for="new-month" class="text-xs text-muted-foreground">Month</Label>
             <select
               id="new-month"
               name="month"
@@ -332,58 +302,31 @@
               {/each}
             </select>
           </div>
-          <div>
-            <label for="new-day" class="block text-xs text-muted-foreground mb-1">Day</label>
-            <input
-              id="new-day"
-              name="day"
-              type="number"
-              min="1"
-              max="31"
-              bind:value={newDay}
-              class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-            />
+          <div class="space-y-1">
+            <Label for="new-day" class="text-xs text-muted-foreground">Day</Label>
+            <Input id="new-day" name="day" type="number" min="1" max="31" bind:value={newDay} />
           </div>
-          <div>
-            <label for="new-era" class="block text-xs text-muted-foreground mb-1">Era</label>
-            <input
-              id="new-era"
-              name="era"
-              type="text"
-              bind:value={newEra}
-              class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-            />
+          <div class="space-y-1">
+            <Label for="new-era" class="text-xs text-muted-foreground">Era</Label>
+            <Input id="new-era" name="era" type="text" bind:value={newEra} />
           </div>
         </div>
-        <div>
-          <label for="new-title" class="block text-xs text-muted-foreground mb-1">Title</label>
-          <input
-            id="new-title"
-            name="title"
-            type="text"
-            required
-            bind:value={newTitle}
-            class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-            placeholder="Event title..."
-          />
+        <div class="space-y-1">
+          <Label for="new-title" class="text-xs text-muted-foreground">Title</Label>
+          <Input id="new-title" name="title" type="text" required bind:value={newTitle} placeholder="Event title..." />
         </div>
-        <div>
-          <label for="new-description" class="block text-xs text-muted-foreground mb-1"
-            >Description</label
-          >
-          <textarea
+        <div class="space-y-1">
+          <Label for="new-description" class="text-xs text-muted-foreground">Description</Label>
+          <Textarea
             id="new-description"
             name="description"
-            rows="3"
             bind:value={newDescription}
-            class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-            placeholder="Event description..."></textarea>
+            placeholder="Event description..."
+          />
         </div>
         <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label for="new-significance" class="block text-xs text-muted-foreground mb-1"
-              >Significance</label
-            >
+          <div class="space-y-1">
+            <Label for="new-significance" class="text-xs text-muted-foreground">Significance</Label>
             <select
               id="new-significance"
               name="significance"
@@ -395,33 +338,23 @@
               <option value="trivial">Trivial</option>
             </select>
           </div>
-          <div>
-            <label for="new-entities" class="block text-xs text-muted-foreground mb-1"
-              >Linked Entities</label
-            >
-            <select
-              id="new-entities"
-              class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-              onchange={(e) => {
-                const val = (e.target as HTMLSelectElement).value;
-                if (val && !newEntityIds.includes(val)) {
-                  newEntityIds = [...newEntityIds, val];
-                }
+          <div class="space-y-1">
+            <Label for="new-entities" class="text-xs text-muted-foreground">Linked Entities</Label>
+            <Combobox
+              options={entities
+                .filter((e) => !newEntityIds.includes(e.id))
+                .map((e) => ({ value: e.id, label: `${e.name} (${e.type})` }))}
+              placeholder="Add entity..."
+              onSelect={(val) => {
+                if (val && !newEntityIds.includes(val)) newEntityIds = [...newEntityIds, val];
               }}
-            >
-              <option value="">Add entity...</option>
-              {#each entities.filter((e) => !newEntityIds.includes(e.id)) as entity}
-                <option value={entity.id}>{entity.name} ({entity.type})</option>
-              {/each}
-            </select>
+            />
             {#if newEntityIds.length > 0}
               <div class="mt-1 flex flex-wrap gap-1">
                 {#each newEntityIds as eid}
                   {@const entity = entityMap.get(eid)}
                   {#if entity}
-                    <span
-                      class="flex items-center gap-1 rounded bg-secondary px-1.5 py-0.5 text-xs"
-                    >
+                    <Badge variant="secondary" class="gap-1">
                       {entity.name}
                       <button
                         type="button"
@@ -431,7 +364,7 @@
                       >
                         <X class="h-3 w-3" />
                       </button>
-                    </span>
+                    </Badge>
                   {/if}
                 {/each}
               </div>
@@ -440,22 +373,17 @@
           </div>
         </div>
         <div class="flex gap-2">
-          <button
-            type="submit"
-            class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            Add Event
-          </button>
-          <button
+          <Button type="submit">Add Event</Button>
+          <Button
             type="button"
-            class="rounded-lg border border-border px-4 py-2 text-sm hover:bg-secondary"
+            variant="outline"
             onclick={() => {
               showCreate = false;
               resetCreateForm();
             }}
           >
             Cancel
-          </button>
+          </Button>
         </div>
       </form>
     </div>
@@ -492,15 +420,15 @@
           <option value={era}>{era}</option>
         {/each}
       </select>
-      <select
-        class="rounded border border-input bg-background px-2 py-2 text-sm"
+      <Combobox
         bind:value={filterEntity}
-      >
-        <option value="">All entities</option>
-        {#each entities as entity}
-          <option value={entity.id}>{entity.name}</option>
-        {/each}
-      </select>
+        options={[
+          { value: '', label: 'All entities' },
+          ...entities.map((e) => ({ value: e.id, label: e.name }))
+        ]}
+        placeholder="All entities"
+        class="w-40"
+      />
     </div>
   {/if}
 
@@ -645,23 +573,12 @@
             >
               <input type="hidden" name="eventId" value={event.id} />
               <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div>
-                  <label for="edit-year" class="block text-xs text-muted-foreground mb-1"
-                    >Year</label
-                  >
-                  <input
-                    id="edit-year"
-                    name="year"
-                    type="number"
-                    required
-                    bind:value={editYear}
-                    class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-                  />
+                <div class="space-y-1">
+                  <Label for="edit-year" class="text-xs text-muted-foreground">Year</Label>
+                  <Input id="edit-year" name="year" type="number" required bind:value={editYear} />
                 </div>
-                <div>
-                  <label for="edit-month" class="block text-xs text-muted-foreground mb-1"
-                    >Month</label
-                  >
+                <div class="space-y-1">
+                  <Label for="edit-month" class="text-xs text-muted-foreground">Month</Label>
                   <select
                     id="edit-month"
                     name="month"
@@ -674,59 +591,30 @@
                     {/each}
                   </select>
                 </div>
-                <div>
-                  <label for="edit-day" class="block text-xs text-muted-foreground mb-1">Day</label>
-                  <input
-                    id="edit-day"
-                    name="day"
-                    type="number"
-                    min="1"
-                    max="31"
-                    bind:value={editDay}
-                    class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-                  />
+                <div class="space-y-1">
+                  <Label for="edit-day" class="text-xs text-muted-foreground">Day</Label>
+                  <Input id="edit-day" name="day" type="number" min="1" max="31" bind:value={editDay} />
                 </div>
-                <div>
-                  <label for="edit-era" class="block text-xs text-muted-foreground mb-1">Era</label>
-                  <input
-                    id="edit-era"
-                    name="era"
-                    type="text"
-                    bind:value={editEra}
-                    class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-                  />
+                <div class="space-y-1">
+                  <Label for="edit-era" class="text-xs text-muted-foreground">Era</Label>
+                  <Input id="edit-era" name="era" type="text" bind:value={editEra} />
                 </div>
               </div>
-              <div>
-                <label for="edit-title" class="block text-xs text-muted-foreground mb-1"
-                  >Title</label
-                >
-                <input
-                  id="edit-title"
-                  name="title"
-                  type="text"
-                  required
-                  bind:value={editTitle}
-                  class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-                />
+              <div class="space-y-1">
+                <Label for="edit-title" class="text-xs text-muted-foreground">Title</Label>
+                <Input id="edit-title" name="title" type="text" required bind:value={editTitle} />
               </div>
-              <div>
-                <label for="edit-description" class="block text-xs text-muted-foreground mb-1"
-                  >Description</label
-                >
-                <textarea
+              <div class="space-y-1">
+                <Label for="edit-description" class="text-xs text-muted-foreground">Description</Label>
+                <Textarea
                   id="edit-description"
                   name="description"
-                  rows="3"
                   bind:value={editDescription}
-                  class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-                ></textarea>
+                />
               </div>
               <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label for="edit-significance" class="block text-xs text-muted-foreground mb-1"
-                    >Significance</label
-                  >
+                <div class="space-y-1">
+                  <Label for="edit-significance" class="text-xs text-muted-foreground">Significance</Label>
                   <select
                     id="edit-significance"
                     name="significance"
@@ -738,33 +626,23 @@
                     <option value="trivial">Trivial</option>
                   </select>
                 </div>
-                <div>
-                  <label for="edit-entities" class="block text-xs text-muted-foreground mb-1"
-                    >Linked Entities</label
-                  >
-                  <select
-                    id="edit-entities"
-                    class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-                    onchange={(e) => {
-                      const val = (e.target as HTMLSelectElement).value;
-                      if (val && !editEntityIds.includes(val)) {
-                        editEntityIds = [...editEntityIds, val];
-                      }
+                <div class="space-y-1">
+                  <Label for="edit-entities" class="text-xs text-muted-foreground">Linked Entities</Label>
+                  <Combobox
+                    options={entities
+                      .filter((e) => !editEntityIds.includes(e.id))
+                      .map((e) => ({ value: e.id, label: `${e.name} (${e.type})` }))}
+                    placeholder="Add entity..."
+                    onSelect={(val) => {
+                      if (val && !editEntityIds.includes(val)) editEntityIds = [...editEntityIds, val];
                     }}
-                  >
-                    <option value="">Add entity...</option>
-                    {#each entities.filter((e) => !editEntityIds.includes(e.id)) as entity}
-                      <option value={entity.id}>{entity.name} ({entity.type})</option>
-                    {/each}
-                  </select>
+                  />
                   {#if editEntityIds.length > 0}
                     <div class="mt-1 flex flex-wrap gap-1">
                       {#each editEntityIds as eid}
                         {@const entity = entityMap.get(eid)}
                         {#if entity}
-                          <span
-                            class="flex items-center gap-1 rounded bg-secondary px-1.5 py-0.5 text-xs"
-                          >
+                          <Badge variant="secondary" class="gap-1">
                             {entity.name}
                             <button
                               type="button"
@@ -775,7 +653,7 @@
                             >
                               <X class="h-3 w-3" />
                             </button>
-                          </span>
+                          </Badge>
                         {/if}
                       {/each}
                     </div>
@@ -784,28 +662,15 @@
                 </div>
               </div>
               <div class="flex gap-2">
-                <button
-                  type="submit"
-                  class="flex items-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-                >
+                <Button type="submit">
                   <Save class="h-4 w-4" />
                   Save
-                </button>
-                <button
-                  type="button"
-                  class="rounded-lg border border-border px-4 py-2 text-sm hover:bg-secondary"
-                  onclick={closeEdit}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  formaction="?/deleteEvent"
-                  class="flex items-center gap-1 rounded-lg border border-destructive/50 px-4 py-2 text-sm text-destructive hover:bg-destructive/10 ml-auto"
-                >
+                </Button>
+                <Button type="button" variant="outline" onclick={closeEdit}>Cancel</Button>
+                <Button type="submit" formaction="?/deleteEvent" variant="destructive" class="ml-auto">
                   <Trash2 class="h-4 w-4" />
                   Delete
-                </button>
+                </Button>
               </div>
             </form>
           {:else}
@@ -846,33 +711,21 @@
                     {#each event.entityIds as eid}
                       {@const entity = entityMap.get(eid)}
                       {#if entity}
-                        <span
-                          class="rounded bg-secondary px-1.5 py-0.5 text-xs text-muted-foreground"
-                        >
-                          {entity.name}
-                        </span>
+                        <Badge variant="secondary">{entity.name}</Badge>
                       {/if}
                     {/each}
                   </div>
                 {/if}
               </div>
               <div class="flex shrink-0 items-center gap-1 ml-3">
-                <button
-                  class="rounded p-1.5 hover:bg-secondary"
-                  onclick={() => openEdit(event)}
-                  aria-label="Edit event"
-                >
+                <Button variant="ghost" size="icon-sm" onclick={() => openEdit(event)} aria-label="Edit event">
                   <Edit class="h-4 w-4" />
-                </button>
+                </Button>
                 <form method="POST" action="?/deleteEvent" use:enhance>
                   <input type="hidden" name="eventId" value={event.id} />
-                  <button
-                    type="submit"
-                    class="rounded p-1.5 hover:bg-secondary"
-                    aria-label="Delete event"
-                  >
+                  <Button type="submit" variant="ghost" size="icon-sm" aria-label="Delete event">
                     <Trash2 class="h-4 w-4 text-destructive" />
-                  </button>
+                  </Button>
                 </form>
               </div>
             </div>

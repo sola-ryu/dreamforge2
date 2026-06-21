@@ -19,6 +19,8 @@
   } from '@lucide/svelte';
   import { getZenMode } from '$lib/stores/zenMode.svelte';
   import Editor from '$lib/components/Editor.svelte';
+  import { Button } from '$lib/components/ui/button';
+  import { Input } from '$lib/components/ui/input';
 
   const zen = getZenMode();
 
@@ -179,32 +181,35 @@
       <div class="mt-2 flex items-center justify-between">
         <h2 class="text-lg font-semibold">{$page.data?.story?.title || 'Story'}</h2>
         <div class="flex flex-wrap items-center gap-1">
-          <a
+          <Button
             href="/projects/{$page.params.id}/stories/{$page.params.storyId}/export"
             target="_blank"
-            class="flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs hover:bg-secondary"
+            variant="outline"
+            size="xs"
           >
             <Download class="h-3 w-3" />
             Export
-          </a>
-          <a
+          </Button>
+          <Button
             href="/projects/{$page.params.id}/stories/{$page.params.storyId}/summaries"
-            class="flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs hover:bg-secondary"
+            variant="outline"
+            size="xs"
           >
             <LayoutList class="h-3 w-3" />
             Summaries
-          </a>
+          </Button>
         </div>
       </div>
     </div>
 
-    <button
-      class="mb-4 flex w-full items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm text-muted-foreground hover:border-primary hover:text-foreground"
+    <Button
+      variant="outline"
+      class="mb-4 w-full border-dashed text-muted-foreground hover:border-primary hover:text-foreground"
       onclick={() => (showCreateChapter = !showCreateChapter)}
     >
       <Plus class="h-4 w-4" />
       Add Chapter
-    </button>
+    </Button>
 
     {#if showCreateChapter}
       <div class="mb-4 rounded-lg border border-border bg-background p-3">
@@ -221,24 +226,17 @@
             };
           }}
         >
-          <input
+          <Input
             name="title"
             type="text"
             required
             bind:value={chapterTitle}
-            class="mb-2 w-full rounded border border-input bg-background px-2 py-1 text-sm"
+            class="mb-2"
             placeholder="Chapter title"
           />
           <div class="flex gap-1">
-            <button
-              type="submit"
-              class="rounded bg-primary px-2 py-1 text-xs text-primary-foreground">Create</button
-            >
-            <button
-              type="button"
-              class="rounded border border-border px-2 py-1 text-xs"
-              onclick={() => (showCreateChapter = false)}>Cancel</button
-            >
+            <Button type="submit" size="xs">Create</Button>
+            <Button type="button" variant="outline" size="xs" onclick={() => (showCreateChapter = false)}>Cancel</Button>
           </div>
         </form>
       </div>
@@ -308,12 +306,9 @@
                     <form method="POST" action="?/deleteScene">
                       <input type="hidden" name="chapterId" value={chapter.id} />
                       <input type="hidden" name="sceneId" value={scene.id} />
-                      <button
-                        type="submit"
-                        class="rounded p-0.5 hover:bg-secondary"
-                        aria-label="Delete scene"
-                        ><Trash2 class="h-3 w-3 text-destructive" /></button
-                      >
+                      <Button type="submit" variant="ghost" size="icon-xs" aria-label="Delete scene">
+                        <Trash2 class="h-3 w-3 text-destructive" />
+                      </Button>
                     </form>
                   </div>
                 </div>
@@ -331,12 +326,9 @@
                 }}
               >
                 <input type="hidden" name="chapterId" value={chapter.id} />
-                <button
-                  type="submit"
-                  class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-                >
+                <Button type="submit" variant="ghost" size="xs" class="text-muted-foreground hover:text-foreground">
                   <Plus class="h-3 w-3" /> Add Scene
-                </button>
+                </Button>
               </form>
             </div>
           {/if}
@@ -392,16 +384,13 @@
             />
           </div>
           <div class="flex items-center gap-2">
-            <button
-              type="submit"
-              class="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:opacity-90"
-              onclick={() => (isSaving = true)}
-            >
+            <Button type="submit" onclick={() => (isSaving = true)}>
               <Save class="h-4 w-4" />
               Save
-            </button>
-            <button
-              class="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+            </Button>
+            <Button
+              variant="outline"
+              size="icon-sm"
               title="Convert to Note"
               aria-label="Convert to Note"
               onclick={async () => {
@@ -414,69 +403,63 @@
               }}
             >
               <SwitchCamera class="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              class="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-secondary"
-              onclick={closeScene}
-            >
-              Close
-            </button>
+            </Button>
+            <Button type="button" variant="outline" onclick={closeScene}>Close</Button>
           </div>
         </div>
 
         <div class="mb-4 flex flex-wrap gap-4 text-sm">
           <div class="flex items-center gap-2">
             <label for="scene-narrator" class="text-muted-foreground">Narrator:</label>
-            <input
+            <Input
               id="scene-narrator"
               type="text"
               name="narrator"
               bind:value={sceneNarrator}
-              class="rounded border border-input bg-background px-2 py-1 text-sm"
+              class="h-7 w-auto"
               placeholder="Who narrates?"
             />
           </div>
           <div class="flex items-center gap-2">
             <label for="scene-time" class="text-muted-foreground">Time:</label>
-            <input
+            <Input
               id="scene-time"
               type="text"
               name="time"
               bind:value={sceneTime}
-              class="rounded border border-input bg-background px-2 py-1 text-sm"
+              class="h-7 w-auto"
               placeholder="When?"
             />
           </div>
           <div class="flex items-center gap-2">
             <label for="scene-place" class="text-muted-foreground">Place:</label>
-            <input
+            <Input
               id="scene-place"
               type="text"
               name="place"
               bind:value={scenePlace}
-              class="rounded border border-input bg-background px-2 py-1 text-sm"
+              class="h-7 w-auto"
               placeholder="Where?"
             />
           </div>
           <div class="flex items-center gap-2">
             <label for="scene-participants" class="text-muted-foreground">Participants:</label>
-            <input
+            <Input
               id="scene-participants"
               type="text"
               name="participants"
               bind:value={sceneParticipants}
-              class="rounded border border-input bg-background px-2 py-1 text-sm"
+              class="h-7 w-auto"
               placeholder="char_id1, char_id2"
             />
           </div>
           <div class="flex items-center gap-2">
             <Image class="h-3.5 w-3.5 text-muted-foreground" />
-            <input
+            <Input
               type="text"
               name="backgroundImage"
               bind:value={sceneBackgroundImage}
-              class="rounded border border-input bg-background px-2 py-1 text-sm"
+              class="h-7 w-auto"
               placeholder="Background image URL for Zen Mode"
             />
           </div>

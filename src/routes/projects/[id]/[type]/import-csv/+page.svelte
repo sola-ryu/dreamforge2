@@ -6,6 +6,7 @@
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import type { EntityType } from '$lib/types';
   import { ArrowLeft, Upload } from '@lucide/svelte';
+  import { Button } from '$lib/components/ui/button';
 
   const FIELD_TYPE_OPTIONS = [
     { value: 'text', label: 'Text' },
@@ -76,8 +77,7 @@
       Upload a CSV file to create or update {$page.data?.entityType
         ? ENTITY_PLURAL[$page.data.entityType as EntityType].toLowerCase()
         : 'entities'}. Rows are matched by ID first, then by name.
-      <button class="underline cursor-pointer" onclick={downloadCsv}>Download a CSV template</button
-      >.
+      <Button variant="link" class="h-auto p-0 text-sm" onclick={downloadCsv}>Download a CSV template</Button>.
     </p>
   </div>
 
@@ -97,9 +97,8 @@
           </ul>
         </div>
       {/if}
-      <div class="mt-4">
-        <button
-          class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+      <div class="mt-4 flex gap-2">
+        <Button
           onclick={() => {
             importResult = null;
             csvHeaders = [];
@@ -110,16 +109,16 @@
           }}
         >
           Import Another File
-        </button>
-        <button
-          class="ml-2 rounded-lg border border-border px-4 py-2 text-sm hover:bg-secondary"
+        </Button>
+        <Button
+          variant="outline"
           onclick={() => {
             const route = entityTypeToRoute($page.data?.entityType || 'character');
             goto(`/projects/${$page.params.id}/${route}`);
           }}
         >
           Back to List
-        </button>
+        </Button>
       </div>
     </div>
   {:else if csvHeaders.length > 0}
@@ -153,15 +152,9 @@
           <table class="w-full text-sm">
             <thead>
               <tr class="border-b border-border">
-                <th class="px-2 py-1 text-left text-xs text-muted-foreground font-medium"
-                  >CSV Column</th
-                >
-                <th class="px-2 py-1 text-left text-xs text-muted-foreground font-medium"
-                  >Map to Field</th
-                >
-                <th class="px-2 py-1 text-left text-xs text-muted-foreground font-medium"
-                  >Preview</th
-                >
+                <th class="px-2 py-1 text-left text-xs text-muted-foreground font-medium">CSV Column</th>
+                <th class="px-2 py-1 text-left text-xs text-muted-foreground font-medium">Map to Field</th>
+                <th class="px-2 py-1 text-left text-xs text-muted-foreground font-medium">Preview</th>
               </tr>
             </thead>
             <tbody>
@@ -218,9 +211,7 @@
                       </div>
                     {/if}
                   </td>
-                  <td
-                    class="px-2 py-1.5 text-xs text-muted-foreground align-top pt-3 max-w-[200px]"
-                  >
+                  <td class="px-2 py-1.5 text-xs text-muted-foreground align-top pt-3 max-w-[200px]">
                     <div class="space-y-0.5">
                       {#each preview.slice(0, 3) as row}
                         <div class="truncate">{row[header] || ''}</div>
@@ -238,16 +229,12 @@
         </p>
 
         <div class="flex gap-2">
-          <button
-            type="submit"
-            disabled={uploading}
-            class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-          >
+          <Button type="submit" disabled={uploading}>
             {uploading ? 'Importing...' : 'Import Data'}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            class="rounded-lg border border-border px-4 py-2 text-sm hover:bg-secondary"
+            variant="outline"
             onclick={() => {
               csvHeaders = [];
               preview = [];
@@ -257,7 +244,7 @@
             }}
           >
             Cancel
-          </button>
+          </Button>
         </div>
       </form>
     </div>

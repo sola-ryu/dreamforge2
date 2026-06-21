@@ -4,6 +4,7 @@
   import { FileText, Search as SearchIcon } from '@lucide/svelte';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import { cn, formatDate } from '$lib/utils';
+  import { Badge } from '$lib/components/ui/badge';
 
   let query = $state($page.data?.query || '');
   let timer: ReturnType<typeof setTimeout>;
@@ -60,13 +61,9 @@
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2">
             <span class="font-medium">{entity.name}</span>
-            <span class="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground"
-              >{entity.type}</span
-            >
+            <Badge variant="secondary">{entity.type}</Badge>
             {#each entity.tags || [] as tag}
-              <span class="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground"
-                >{tag}</span
-              >
+              <Badge variant="secondary">{tag}</Badge>
             {/each}
           </div>
           <p class="text-xs text-muted-foreground">Modified {formatDate(entity.modifiedAt)}</p>

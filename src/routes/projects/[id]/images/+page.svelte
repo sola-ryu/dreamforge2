@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { enhance } from '$app/forms';
-
   import { ArrowLeft, Upload, Image, X } from '@lucide/svelte';
+  import { Button } from '$lib/components/ui/button';
 
   let uploadFiles = $state<File[]>([]);
   let uploading = $state(false);
@@ -86,13 +86,15 @@
                 alt={uploadFiles[i].name}
                 class="h-24 w-24 rounded-lg border border-border object-cover"
               />
-              <button
+              <Button
                 type="button"
-                class="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground opacity-0 group-hover:opacity-100"
+                variant="destructive"
+                size="icon-xs"
+                class="absolute -right-1.5 -top-1.5 opacity-0 group-hover:opacity-100 rounded-full"
                 onclick={() => removePreview(i)}
               >
                 <X class="h-3 w-3" />
-              </button>
+              </Button>
               <p class="mt-1 max-w-24 truncate text-xs text-muted-foreground">
                 {uploadFiles[i].name}
               </p>
@@ -102,15 +104,11 @@
       {/if}
 
       {#if uploadFiles.length > 0}
-        <button
-          type="submit"
-          disabled={uploading}
-          class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-        >
+        <Button type="submit" disabled={uploading}>
           {uploading
             ? 'Uploading...'
             : `Upload ${uploadFiles.length} file${uploadFiles.length > 1 ? 's' : ''}`}
-        </button>
+        </Button>
       {/if}
     </form>
   </div>

@@ -7,6 +7,8 @@
   import { formatDate } from '$lib/utils';
   import type { EntityType } from '$lib/types';
   import { ArrowLeft, Trash2, RotateCcw, AlertTriangle } from '@lucide/svelte';
+  import { Button } from '$lib/components/ui/button';
+  import { Badge } from '$lib/components/ui/badge';
 
   function goToEntity(item: any) {
     if (item.entityType === 'image') {
@@ -40,13 +42,10 @@
       </div>
       {#if ($page.data?.items || []).length > 0}
         <form method="POST" action="?/emptyTrash" use:enhance>
-          <button
-            type="submit"
-            class="flex items-center gap-2 rounded-lg border border-destructive/50 px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
-          >
+          <Button type="submit" variant="destructive">
             <Trash2 class="h-4 w-4" />
             Empty Trash
-          </button>
+          </Button>
         </form>
       {/if}
     </div>
@@ -70,13 +69,11 @@
                 >
                   {item.name}
                 </button>
-                <span
-                  class="shrink-0 rounded bg-secondary px-1.5 py-0.5 text-xs text-muted-foreground"
-                >
+                <Badge variant="secondary">
                   {item.entityType === 'image'
                     ? 'Image'
                     : ENTITY_LABELS[item.entityType as EntityType] || item.entityType}
-                </span>
+                </Badge>
               </div>
               <p class="mt-1 text-xs text-muted-foreground">
                 Deleted {formatDate(item.deletedAt)}
@@ -110,13 +107,10 @@
                 }}
               >
                 <input type="hidden" name="trashId" value={item.id} />
-                <button
-                  type="submit"
-                  class="flex items-center gap-1 rounded bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
-                >
+                <Button type="submit" size="sm">
                   <RotateCcw class="h-3 w-3" />
                   Restore
-                </button>
+                </Button>
               </form>
               <form
                 method="POST"
@@ -130,13 +124,10 @@
                 }}
               >
                 <input type="hidden" name="trashId" value={item.id} />
-                <button
-                  type="submit"
-                  class="flex items-center gap-1 rounded border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-destructive"
-                >
+                <Button type="submit" variant="outline" size="sm">
                   <AlertTriangle class="h-3 w-3" />
                   Delete Forever
-                </button>
+                </Button>
               </form>
             </div>
           </div>

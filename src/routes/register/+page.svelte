@@ -1,6 +1,9 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import { goto } from '$app/navigation';
+  import { Button } from '$lib/components/ui/button';
+  import { Input } from '$lib/components/ui/input';
+  import { Label } from '$lib/components/ui/label';
 
   let email = $state('');
   let username = $state('');
@@ -41,49 +44,22 @@
         </div>
       {/if}
 
-      <div>
-        <label for="email" class="block text-sm font-medium">Email</label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          required
-          bind:value={email}
-          class="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-        />
+      <div class="space-y-1.5">
+        <Label for="email">Email</Label>
+        <Input id="email" name="email" type="email" required bind:value={email} />
       </div>
 
-      <div>
-        <label for="username" class="block text-sm font-medium">Username</label>
-        <input
-          id="username"
-          name="username"
-          type="text"
-          required
-          bind:value={username}
-          class="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-        />
+      <div class="space-y-1.5">
+        <Label for="username">Username</Label>
+        <Input id="username" name="username" type="text" required bind:value={username} />
       </div>
 
-      <div>
-        <label for="password" class="block text-sm font-medium">Password</label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          required
-          minlength={8}
-          bind:value={password}
-          class="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-        />
+      <div class="space-y-1.5">
+        <Label for="password">Password</Label>
+        <Input id="password" name="password" type="password" required minlength={8} bind:value={password} />
       </div>
 
-      <button
-        type="submit"
-        class="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-      >
-        Register
-      </button>
+      <Button type="submit" class="w-full">Register</Button>
     </form>
 
     <p class="text-center text-sm text-muted-foreground">

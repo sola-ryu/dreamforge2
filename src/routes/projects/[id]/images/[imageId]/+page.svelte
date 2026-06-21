@@ -4,6 +4,12 @@
   import { goto } from '$app/navigation';
   import { ArrowLeft, Save, Trash2, Link2, Unlink, Image, ExternalLink } from '@lucide/svelte';
   import { ENTITY_LABELS } from '$lib/entityFields';
+  import { Button } from '$lib/components/ui/button';
+  import { Input } from '$lib/components/ui/input';
+  import { Label } from '$lib/components/ui/label';
+  import { Badge } from '$lib/components/ui/badge';
+  import { Textarea } from '$lib/components/ui/textarea';
+  import { Combobox } from '$lib/components/ui/combobox';
 
   let editing = $state(false);
   let caption = $state($page.data?.image?.caption || '');
@@ -45,35 +51,18 @@
       <h1 class="text-2xl font-bold">{$page.data?.image?.originalName || 'Image'}</h1>
       <div class="flex flex-wrap gap-2">
         {#if editing}
-          <button
-            form="edit-form"
-            type="submit"
-            class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
+          <Button form="edit-form" type="submit">
             <Save class="h-4 w-4" />
             Save
-          </button>
-          <button
-            class="rounded-lg border border-border px-4 py-2 text-sm hover:bg-secondary"
-            onclick={() => (editing = false)}
-          >
-            Cancel
-          </button>
+          </Button>
+          <Button variant="outline" onclick={() => (editing = false)}>Cancel</Button>
         {:else}
-          <button
-            class="rounded-lg border border-border px-4 py-2 text-sm hover:bg-secondary"
-            onclick={() => (editing = true)}
-          >
-            Edit Details
-          </button>
+          <Button variant="outline" onclick={() => (editing = true)}>Edit Details</Button>
           <form method="POST" action="?/delete" use:enhance>
-            <button
-              type="submit"
-              class="flex items-center gap-2 rounded-lg border border-destructive/50 px-4 py-2 text-sm text-destructive hover:bg-destructive/10"
-            >
+            <Button type="submit" variant="destructive">
               <Trash2 class="h-4 w-4" />
               Delete
-            </button>
+            </Button>
           </form>
         {/if}
       </div>
@@ -102,28 +91,26 @@
     >
       <h2 class="mb-3 text-sm font-medium">Details</h2>
       <div class="space-y-3">
-        <div>
-          <label for="caption" class="block text-xs text-muted-foreground mb-1">Caption</label>
-          <input
+        <div class="space-y-1">
+          <Label for="caption" class="text-xs text-muted-foreground">Caption</Label>
+          <Input
             id="caption"
             name="caption"
             type="text"
             disabled={!editing}
             bind:value={caption}
-            class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
             placeholder="Add a caption..."
           />
         </div>
-        <div>
-          <label for="altText" class="block text-xs text-muted-foreground mb-1">Alt Text</label>
-          <textarea
+        <div class="space-y-1">
+          <Label for="altText" class="text-xs text-muted-foreground">Alt Text</Label>
+          <Textarea
             id="altText"
             name="altText"
-            rows={2}
             disabled={!editing}
             bind:value={altText}
-            class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-            placeholder="Describe the image for accessibility..."></textarea>
+            placeholder="Describe the image for accessibility..."
+          />
         </div>
         <div class="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
           <div>
@@ -159,13 +146,10 @@
     <div class="rounded-lg border border-border bg-card p-4">
       <div class="mb-3 flex items-center justify-between">
         <h2 class="text-sm font-medium">Linked Entities</h2>
-        <button
-          class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-          onclick={() => (showLinkPicker = !showLinkPicker)}
-        >
+        <Button variant="ghost" size="xs" class="text-muted-foreground hover:text-foreground" onclick={() => (showLinkPicker = !showLinkPicker)}>
           <Link2 class="h-3 w-3" />
           Link
-        </button>
+        </Button>
       </div>
 
       {#if showLinkPicker}
@@ -183,22 +167,17 @@
           }}
           class="mb-3 flex gap-2"
         >
-          <select
+          <Combobox
             name="entityId"
             bind:value={selectedEntityId}
-            required
-            class="flex-1 rounded border border-input bg-background px-2 py-1.5 text-xs"
-          >
-            <option value="">Select entity...</option>
-            {#each unlinkedEntities() as e}
-              <option value={e.id}
-                >{ENTITY_LABELS[e.type as keyof typeof ENTITY_LABELS] || e.type}: {e.name}</option
-              >
-            {/each}
-          </select>
-          <button type="submit" class="rounded bg-primary px-2 py-1 text-xs text-primary-foreground"
-            >Add</button
-          >
+            options={unlinkedEntities().map((e) => ({
+              value: e.id,
+              label: `${ENTITY_LABELS[e.type as keyof typeof ENTITY_LABELS] || e.type}: ${e.name}`
+            }))}
+            placeholder="Select entity..."
+            class="flex-1"
+          />
+          <Button type="submit" size="sm">Add</Button>
         </form>
       {/if}
 
@@ -211,7 +190,7 @@
               href="/projects/{$page.params.id}/{entity.type}s/{entity.id}"
               class="flex items-center gap-1 text-xs hover:underline"
             >
-              <span class="rounded bg-secondary px-1 text-xs">{entity.type}</span>
+              <Badge variant="secondary">{entity.type}</Badge>
               {entity.name}
             </a>
             <form
@@ -224,13 +203,9 @@
               }}
             >
               <input type="hidden" name="entityId" value={entity.id} />
-              <button
-                type="submit"
-                class="rounded p-0.5 text-muted-foreground hover:text-destructive"
-                aria-label="Unlink entity"
-              >
+              <Button type="submit" variant="ghost" size="icon-xs" class="text-muted-foreground hover:text-destructive" aria-label="Unlink entity">
                 <Unlink class="h-3 w-3" />
-              </button>
+              </Button>
             </form>
           </div>
         {/each}

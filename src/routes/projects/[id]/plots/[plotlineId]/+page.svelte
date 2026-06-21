@@ -3,6 +3,8 @@
   import { enhance } from '$app/forms';
   import { ArrowLeft, Save } from '@lucide/svelte';
   import PlotTimeline from '$lib/components/PlotTimeline.svelte';
+  import { Button } from '$lib/components/ui/button';
+  import { Badge } from '$lib/components/ui/badge';
 
   let isSaving = $state(false);
 
@@ -55,18 +57,12 @@
       />
       <div class="flex items-center gap-2">
         {#if $page.data?.plotline?.template}
-          <span class="rounded-full bg-secondary px-3 py-1 text-xs text-muted-foreground">
-            {$page.data.plotline.template}
-          </span>
+          <Badge variant="secondary">{$page.data.plotline.template}</Badge>
         {/if}
-        <button
-          type="submit"
-          class="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:opacity-90"
-          onclick={() => (isSaving = true)}
-        >
+        <Button type="submit" onclick={() => (isSaving = true)}>
           <Save class="h-4 w-4" />
           Save
-        </button>
+        </Button>
       </div>
     </div>
   </form>
