@@ -30,6 +30,7 @@
     'sibling',
     'mentor',
     'student',
+    'friend',
     'lover',
     'rival',
     'located_in',

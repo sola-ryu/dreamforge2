@@ -1,8 +1,11 @@
 <script lang="ts">
-  import { Popover, Command } from 'bits-ui';
-  import { Button } from '$lib/components/ui/button';
-  import { Check, ChevronsUpDown, Search } from '@lucide/svelte';
-  import { cn } from '$lib/utils.js';
+  import CheckIcon from "@lucide/svelte/icons/check";
+  import ChevronsUpDownIcon from "@lucide/svelte/icons/chevrons-up-down";
+  import { tick } from "svelte";
+  import * as Command from "$lib/components/ui/command";
+  import * as Popover from "$lib/components/ui/popover";
+  import { Button } from "$lib/components/ui/button";
+  import { cn } from "$lib/utils.js";
 
   let {
     options = [],
@@ -27,9 +30,16 @@
   } = $props();
 
   let open = $state(false);
-  let searchValue = $state('');
+  let triggerRef = $state<HTMLButtonElement>(null!);
 
-  let selectedLabel = $derived(options.find((o) => o.value === value)?.label ?? '');
+  let selectedValue = $derived(options.find((o) => o.value === value)?.label ?? '');
+
+  function closeAndFocusTrigger() {
+    open = false;
+    tick().then(() => {
+      triggerRef.focus();
+    });
+  }
 
   function handleSelect(val: string) {
     if (onSelect) {
@@ -37,8 +47,7 @@
     } else {
       value = val;
     }
-    open = false;
-    searchValue = '';
+    closeAndFocusTrigger();
   }
 </script>
 
@@ -47,9 +56,10 @@
 {/if}
 
 <Popover.Root bind:open>
-  <Popover.Trigger>
+  <Popover.Trigger bind:ref={triggerRef}>
     {#snippet child({ props })}
       <Button
+        {...props}
         variant="outline"
         role="combobox"
         aria-expanded={open}
@@ -59,42 +69,25 @@
           className
         )}
         {disabled}
-        {...props}
       >
-        {selectedLabel || placeholder}
-        <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        {selectedValue || placeholder}
+        <ChevronsUpDownIcon class="ml-2 h-4 w-4 shrink-0 opacity-50" />
       </Button>
     {/snippet}
   </Popover.Trigger>
-  <Popover.Content
-    class="z-50 min-w-[8rem] overflow-hidden rounded-2xl border border-border bg-popover p-0 text-popover-foreground shadow-md outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 w-[var(--bits-popover-anchor-width)]"
-    align="start"
-    sideOffset={4}
-  >
-    <Command.Root
-      class="flex h-full w-full flex-col overflow-hidden rounded-2xl bg-popover text-popover-foreground"
-    >
-      <div class="flex items-center border-b border-border px-3">
-        <Search class="mr-2 h-4 w-4 shrink-0 opacity-50" />
-        <Command.Input
-          bind:value={searchValue}
-          placeholder={searchPlaceholder}
-          class="flex h-10 w-full bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
-        />
-      </div>
-      <Command.List class="max-h-[300px] overflow-y-auto overflow-x-hidden p-1">
-        <Command.Empty class="py-6 text-center text-sm text-muted-foreground">
-          {emptyText}
-        </Command.Empty>
-        <Command.Group>
-          {#each options as option}
+  <Popover.Content class="p-0" align="start" sideOffset={4}>
+    <Command.Root>
+      <Command.Input placeholder={searchPlaceholder} />
+      <Command.List>
+        <Command.Empty>{emptyText}</Command.Empty>
+        <Command.Group value="options">
+          {#each options as option (option.value)}
             <Command.Item
-              value={option.value}
+              value={option.label}
               onSelect={() => handleSelect(option.value)}
-              class="relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-1.5 text-sm outline-none data-[selected]:bg-accent data-[selected]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
             >
-              <Check
-                class={cn('h-4 w-4 shrink-0', value === option.value ? 'opacity-100' : 'opacity-0')}
+              <CheckIcon
+                class={cn('h-4 w-4 shrink-0', value !== option.value && 'text-transparent')}
               />
               {option.label}
             </Command.Item>
