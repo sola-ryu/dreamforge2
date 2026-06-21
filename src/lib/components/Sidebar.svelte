@@ -23,7 +23,7 @@
 
 <Sidebar.Root collapsible="icon">
   <Sidebar.Header>
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2 [&>span:last-child]:truncate">
       <Sidebar.Trigger />
       <span class="font-semibold">DreamForge</span>
     </div>
