@@ -285,12 +285,7 @@
                     class="rounded border-input"
                   />
                 {:else if field.type === 'date'}
-                  <Input
-                    id="cf-{field.key}"
-                    name={field.key}
-                    type="date"
-                    class="mt-1"
-                  />
+                  <Input id="cf-{field.key}" name={field.key} type="date" class="mt-1" />
                 {:else if field.type === 'textarea' || field.type === 'markdown'}
                   <Textarea
                     id="cf-{field.key}"
@@ -313,7 +308,9 @@
         {/if}
         <div class="flex gap-2">
           <Button type="submit">Create</Button>
-          <Button type="button" variant="outline" onclick={() => (showCreate = false)}>Cancel</Button>
+          <Button type="button" variant="outline" onclick={() => (showCreate = false)}
+            >Cancel</Button
+          >
         </div>
       </form>
     </div>

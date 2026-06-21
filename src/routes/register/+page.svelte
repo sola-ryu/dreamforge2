@@ -56,7 +56,14 @@
 
       <div class="space-y-1.5">
         <Label for="password">Password</Label>
-        <Input id="password" name="password" type="password" required minlength={8} bind:value={password} />
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          required
+          minlength={8}
+          bind:value={password}
+        />
       </div>
 
       <Button type="submit" class="w-full">Register</Button>

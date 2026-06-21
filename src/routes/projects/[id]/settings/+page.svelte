@@ -125,7 +125,13 @@
             </div>
             <form method="POST" action="?/deleteField" use:enhance>
               <input type="hidden" name="fieldId" value={field.id} />
-              <Button type="submit" variant="ghost" size="icon-sm" class="text-destructive hover:text-destructive" aria-label="Delete field">
+              <Button
+                type="submit"
+                variant="ghost"
+                size="icon-sm"
+                class="text-destructive hover:text-destructive"
+                aria-label="Delete field"
+              >
                 <Trash2 class="h-4 w-4" />
               </Button>
             </form>
@@ -206,7 +212,9 @@
 
         {#if newFieldType === 'entityRef'}
           <div class="space-y-1">
-            <Label for="ref-entity-type" class="text-xs text-muted-foreground">Referenced Entity Type</Label>
+            <Label for="ref-entity-type" class="text-xs text-muted-foreground"
+              >Referenced Entity Type</Label
+            >
             <select
               id="ref-entity-type"
               name="refEntityType"
@@ -301,7 +309,8 @@
           class="flex flex-col gap-3 sm:flex-row sm:items-end"
         >
           <div class="flex-1 space-y-1">
-            <Label for="member-query" class="text-xs text-muted-foreground">Email or username</Label>
+            <Label for="member-query" class="text-xs text-muted-foreground">Email or username</Label
+            >
             <Input
               id="member-query"
               name="query"

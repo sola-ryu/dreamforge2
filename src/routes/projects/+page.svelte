@@ -54,7 +54,9 @@
         </div>
         <div class="flex gap-2">
           <Button type="submit">Create</Button>
-          <Button type="button" variant="outline" onclick={() => (showCreate = false)}>Cancel</Button>
+          <Button type="button" variant="outline" onclick={() => (showCreate = false)}
+            >Cancel</Button
+          >
         </div>
       </form>
     </div>
@@ -106,7 +108,12 @@
               {/if}
             </Button>
           </form>
-          <Button href="/projects/{project.id}" variant="ghost" size="icon-sm" aria-label="Open project">
+          <Button
+            href="/projects/{project.id}"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Open project"
+          >
             <ExternalLink class="h-4 w-4" />
           </Button>
         </div>
@@ -131,7 +138,12 @@
                 Modified {formatDate(project.modifiedAt)}
               </p>
             </div>
-            <Button href="/projects/{project.id}" variant="ghost" size="icon-sm" aria-label="Open project">
+            <Button
+              href="/projects/{project.id}"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Open project"
+            >
               <ExternalLink class="h-4 w-4" />
             </Button>
           </div>

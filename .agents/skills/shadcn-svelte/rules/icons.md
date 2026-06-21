@@ -12,8 +12,8 @@ Add `data-icon="inline-start"` (prefix) or `data-icon="inline-end"` (suffix) to 
 
 ```svelte
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button";
-  import SearchIcon from "@lucide/svelte/icons/search";
+  import { Button } from '$lib/components/ui/button';
+  import SearchIcon from '@lucide/svelte/icons/search';
 </script>
 
 <Button>
@@ -26,9 +26,9 @@ Add `data-icon="inline-start"` (prefix) or `data-icon="inline-end"` (suffix) to 
 
 ```svelte
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button";
-  import SearchIcon from "@lucide/svelte/icons/search";
-  import ArrowRightIcon from "@lucide/svelte/icons/arrow-right";
+  import { Button } from '$lib/components/ui/button';
+  import SearchIcon from '@lucide/svelte/icons/search';
+  import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
 </script>
 
 <Button>
@@ -52,8 +52,8 @@ Components handle icon sizing via CSS. Don't add `size-4`, `w-4 h-4`, or other s
 
 ```svelte
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button";
-  import SearchIcon from "@lucide/svelte/icons/search";
+  import { Button } from '$lib/components/ui/button';
+  import SearchIcon from '@lucide/svelte/icons/search';
 </script>
 
 <Button>
@@ -66,8 +66,8 @@ Components handle icon sizing via CSS. Don't add `size-4`, `w-4 h-4`, or other s
 
 ```svelte
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button";
-  import SearchIcon from "@lucide/svelte/icons/search";
+  import { Button } from '$lib/components/ui/button';
+  import SearchIcon from '@lucide/svelte/icons/search';
 </script>
 
 <Button>
@@ -95,8 +95,8 @@ Use a component reference, not a string key to a lookup map.
 
 ```svelte
 <script lang="ts">
-  import type { Component } from "svelte";
-  import CheckIcon from "@lucide/svelte/icons/check";
+  import type { Component } from 'svelte';
+  import CheckIcon from '@lucide/svelte/icons/check';
 
   let { Icon }: { Icon: Component } = $props();
 </script>

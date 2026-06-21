@@ -146,7 +146,12 @@
     <div class="rounded-lg border border-border bg-card p-4">
       <div class="mb-3 flex items-center justify-between">
         <h2 class="text-sm font-medium">Linked Entities</h2>
-        <Button variant="ghost" size="xs" class="text-muted-foreground hover:text-foreground" onclick={() => (showLinkPicker = !showLinkPicker)}>
+        <Button
+          variant="ghost"
+          size="xs"
+          class="text-muted-foreground hover:text-foreground"
+          onclick={() => (showLinkPicker = !showLinkPicker)}
+        >
           <Link2 class="h-3 w-3" />
           Link
         </Button>
@@ -170,7 +175,7 @@
           <Combobox
             name="entityId"
             bind:value={selectedEntityId}
-            options={unlinkedEntities().map((e) => ({
+            options={unlinkedEntities().map((e: { id: string; type: string; name: string }) => ({
               value: e.id,
               label: `${ENTITY_LABELS[e.type as keyof typeof ENTITY_LABELS] || e.type}: ${e.name}`
             }))}
@@ -203,7 +208,13 @@
               }}
             >
               <input type="hidden" name="entityId" value={entity.id} />
-              <Button type="submit" variant="ghost" size="icon-xs" class="text-muted-foreground hover:text-destructive" aria-label="Unlink entity">
+              <Button
+                type="submit"
+                variant="ghost"
+                size="icon-xs"
+                class="text-muted-foreground hover:text-destructive"
+                aria-label="Unlink entity"
+              >
                 <Unlink class="h-3 w-3" />
               </Button>
             </form>

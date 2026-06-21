@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import db from './db';
-import { projectImages, imageEntityLinks } from './schema';
+import { projectImages, imageEntityLinks, entities } from './schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { generateId } from '$lib/utils';
@@ -114,9 +114,19 @@ export function listProjectImages(projectId: string, projectPath: string): Proje
 
   const linkMap = new Map<string, { id: string; name: string; type: string }[]>();
 
-  for (const link of links) {
-    if (!linkMap.has(link.imageId)) {
-      linkMap.set(link.imageId, []);
+  if (links.length > 0) {
+    const entityIds = [...new Set(links.map((l) => l.entityId))];
+    const entityRows = drizzleDb
+      .select({ id: entities.id, name: entities.name, type: entities.type })
+      .from(entities)
+      .where(inArray(entities.id, entityIds))
+      .all();
+    const entityMap = new Map(entityRows.map((e) => [e.id, e]));
+
+    for (const link of links) {
+      if (!linkMap.has(link.imageId)) linkMap.set(link.imageId, []);
+      const entity = entityMap.get(link.entityId);
+      if (entity) linkMap.get(link.imageId)!.push(entity);
     }
   }
 
@@ -154,6 +164,21 @@ export function getProjectImage(
     .where(and(eq(imageEntityLinks.imageId, imageId), eq(imageEntityLinks.projectId, projectId)))
     .all();
 
+  let linkedEntities: { id: string; name: string; type: string }[] = [];
+  if (links.length > 0) {
+    const entityRows = drizzleDb
+      .select({ id: entities.id, name: entities.name, type: entities.type })
+      .from(entities)
+      .where(
+        inArray(
+          entities.id,
+          links.map((l) => l.entityId)
+        )
+      )
+      .all();
+    linkedEntities = entityRows;
+  }
+
   return {
     id: row.id,
     projectId: row.projectId,
@@ -165,7 +190,7 @@ export function getProjectImage(
     altText: row.altText,
     createdAt: row.createdAt,
     url: `/api/projects/${projectId}/images/${row.filename}`,
-    linkedEntities: [] // populated separately
+    linkedEntities
   };
 }
 

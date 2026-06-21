@@ -53,7 +53,7 @@ Class-based toggle via `.dark` on the root element. In SvelteKit, use [mode-watc
 
 ```svelte
 <script lang="ts">
-  import { ModeWatcher } from "mode-watcher";
+  import { ModeWatcher } from 'mode-watcher';
   let { children } = $props();
 </script>
 
@@ -109,18 +109,16 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        warning: "oklch(var(--warning) / <alpha-value>)",
-        "warning-foreground":
-          "oklch(var(--warning-foreground) / <alpha-value>)",
-      },
-    },
-  },
+        warning: 'oklch(var(--warning) / <alpha-value>)',
+        'warning-foreground': 'oklch(var(--warning-foreground) / <alpha-value>)'
+      }
+    }
+  }
 };
 ```
 
 ```svelte
-<!-- 3. Use in components. -->
-<div class="bg-warning text-warning-foreground">Warning</div>
+<!-- 3. Use in components. --><div class="bg-warning text-warning-foreground">Warning</div>
 ```
 
 ---
@@ -141,7 +139,7 @@ Prefer these approaches in order:
 
 ```svelte
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button";
+  import { Button } from '$lib/components/ui/button';
 </script>
 
 <Button variant="outline" size="sm">Click</Button>
@@ -151,7 +149,7 @@ Prefer these approaches in order:
 
 ```svelte
 <script lang="ts">
-  import * as Card from "$lib/components/ui/card";
+  import * as Card from '$lib/components/ui/card';
 </script>
 
 <Card.Root class="mx-auto max-w-md">
@@ -174,7 +172,7 @@ Compose shadcn-svelte primitives into higher-level `.svelte` files:
 
 ```svelte
 <script lang="ts">
-  import * as AlertDialog from "$lib/components/ui/alert-dialog";
+  import * as AlertDialog from '$lib/components/ui/alert-dialog';
   let { title, description, onConfirm, children } = $props();
   let open = $state(false);
 </script>

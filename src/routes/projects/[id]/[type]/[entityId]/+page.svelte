@@ -280,10 +280,14 @@
         <div class="mt-3 flex gap-2">
           <Combobox
             bind:value={selectedImageId}
-            options={($page.data?.projectImages || []).map((img: any) => ({
-              value: img.id,
-              label: img.originalName
-            }))}
+            options={($page.data?.projectImages || [])
+              .filter(
+                (img: any) => !($page.data?.entityImages || []).some((ei: any) => ei.id === img.id)
+              )
+              .map((img: any) => ({
+                value: img.id,
+                label: img.originalName
+              }))}
             placeholder="Select an image..."
             class="flex-1"
           />
@@ -384,20 +388,27 @@
           />
         </div>
         <div class="space-y-1">
-          <Label for="convertChapter" class="text-xs text-muted-foreground">Chapter (optional)</Label>
+          <Label for="convertChapter" class="text-xs text-muted-foreground"
+            >Chapter (optional)</Label
+          >
           <Combobox
             name="chapterId"
             bind:value={convertChapterId}
             options={[
               { value: '', label: 'New chapter...' },
-              ...(($page.data?.stories || []).find((s: any) => s.id === convertStoryId)?.chapters || []).map((ch: any) => ({ value: ch.id, label: ch.title }))
+              ...(
+                ($page.data?.stories || []).find((s: any) => s.id === convertStoryId)?.chapters ||
+                []
+              ).map((ch: any) => ({ value: ch.id, label: ch.title }))
             ]}
             placeholder="New chapter..."
           />
         </div>
         <div class="flex flex-wrap gap-2">
           <Button type="submit">Convert</Button>
-          <Button type="button" variant="outline" onclick={() => (showConvert = false)}>Cancel</Button>
+          <Button type="button" variant="outline" onclick={() => (showConvert = false)}
+            >Cancel</Button
+          >
         </div>
       </form>
     </div>

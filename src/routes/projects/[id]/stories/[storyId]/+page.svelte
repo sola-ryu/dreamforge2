@@ -236,7 +236,12 @@
           />
           <div class="flex gap-1">
             <Button type="submit" size="xs">Create</Button>
-            <Button type="button" variant="outline" size="xs" onclick={() => (showCreateChapter = false)}>Cancel</Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              onclick={() => (showCreateChapter = false)}>Cancel</Button
+            >
           </div>
         </form>
       </div>
@@ -306,7 +311,12 @@
                     <form method="POST" action="?/deleteScene">
                       <input type="hidden" name="chapterId" value={chapter.id} />
                       <input type="hidden" name="sceneId" value={scene.id} />
-                      <Button type="submit" variant="ghost" size="icon-xs" aria-label="Delete scene">
+                      <Button
+                        type="submit"
+                        variant="ghost"
+                        size="icon-xs"
+                        aria-label="Delete scene"
+                      >
                         <Trash2 class="h-3 w-3 text-destructive" />
                       </Button>
                     </form>
@@ -326,7 +336,12 @@
                 }}
               >
                 <input type="hidden" name="chapterId" value={chapter.id} />
-                <Button type="submit" variant="ghost" size="xs" class="text-muted-foreground hover:text-foreground">
+                <Button
+                  type="submit"
+                  variant="ghost"
+                  size="xs"
+                  class="text-muted-foreground hover:text-foreground"
+                >
                   <Plus class="h-3 w-3" /> Add Scene
                 </Button>
               </form>

@@ -61,7 +61,9 @@
         </div>
         <div class="flex gap-2">
           <Button type="submit">Create</Button>
-          <Button type="button" variant="outline" onclick={() => (showCreate = false)}>Cancel</Button>
+          <Button type="button" variant="outline" onclick={() => (showCreate = false)}
+            >Cancel</Button
+          >
         </div>
       </form>
     </div>

@@ -77,7 +77,9 @@
       Upload a CSV file to create or update {$page.data?.entityType
         ? ENTITY_PLURAL[$page.data.entityType as EntityType].toLowerCase()
         : 'entities'}. Rows are matched by ID first, then by name.
-      <Button variant="link" class="h-auto p-0 text-sm" onclick={downloadCsv}>Download a CSV template</Button>.
+      <Button variant="link" class="h-auto p-0 text-sm" onclick={downloadCsv}
+        >Download a CSV template</Button
+      >.
     </p>
   </div>
 
@@ -152,9 +154,15 @@
           <table class="w-full text-sm">
             <thead>
               <tr class="border-b border-border">
-                <th class="px-2 py-1 text-left text-xs text-muted-foreground font-medium">CSV Column</th>
-                <th class="px-2 py-1 text-left text-xs text-muted-foreground font-medium">Map to Field</th>
-                <th class="px-2 py-1 text-left text-xs text-muted-foreground font-medium">Preview</th>
+                <th class="px-2 py-1 text-left text-xs text-muted-foreground font-medium"
+                  >CSV Column</th
+                >
+                <th class="px-2 py-1 text-left text-xs text-muted-foreground font-medium"
+                  >Map to Field</th
+                >
+                <th class="px-2 py-1 text-left text-xs text-muted-foreground font-medium"
+                  >Preview</th
+                >
               </tr>
             </thead>
             <tbody>
@@ -211,7 +219,9 @@
                       </div>
                     {/if}
                   </td>
-                  <td class="px-2 py-1.5 text-xs text-muted-foreground align-top pt-3 max-w-[200px]">
+                  <td
+                    class="px-2 py-1.5 text-xs text-muted-foreground align-top pt-3 max-w-[200px]"
+                  >
                     <div class="space-y-0.5">
                       {#each preview.slice(0, 3) as row}
                         <div class="truncate">{row[header] || ''}</div>

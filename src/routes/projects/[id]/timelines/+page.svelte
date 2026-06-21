@@ -243,7 +243,12 @@
     <div class="mb-6 rounded-lg border border-border bg-card p-4">
       <div class="mb-3 flex items-center justify-between">
         <h2 class="text-sm font-semibold">Calendar Settings</h2>
-        <Button variant="ghost" size="icon-sm" onclick={() => (showCalendarSettings = false)} aria-label="Close calendar settings">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onclick={() => (showCalendarSettings = false)}
+          aria-label="Close calendar settings"
+        >
           <X class="h-4 w-4" />
         </Button>
       </div>
@@ -254,8 +259,16 @@
             <Input id="calendarName" name="calendarName" type="text" value={calendar.name} />
           </div>
           <div class="space-y-1">
-            <Label for="months" class="text-xs text-muted-foreground">Month Names (comma-separated)</Label>
-            <Input id="months" name="months" type="text" value={calendar.months.join(', ')} class="font-mono" />
+            <Label for="months" class="text-xs text-muted-foreground"
+              >Month Names (comma-separated)</Label
+            >
+            <Input
+              id="months"
+              name="months"
+              type="text"
+              value={calendar.months.join(', ')}
+              class="font-mono"
+            />
           </div>
         </div>
         <Button type="submit">
@@ -313,7 +326,14 @@
         </div>
         <div class="space-y-1">
           <Label for="new-title" class="text-xs text-muted-foreground">Title</Label>
-          <Input id="new-title" name="title" type="text" required bind:value={newTitle} placeholder="Event title..." />
+          <Input
+            id="new-title"
+            name="title"
+            type="text"
+            required
+            bind:value={newTitle}
+            placeholder="Event title..."
+          />
         </div>
         <div class="space-y-1">
           <Label for="new-description" class="text-xs text-muted-foreground">Description</Label>
@@ -593,7 +613,14 @@
                 </div>
                 <div class="space-y-1">
                   <Label for="edit-day" class="text-xs text-muted-foreground">Day</Label>
-                  <Input id="edit-day" name="day" type="number" min="1" max="31" bind:value={editDay} />
+                  <Input
+                    id="edit-day"
+                    name="day"
+                    type="number"
+                    min="1"
+                    max="31"
+                    bind:value={editDay}
+                  />
                 </div>
                 <div class="space-y-1">
                   <Label for="edit-era" class="text-xs text-muted-foreground">Era</Label>
@@ -605,16 +632,16 @@
                 <Input id="edit-title" name="title" type="text" required bind:value={editTitle} />
               </div>
               <div class="space-y-1">
-                <Label for="edit-description" class="text-xs text-muted-foreground">Description</Label>
-                <Textarea
-                  id="edit-description"
-                  name="description"
-                  bind:value={editDescription}
-                />
+                <Label for="edit-description" class="text-xs text-muted-foreground"
+                  >Description</Label
+                >
+                <Textarea id="edit-description" name="description" bind:value={editDescription} />
               </div>
               <div class="grid grid-cols-2 gap-3">
                 <div class="space-y-1">
-                  <Label for="edit-significance" class="text-xs text-muted-foreground">Significance</Label>
+                  <Label for="edit-significance" class="text-xs text-muted-foreground"
+                    >Significance</Label
+                  >
                   <select
                     id="edit-significance"
                     name="significance"
@@ -627,14 +654,17 @@
                   </select>
                 </div>
                 <div class="space-y-1">
-                  <Label for="edit-entities" class="text-xs text-muted-foreground">Linked Entities</Label>
+                  <Label for="edit-entities" class="text-xs text-muted-foreground"
+                    >Linked Entities</Label
+                  >
                   <Combobox
                     options={entities
                       .filter((e) => !editEntityIds.includes(e.id))
                       .map((e) => ({ value: e.id, label: `${e.name} (${e.type})` }))}
                     placeholder="Add entity..."
                     onSelect={(val) => {
-                      if (val && !editEntityIds.includes(val)) editEntityIds = [...editEntityIds, val];
+                      if (val && !editEntityIds.includes(val))
+                        editEntityIds = [...editEntityIds, val];
                     }}
                   />
                   {#if editEntityIds.length > 0}
@@ -667,7 +697,12 @@
                   Save
                 </Button>
                 <Button type="button" variant="outline" onclick={closeEdit}>Cancel</Button>
-                <Button type="submit" formaction="?/deleteEvent" variant="destructive" class="ml-auto">
+                <Button
+                  type="submit"
+                  formaction="?/deleteEvent"
+                  variant="destructive"
+                  class="ml-auto"
+                >
                   <Trash2 class="h-4 w-4" />
                   Delete
                 </Button>
@@ -718,7 +753,12 @@
                 {/if}
               </div>
               <div class="flex shrink-0 items-center gap-1 ml-3">
-                <Button variant="ghost" size="icon-sm" onclick={() => openEdit(event)} aria-label="Edit event">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onclick={() => openEdit(event)}
+                  aria-label="Edit event"
+                >
                   <Edit class="h-4 w-4" />
                 </Button>
                 <form method="POST" action="?/deleteEvent" use:enhance>
