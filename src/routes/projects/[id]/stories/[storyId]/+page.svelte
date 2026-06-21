@@ -356,6 +356,22 @@
             if (result.type === 'success') {
               isSaving = false;
               await update();
+              if (activeSceneId) {
+                const chapters = $page.data?.chapters || [];
+                for (const ch of chapters) {
+                  const scene = (ch.scenes || []).find((s: any) => s.id === activeSceneId);
+                  if (scene) {
+                    sceneTitle = scene.title || '';
+                    sceneBody = scene.body || '';
+                    sceneNarrator = scene.narrator || '';
+                    sceneTime = scene.time || '';
+                    scenePlace = scene.place || '';
+                    sceneParticipants = (scene.participants || []).join(', ');
+                    sceneBackgroundImage = scene.backgroundImage || '';
+                    break;
+                  }
+                }
+              }
             }
           };
         }}

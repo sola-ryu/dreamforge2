@@ -330,7 +330,7 @@
             onUpdate={(md) => (body = md)}
           />
         {:else}
-          <div class="mt-4 prose prose-sm dark:prose-invert max-w-none">
+          <div class="mt-4 prose prose-sm  max-w-none">
             {@html marked.parse(body || '')}
           </div>
         {/if}
@@ -344,7 +344,7 @@
           >{body}</textarea
         >
         {#if !editing}
-          <div class="mt-4 prose prose-sm dark:prose-invert max-w-none">
+          <div class="mt-4 prose prose-sm  max-w-none">
             {@html $page.data?.entity?.body || ''}
           </div>
         {/if}

@@ -442,7 +442,7 @@
     </div>
   {:else}
     <!-- Table layout -->
-    <div class="overflow-x-auto rounded-lg border border-border">
+    <div class="rounded-lg border border-border">
       {#if entities.length === 0}
         <p class="py-12 text-center text-muted-foreground">
           No {$page.data?.entityType
@@ -450,8 +450,8 @@
             : 'entities'} yet.
         </p>
       {:else}
-        <table class="w-full text-sm">
-          <thead>
+        <table class="w-full text-sm min-w-max">
+          <thead class="sticky top-0 z-10 bg-background">
             <tr class="border-b border-border bg-muted/40">
               <th class="px-3 py-2 text-left font-medium">Name</th>
               <th class="px-3 py-2 text-left font-medium">Status</th>

@@ -2,6 +2,8 @@
   import { page } from '$app/stores';
   import { enhance } from '$app/forms';
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import * as d3 from 'd3';
   import type { EntityType } from '$lib/types';
   import { Plus, Trash2, Share2 } from '@lucide/svelte';
 
@@ -32,98 +34,191 @@
     'used_by'
   ];
 
+  const entityTypeOrder: EntityType[] = [
+    'character',
+    'organization',
+    'location',
+    'culture',
+    'species',
+    'item',
+    'note'
+  ];
+
   let svgEl: SVGSVGElement;
+
+  function entitiesByType(entities: { id: string; name: string; type: EntityType }[]) {
+    const grouped = new Map<EntityType, typeof entities>();
+    for (const t of entityTypeOrder) grouped.set(t, []);
+    for (const e of entities) {
+      grouped.get(e.type as EntityType)?.push(e);
+    }
+    return grouped;
+  }
 
   function buildGraph() {
     if (!svgEl || !$page.data?.relations) return;
     const relations = $page.data.relations;
-    const entities: { id: string; name: string; type: EntityType }[] = $page.data.entities || [];
-    const entityMap = new Map(entities.map((e) => [e.id, e]));
+    const allEntities: { id: string; name: string; type: EntityType }[] =
+      $page.data.entities || [];
+    const entityMap = new Map(allEntities.map((e) => [e.id, e]));
+    const projectId = $page.params.id;
 
-    const nodes = new Map<
-      string,
-      { id: string; name: string; type: string; x: number; y: number }
-    >();
-    const edges: Array<{ source: string; target: string; label: string }> = [];
+    type SimNode = d3.SimulationNodeDatum & {
+      id: string;
+      name: string;
+      type: string;
+    };
+    type SimLink = d3.SimulationLinkDatum<SimNode> & { label: string };
+
+    const nodeMap = new Map<string, SimNode>();
+    const links: SimLink[] = [];
 
     for (const rel of relations) {
-      if (!nodes.has(rel.sourceId) && entityMap.has(rel.sourceId)) {
+      if (!nodeMap.has(rel.sourceId) && entityMap.has(rel.sourceId)) {
         const e = entityMap.get(rel.sourceId)!;
-        nodes.set(rel.sourceId, {
-          id: e.id,
-          name: e.name,
-          type: e.type,
-          x: Math.random() * 600,
-          y: Math.random() * 400
-        });
+        nodeMap.set(rel.sourceId, { id: e.id, name: e.name, type: e.type });
       }
-      if (!nodes.has(rel.targetId) && entityMap.has(rel.targetId)) {
+      if (!nodeMap.has(rel.targetId) && entityMap.has(rel.targetId)) {
         const e = entityMap.get(rel.targetId)!;
-        nodes.set(rel.targetId, {
-          id: e.id,
-          name: e.name,
-          type: e.type,
-          x: Math.random() * 600,
-          y: Math.random() * 400
-        });
+        nodeMap.set(rel.targetId, { id: e.id, name: e.name, type: e.type });
       }
-      edges.push({
+      links.push({
         source: rel.sourceId,
         target: rel.targetId,
-        label: rel.label || rel.relationType
+        label: rel.label || rel.relationType.replace(/_/g, ' ')
       });
     }
 
-    const nodeArr = [...nodes.values()];
-
-    const svg = svgEl;
-    svg.innerHTML = '';
-
-    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-    defs.innerHTML = `<marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="hsl(var(--muted-foreground))" />
-    </marker>`;
-    svg.appendChild(defs);
-
-    for (const edge of edges) {
-      const src = nodes.get(edge.source);
-      const tgt = nodes.get(edge.target);
-      if (!src || !tgt) continue;
-      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line.setAttribute('x1', String(src.x + 50));
-      line.setAttribute('y1', String(src.y + 20));
-      line.setAttribute('x2', String(tgt.x + 50));
-      line.setAttribute('y2', String(tgt.y + 20));
-      line.setAttribute('stroke', 'hsl(var(--muted-foreground))');
-      line.setAttribute('stroke-width', '1.5');
-      line.setAttribute('marker-end', 'url(#arrowhead)');
-      svg.appendChild(line);
+    const nodes = [...nodeMap.values()];
+    if (nodes.length === 0) {
+      svgEl.innerHTML = '';
+      return;
     }
 
-    for (const node of nodeArr) {
-      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
+    const svgRect = svgEl.getBoundingClientRect();
+    const W = svgRect.width || 800;
+    const H = 450;
+    const nodeW = 100;
+    const nodeH = 36;
 
-      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      rect.setAttribute('width', '100');
-      rect.setAttribute('height', '40');
-      rect.setAttribute('rx', '8');
-      rect.setAttribute('fill', 'hsl(var(--card))');
-      rect.setAttribute('stroke', 'hsl(var(--border))');
-      rect.setAttribute('stroke-width', '1');
-      g.appendChild(rect);
+    svgEl.innerHTML = '';
 
-      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text.setAttribute('x', '50');
-      text.setAttribute('y', '20');
-      text.setAttribute('text-anchor', 'middle');
-      text.setAttribute('dominant-baseline', 'middle');
-      text.setAttribute('fill', 'hsl(var(--foreground))');
-      text.setAttribute('font-size', '11');
-      text.textContent = node.name.length > 15 ? node.name.slice(0, 15) + '...' : node.name;
-      g.appendChild(text);
+    const svg = d3.select(svgEl);
 
-      svg.appendChild(g);
+    const defs = svg.append('defs');
+    defs
+      .append('marker')
+      .attr('id', 'arrowhead')
+      .attr('markerWidth', '10')
+      .attr('markerHeight', '7')
+      .attr('refX', '10')
+      .attr('refY', '3.5')
+      .attr('orient', 'auto')
+      .append('polygon')
+      .attr('points', '0 0, 10 3.5, 0 7')
+      .attr('fill', 'hsl(var(--muted-foreground))');
+
+    const simulation = d3
+      .forceSimulation<SimNode>(nodes)
+      .force(
+        'link',
+        d3
+          .forceLink<SimNode, SimLink>(links)
+          .id((d) => d.id)
+          .distance(180)
+          .strength(0.8)
+      )
+      .force('charge', d3.forceManyBody<SimNode>().strength(-400))
+      .force('center', d3.forceCenter(W / 2, H / 2))
+      .force('collision', d3.forceCollide<SimNode>(80))
+      .stop();
+
+    for (let i = 0; i < 300; i++) simulation.tick();
+
+    const clamp = (val: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, val));
+    for (const n of nodes) {
+      n.x = clamp(n.x ?? W / 2, nodeW / 2 + 4, W - nodeW / 2 - 4);
+      n.y = clamp(n.y ?? H / 2, nodeH / 2 + 4, H - nodeH / 2 - 4);
+    }
+
+    const edgeGroup = svg.append('g');
+    const edgeLabelGroup = svg.append('g');
+    const nodeGroup = svg.append('g');
+
+    for (const link of links) {
+      const src = nodeMap.get(typeof link.source === 'string' ? link.source : (link.source as SimNode).id);
+      const tgt = nodeMap.get(typeof link.target === 'string' ? link.target : (link.target as SimNode).id);
+      if (!src || !tgt) continue;
+
+      const x1 = (src.x ?? 0) + nodeW / 2;
+      const y1 = (src.y ?? 0) + nodeH / 2;
+      const x2 = (tgt.x ?? 0) + nodeW / 2;
+      const y2 = (tgt.y ?? 0) + nodeH / 2;
+
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const len = Math.sqrt(dx * dx + dy * dy) || 1;
+      const ex2 = x2 - (dx / len) * (nodeW / 2 + 6);
+      const ey2 = y2 - (dy / len) * (nodeH / 2 + 6);
+
+      edgeGroup
+        .append('line')
+        .attr('x1', x1)
+        .attr('y1', y1)
+        .attr('x2', ex2)
+        .attr('y2', ey2)
+        .attr('stroke', 'hsl(var(--muted-foreground))')
+        .attr('stroke-width', '1.5')
+        .attr('stroke-opacity', '0.6')
+        .attr('marker-end', 'url(#arrowhead)');
+
+      edgeLabelGroup
+        .append('text')
+        .attr('x', (x1 + x2) / 2)
+        .attr('y', (y1 + y2) / 2 - 4)
+        .attr('text-anchor', 'middle')
+        .attr('fill', 'hsl(var(--muted-foreground))')
+        .attr('font-size', '10')
+        .text(link.label);
+    }
+
+    for (const node of nodes) {
+      const nx = node.x ?? 0;
+      const ny = node.y ?? 0;
+      const entityUrl = `/projects/${projectId}/${node.type}/${node.id}`;
+
+      const g = nodeGroup
+        .append('g')
+        .attr('transform', `translate(${nx}, ${ny})`)
+        .attr('cursor', 'pointer')
+        .on('click', () => goto(entityUrl));
+
+      g.append('rect')
+        .attr('width', nodeW)
+        .attr('height', nodeH)
+        .attr('rx', '8')
+        .attr('fill', 'hsl(var(--card))')
+        .attr('stroke', 'hsl(var(--border))')
+        .attr('stroke-width', '1.5');
+
+      g.append('text')
+        .attr('x', nodeW / 2)
+        .attr('y', nodeH / 2 - 6)
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'middle')
+        .attr('fill', 'hsl(var(--foreground))')
+        .attr('font-size', '11')
+        .attr('font-weight', '500')
+        .text(node.name.length > 14 ? node.name.slice(0, 14) + '…' : node.name);
+
+      g.append('text')
+        .attr('x', nodeW / 2)
+        .attr('y', nodeH / 2 + 8)
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'middle')
+        .attr('fill', 'hsl(var(--muted-foreground))')
+        .attr('font-size', '9')
+        .text(node.type);
     }
   }
 
@@ -158,6 +253,7 @@
             if (result.type === 'success') {
               showCreate = false;
               await update();
+              buildGraph();
             }
           };
         }}
@@ -174,8 +270,15 @@
               class="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm"
             >
               <option value="">Select...</option>
-              {#each $page.data?.entities || [] as entity}
-                <option value={entity.id}>{entity.name} ({entity.type})</option>
+              {#each entityTypeOrder as type}
+                {@const group = entitiesByType($page.data?.entities || []).get(type) || []}
+                {#if group.length > 0}
+                  <optgroup label={type.charAt(0).toUpperCase() + type.slice(1) + 's'}>
+                    {#each group as entity}
+                      <option value={entity.id}>{entity.name}</option>
+                    {/each}
+                  </optgroup>
+                {/if}
               {/each}
             </select>
           </div>
@@ -189,8 +292,15 @@
               class="mt-1 w-full rounded border border-input bg-background px-3 py-2 text-sm"
             >
               <option value="">Select...</option>
-              {#each $page.data?.entities || [] as entity}
-                <option value={entity.id}>{entity.name} ({entity.type})</option>
+              {#each entityTypeOrder as type}
+                {@const group = entitiesByType($page.data?.entities || []).get(type) || []}
+                {#if group.length > 0}
+                  <optgroup label={type.charAt(0).toUpperCase() + type.slice(1) + 's'}>
+                    {#each group as entity}
+                      <option value={entity.id}>{entity.name}</option>
+                    {/each}
+                  </optgroup>
+                {/if}
               {/each}
             </select>
           </div>
@@ -245,22 +355,32 @@
   <!-- List -->
   <div class="space-y-2">
     {#each $page.data?.relations || [] as rel}
+      {@const source = ($page.data?.entities || []).find((e: any) => e.id === rel.sourceId)}
+      {@const target = ($page.data?.entities || []).find((e: any) => e.id === rel.targetId)}
       <div
         class="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3"
       >
         <div class="flex items-center gap-3 text-sm">
           <Share2 class="h-4 w-4 text-muted-foreground" />
-          <span class="font-medium"
-            >{($page.data?.entities || []).find((e: any) => e.id === rel.sourceId)?.name ||
-              rel.sourceId}</span
-          >
+          {#if source}
+            <a
+              href="/projects/{$page.params.id}/{source.type}/{source.id}"
+              class="font-medium hover:underline">{source.name}</a
+            >
+          {:else}
+            <span class="font-medium">{rel.sourceId}</span>
+          {/if}
           <span class="text-muted-foreground italic"
             >{rel.label || rel.relationType.replace(/_/g, ' ')}</span
           >
-          <span class="font-medium"
-            >{($page.data?.entities || []).find((e: any) => e.id === rel.targetId)?.name ||
-              rel.targetId}</span
-          >
+          {#if target}
+            <a
+              href="/projects/{$page.params.id}/{target.type}/{target.id}"
+              class="font-medium hover:underline">{target.name}</a
+            >
+          {:else}
+            <span class="font-medium">{rel.targetId}</span>
+          {/if}
         </div>
         <form method="POST" action="?/delete">
           <input type="hidden" name="relId" value={rel.id} />

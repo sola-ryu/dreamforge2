@@ -29,10 +29,7 @@
           size="lg"
           class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
         >
-          <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-            <span class="text-sm font-semibold">DF</span>
-          </div>
-          <span class="truncate font-semibold">DreamForge</span>
+          <span class="font-semibold">DreamForge</span>
         </Sidebar.MenuButton>
       </Sidebar.MenuItem>
     </Sidebar.Menu>
@@ -129,7 +126,8 @@
               {#each $page.data.bookmarks as bm (bm.entityId)}
                 <Sidebar.MenuItem>
                   <Sidebar.MenuButton
-                    onclick={() => goto(`/projects/${$page.params.id}/${bm.entityType}s/${bm.entityId}`)}
+                    onclick={() =>
+                      goto(`/projects/${$page.params.id}/${bm.entityType}s/${bm.entityId}`)}
                     tooltipContent={bm.entityName || bm.entityId}
                   >
                     <span class="truncate">{bm.entityName || bm.entityId}</span>
@@ -173,10 +171,7 @@
         </Sidebar.MenuButton>
       </Sidebar.MenuItem>
       <Sidebar.MenuItem>
-        <Sidebar.MenuButton
-          onclick={() => goto('/logout')}
-          tooltipContent="Log Out"
-        >
+        <Sidebar.MenuButton onclick={() => goto('/logout')} tooltipContent="Log Out">
           <LogOut class="h-4 w-4" />
           <span>Log Out</span>
         </Sidebar.MenuButton>
