@@ -59,8 +59,10 @@
     ($page.data?.customFields || []).filter((f: any) => f.entityType === selectedType)
   );
 
+  let fieldError = $state<string | null>(null);
   let addMemberQuery = $state('');
   let addMemberRole = $state<'editor' | 'commenter'>('editor');
+  let memberError = $state<string | null>(null);
   let isOwner = $derived($page.data?.role === 'owner');
 </script>
 
@@ -148,9 +150,12 @@
         use:enhance={() => {
           return async ({ result, update }) => {
             if (result.type === 'success') {
+              fieldError = null;
               resetForm();
-              await update();
+            } else if (result.type === 'failure') {
+              fieldError = (result.data?.error as string) || 'An error occurred';
             }
+            await update({ reset: false });
           };
         }}
         class="space-y-3"
@@ -241,6 +246,10 @@
           <Label for="field-required">Required</Label>
         </div>
 
+        {#if fieldError}
+          <p class="text-sm text-destructive">{fieldError}</p>
+        {/if}
+
         <Button type="submit">
           <Plus class="h-4 w-4" />
           Add Field
@@ -301,9 +310,12 @@
           use:enhance={() => {
             return async ({ result, update }) => {
               if (result.type === 'success') {
+                memberError = null;
                 addMemberQuery = '';
-                update();
+              } else if (result.type === 'failure') {
+                memberError = (result.data?.error as string) || 'An error occurred';
               }
+              await update({ reset: false });
             };
           }}
           class="flex flex-col gap-3 sm:flex-row sm:items-end"
@@ -337,6 +349,9 @@
             Add
           </Button>
         </form>
+        {#if memberError}
+          <p class="mt-2 text-sm text-destructive">{memberError}</p>
+        {/if}
         <p class="mt-2 text-xs text-muted-foreground">
           Editors can view and edit content. Commenters can view and leave comments.
         </p>

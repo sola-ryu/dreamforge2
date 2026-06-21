@@ -4,7 +4,6 @@ import {
   addCustomFieldDef,
   deleteCustomFieldDef
 } from '$lib/server/customFields';
-import { routeToEntityType, entityTypeToRoute } from '$lib/utils/entityTypes';
 import {
   getProjectAccess,
   listMembers,
@@ -56,10 +55,19 @@ export const actions = {
       return fail(400, { error: 'entityType, key, label, and fieldType are required' });
     }
 
-    const resolvedType = routeToEntityType(entityType);
-    if (!resolvedType) {
+    const validEntityTypes = [
+      'character',
+      'organization',
+      'location',
+      'culture',
+      'species',
+      'item',
+      'note'
+    ];
+    if (!validEntityTypes.includes(entityType)) {
       return fail(400, { error: 'Invalid entity type' });
     }
+    const resolvedType = entityType as EntityType;
 
     const validFieldTypes = [
       'text',
@@ -79,7 +87,7 @@ export const actions = {
       key,
       label,
       fieldType: fieldType as any,
-      refEntityType: refEntityType ? routeToEntityType(refEntityType) || null : null,
+      refEntityType: (refEntityType && validEntityTypes.includes(refEntityType) ? refEntityType : null) as EntityType | null,
       placeholder,
       required
     });
