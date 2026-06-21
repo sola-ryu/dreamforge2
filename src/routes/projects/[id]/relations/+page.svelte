@@ -119,7 +119,7 @@
       .attr('orient', 'auto')
       .append('polygon')
       .attr('points', '0 0, 10 3.5, 0 7')
-      .attr('fill', 'hsl(var(--muted-foreground))');
+      .attr('fill', 'var(--muted-foreground)');
 
     const simulation = d3
       .forceSimulation<SimNode>(nodes)
@@ -174,7 +174,7 @@
         .attr('y1', y1)
         .attr('x2', ex2)
         .attr('y2', ey2)
-        .attr('stroke', 'hsl(var(--muted-foreground))')
+        .attr('stroke', 'var(--muted-foreground)')
         .attr('stroke-width', '1.5')
         .attr('stroke-opacity', '0.6')
         .attr('marker-end', 'url(#arrowhead)');
@@ -184,7 +184,7 @@
         .attr('x', (x1 + x2) / 2)
         .attr('y', (y1 + y2) / 2 - 4)
         .attr('text-anchor', 'middle')
-        .attr('fill', 'hsl(var(--muted-foreground))')
+        .attr('fill', 'var(--muted-foreground)')
         .attr('font-size', '10')
         .text(link.label);
     }
@@ -204,8 +204,8 @@
         .attr('width', nodeW)
         .attr('height', nodeH)
         .attr('rx', '8')
-        .attr('fill', 'hsl(var(--card))')
-        .attr('stroke', 'hsl(var(--border))')
+        .attr('fill', 'var(--card)')
+        .attr('stroke', 'var(--border)')
         .attr('stroke-width', '1.5');
 
       g.append('text')
@@ -213,7 +213,7 @@
         .attr('y', nodeH / 2 - 6)
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
-        .attr('fill', 'hsl(var(--foreground))')
+        .attr('fill', 'var(--foreground)')
         .attr('font-size', '11')
         .attr('font-weight', '500')
         .text(node.name.length > 14 ? node.name.slice(0, 14) + '…' : node.name);
@@ -223,7 +223,7 @@
         .attr('y', nodeH / 2 + 8)
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
-        .attr('fill', 'hsl(var(--muted-foreground))')
+        .attr('fill', 'var(--muted-foreground)')
         .attr('font-size', '9')
         .text(node.type);
     }

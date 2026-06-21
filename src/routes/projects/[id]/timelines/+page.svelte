@@ -475,7 +475,7 @@
           y1={AXIS_Y}
           x2={svgWidth}
           y2={AXIS_Y}
-          stroke="hsl(var(--border))"
+          stroke="var(--border)"
           stroke-width="2"
         />
 
@@ -486,14 +486,14 @@
               y1={AXIS_Y - 6}
               x2={yearToX(year)}
               y2={AXIS_Y + 6}
-              stroke="hsl(var(--muted-foreground))"
+              stroke="var(--muted-foreground)"
               stroke-width="1"
             />
             <text
               x={yearToX(year)}
               y={AXIS_Y + 20}
               text-anchor="middle"
-              fill="hsl(var(--muted-foreground))"
+              fill="var(--muted-foreground)"
               font-size="11"
             >
               {year}
@@ -516,7 +516,7 @@
               cy={y}
               r={event.significance === 'major' ? 6 : event.significance === 'minor' ? 4.5 : 3}
               fill={significanceColor(event.significance)}
-              stroke="hsl(var(--card))"
+              stroke="var(--card)"
               stroke-width="2"
             />
             {#if label === 'above'}
@@ -526,14 +526,14 @@
                   (event.significance === 'major' ? 6 : event.significance === 'minor' ? 4.5 : 3)}
                 x2={x}
                 y2={y - 18}
-                stroke="hsl(var(--border))"
+                stroke="var(--border)"
                 stroke-width="1"
               />
               <text
                 {x}
                 y={y - 22}
                 text-anchor="middle"
-                fill="hsl(var(--foreground))"
+                fill="var(--foreground)"
                 font-size="11"
                 font-weight="500"
               >
@@ -543,7 +543,7 @@
                 {x}
                 y={y - 10}
                 text-anchor="middle"
-                fill="hsl(var(--muted-foreground))"
+                fill="var(--muted-foreground)"
                 font-size="9"
               >
                 {formatDateStr(event, calendar)}
@@ -555,14 +555,14 @@
                   (event.significance === 'major' ? 6 : event.significance === 'minor' ? 4.5 : 3)}
                 x2={x}
                 y2={AXIS_Y - 14}
-                stroke="hsl(var(--border))"
+                stroke="var(--border)"
                 stroke-width="1"
               />
               <text
                 {x}
                 y={AXIS_Y - 18}
                 text-anchor="middle"
-                fill="hsl(var(--foreground))"
+                fill="var(--foreground)"
                 font-size="11"
                 font-weight="500"
               >

@@ -11,7 +11,7 @@ Markdown-first: all content stored as Markdown files on disk; SQLite is a query 
 | --------------- | -------------------------------------------------------- |
 | Framework       | SvelteKit 2 + Svelte 5 (runes mode)                      |
 | Language        | TypeScript (strict)                                      |
-| Styling         | Tailwind CSS v3 + shadcn-svelte HSL theme vars           |
+| Styling         | Tailwind CSS v3 + shadcn-svelte theme vars           |
 | Database        | SQLite via better-sqlite3 + Drizzle ORM                  |
 | Editor          | Tiptap 3 / ProseMirror via svelte-tiptap                 |
 | Auth            | Custom (scrypt hashing, session-based, httpOnly cookies) |
@@ -42,7 +42,7 @@ src/
     projects/[id]/search/    — Global search
     projects/[id]/export/    — ZIP export (archiver v7)
     api/projects/[id]/images/ — Image upload + serving
-  app.css            — Tailwind + HSL theme variables
+  app.css            — Tailwind + shadcn-svelte theme variables
   hooks.server.ts    — Auth session check on every request
 ```
 

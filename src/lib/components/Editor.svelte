@@ -408,7 +408,7 @@
     min-height: 200px;
   }
   .editor-wrapper :global(.ProseMirror p.is-editor-empty:first-child::before) {
-    color: hsl(var(--muted-foreground));
+    color: var(--muted-foreground);
     content: attr(data-placeholder);
     float: left;
     height: 0;
@@ -421,27 +421,27 @@
   }
   .editor-wrapper :global(.ProseMirror th),
   .editor-wrapper :global(.ProseMirror td) {
-    border: 1px solid hsl(var(--border));
+    border: 1px solid var(--border);
     padding: 0.5em;
     min-width: 80px;
   }
   .editor-wrapper :global(.ProseMirror th) {
-    background: hsl(var(--muted));
+    background: var(--muted);
     font-weight: 600;
   }
   .editor-wrapper :global(.ProseMirror blockquote) {
-    border-left: 3px solid hsl(var(--primary));
+    border-left: 3px solid var(--primary);
     padding-left: 1em;
-    color: hsl(var(--muted-foreground));
+    color: var(--muted-foreground);
   }
   .editor-wrapper :global(.ProseMirror code) {
-    background: hsl(var(--muted));
+    background: var(--muted);
     border-radius: 0.25em;
     padding: 0.125em 0.25em;
     font-size: 0.9em;
   }
   .editor-wrapper :global(.ProseMirror pre) {
-    background: hsl(var(--muted));
+    background: var(--muted);
     border-radius: 0.5em;
     padding: 1em;
     overflow-x: auto;
@@ -452,15 +452,15 @@
     border-radius: 0.5em;
   }
   .editor-wrapper :global(.ProseMirror a) {
-    color: hsl(var(--primary));
+    color: var(--primary);
     text-decoration: underline;
     cursor: pointer;
   }
   .editor-wrapper :global([data-mention]) {
-    background: hsl(var(--accent));
+    background: var(--accent);
     border-radius: 0.25em;
     padding: 0.125em 0.25em;
-    color: hsl(var(--accent-foreground));
+    color: var(--accent-foreground);
     cursor: pointer;
   }
   :global(.mention-dropdown) {
@@ -468,8 +468,8 @@
     max-height: 12rem;
     overflow-y: auto;
     border-radius: 0.5rem;
-    border: 1px solid hsl(var(--border));
-    background: hsl(var(--popover));
+    border: 1px solid var(--border);
+    background: var(--popover);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 </style>

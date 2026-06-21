@@ -429,7 +429,7 @@
     </div>
   {:else}
     <!-- Table layout -->
-    <div class="rounded-lg border border-border">
+    <div class="rounded-lg border border-border overflow-x-auto">
       {#if entities.length === 0}
         <p class="py-12 text-center text-muted-foreground">
           No {$page.data?.entityType
