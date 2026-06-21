@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
   import { toggleTheme } from '$lib/stores/theme.svelte';
   import { getZenMode } from '$lib/stores/zenMode.svelte';
   import * as Sidebar from '$lib/components/ui/sidebar/index.js';
@@ -37,11 +36,14 @@
           <Sidebar.MenuItem>
             <Sidebar.MenuButton
               isActive={$page.url.pathname === '/projects'}
-              onclick={() => goto('/projects')}
               tooltipContent="Projects"
             >
-              <Home class="h-4 w-4" />
-              <span>Projects</span>
+              {#snippet child({ props })}
+                <a href="/projects" {...props}>
+                  <Home class="h-4 w-4" />
+                  <span>Projects</span>
+                </a>
+              {/snippet}
             </Sidebar.MenuButton>
           </Sidebar.MenuItem>
         </Sidebar.Menu>
@@ -56,51 +58,58 @@
             <Sidebar.MenuItem>
               <Sidebar.MenuButton
                 isActive={$page.url.pathname === `/projects/${$page.params.id}`}
-                onclick={() => goto(`/projects/${$page.params.id}`)}
                 tooltipContent="Dashboard"
               >
-                <LayoutDashboard class="h-4 w-4" />
-                <span>Dashboard</span>
+                {#snippet child({ props })}
+                  <a href={`/projects/${$page.params.id}`} {...props}>
+                    <LayoutDashboard class="h-4 w-4" />
+                    <span>Dashboard</span>
+                  </a>
+                {/snippet}
               </Sidebar.MenuButton>
             </Sidebar.MenuItem>
 
             <Sidebar.MenuItem>
-              <Sidebar.MenuButton
-                onclick={() => goto(`/projects/${$page.params.id}/stories`)}
-                tooltipContent="Stories"
-              >
-                <BookOpenText class="h-4 w-4" />
-                <span>Stories</span>
+              <Sidebar.MenuButton tooltipContent="Stories">
+                {#snippet child({ props })}
+                  <a href={`/projects/${$page.params.id}/stories`} {...props}>
+                    <BookOpenText class="h-4 w-4" />
+                    <span>Stories</span>
+                  </a>
+                {/snippet}
               </Sidebar.MenuButton>
             </Sidebar.MenuItem>
 
             <Sidebar.MenuItem>
-              <Sidebar.MenuButton
-                onclick={() => goto(`/projects/${$page.params.id}/timelines`)}
-                tooltipContent="Timelines"
-              >
-                <Clock class="h-4 w-4" />
-                <span>Timelines</span>
+              <Sidebar.MenuButton tooltipContent="Timelines">
+                {#snippet child({ props })}
+                  <a href={`/projects/${$page.params.id}/timelines`} {...props}>
+                    <Clock class="h-4 w-4" />
+                    <span>Timelines</span>
+                  </a>
+                {/snippet}
               </Sidebar.MenuButton>
             </Sidebar.MenuItem>
 
             <Sidebar.MenuItem>
-              <Sidebar.MenuButton
-                onclick={() => goto(`/projects/${$page.params.id}/relations`)}
-                tooltipContent="Relations"
-              >
-                <GitBranch class="h-4 w-4" />
-                <span>Relations</span>
+              <Sidebar.MenuButton tooltipContent="Relations">
+                {#snippet child({ props })}
+                  <a href={`/projects/${$page.params.id}/relations`} {...props}>
+                    <GitBranch class="h-4 w-4" />
+                    <span>Relations</span>
+                  </a>
+                {/snippet}
               </Sidebar.MenuButton>
             </Sidebar.MenuItem>
 
             <Sidebar.MenuItem>
-              <Sidebar.MenuButton
-                onclick={() => goto(`/projects/${$page.params.id}/search`)}
-                tooltipContent="Search"
-              >
-                <Search class="h-4 w-4" />
-                <span>Search</span>
+              <Sidebar.MenuButton tooltipContent="Search">
+                {#snippet child({ props })}
+                  <a href={`/projects/${$page.params.id}/search`} {...props}>
+                    <Search class="h-4 w-4" />
+                    <span>Search</span>
+                  </a>
+                {/snippet}
               </Sidebar.MenuButton>
             </Sidebar.MenuItem>
           </Sidebar.Menu>
@@ -119,12 +128,15 @@
             <Sidebar.Menu>
               {#each $page.data.bookmarks as bm (bm.entityId)}
                 <Sidebar.MenuItem>
-                  <Sidebar.MenuButton
-                    onclick={() =>
-                      goto(`/projects/${$page.params.id}/${bm.entityType}s/${bm.entityId}`)}
-                    tooltipContent={bm.entityName || bm.entityId}
-                  >
-                    <span class="truncate">{bm.entityName || bm.entityId}</span>
+                  <Sidebar.MenuButton tooltipContent={bm.entityName || bm.entityId}>
+                    {#snippet child({ props })}
+                      <a
+                        href={`/projects/${$page.params.id}/${bm.entityType}s/${bm.entityId}`}
+                        {...props}
+                      >
+                        <span class="truncate">{bm.entityName || bm.entityId}</span>
+                      </a>
+                    {/snippet}
                   </Sidebar.MenuButton>
                 </Sidebar.MenuItem>
               {/each}
@@ -165,9 +177,13 @@
         </Sidebar.MenuButton>
       </Sidebar.MenuItem>
       <Sidebar.MenuItem>
-        <Sidebar.MenuButton onclick={() => goto('/logout')} tooltipContent="Log Out">
-          <LogOut class="h-4 w-4" />
-          <span>Log Out</span>
+        <Sidebar.MenuButton tooltipContent="Log Out">
+          {#snippet child({ props })}
+            <a href="/logout" {...props}>
+              <LogOut class="h-4 w-4" />
+              <span>Log Out</span>
+            </a>
+          {/snippet}
         </Sidebar.MenuButton>
       </Sidebar.MenuItem>
     </Sidebar.Menu>
