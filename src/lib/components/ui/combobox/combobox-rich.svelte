@@ -8,6 +8,8 @@
   import { Button } from "$lib/components/ui/button";
   import { cn } from "$lib/utils.js";
 
+  type Option = { value: string; label: string; group?: string };
+
   let {
     options = [],
     value = $bindable(''),
@@ -20,7 +22,7 @@
     onSelect,
     children,
   }: {
-    options: { value: string; label: string }[];
+    options: Option[];
     value?: string;
     name?: string;
     placeholder?: string;
@@ -29,13 +31,30 @@
     disabled?: boolean;
     class?: string;
     onSelect?: (value: string) => void;
-    children?: Snippet<[{ option: { value: string; label: string }; selected: boolean }]>;
+    children?: Snippet<[{ option: any; selected: boolean }]>;
   } = $props();
 
   let open = $state(false);
   let triggerRef = $state<HTMLButtonElement>(null!);
 
   let selectedOption = $derived(options.find((o) => o.value === value));
+
+  let hasGroups = $derived(options.some((o) => o.group != null));
+
+  let groups = $derived.by(() => {
+    if (!hasGroups) return null;
+    const map: Record<string, { heading: string | null; items: Option[] }> = {};
+    const order: string[] = [];
+    for (const opt of options) {
+      const key = opt.group ?? '';
+      if (!map[key]) {
+        map[key] = { heading: opt.group ?? null, items: [] };
+        order.push(key);
+      }
+      map[key].items.push(opt);
+    }
+    return order.map((key) => map[key]);
+  });
 
   function closeAndFocusTrigger() {
     open = false;
@@ -87,23 +106,45 @@
       <Command.Input placeholder={searchPlaceholder} />
       <Command.List>
         <Command.Empty>{emptyText}</Command.Empty>
-        <Command.Group value="options">
-          {#each options as option (option.value)}
-            <Command.Item
-              value={option.label}
-              onSelect={() => handleSelect(option.value)}
-            >
-              <CheckIcon
-                class={cn('h-4 w-4 shrink-0', value !== option.value && 'text-transparent')}
-              />
-              {#if children}
-                {@render children({ option, selected: value === option.value })}
-              {:else}
-                {option.label}
-              {/if}
-            </Command.Item>
+        {#if groups}
+          {#each groups as group (group.heading ?? '')}
+            <Command.Group heading={group.heading ?? undefined}>
+              {#each group.items as option (option.value)}
+                <Command.Item
+                  value={option.label}
+                  onSelect={() => handleSelect(option.value)}
+                >
+                  <CheckIcon
+                    class={cn('h-4 w-4 shrink-0', value !== option.value && 'text-transparent')}
+                  />
+                  {#if children}
+                    {@render children({ option, selected: value === option.value })}
+                  {:else}
+                    {option.label}
+                  {/if}
+                </Command.Item>
+              {/each}
+            </Command.Group>
           {/each}
-        </Command.Group>
+        {:else}
+          <Command.Group value="options">
+            {#each options as option (option.value)}
+              <Command.Item
+                value={option.label}
+                onSelect={() => handleSelect(option.value)}
+              >
+                <CheckIcon
+                  class={cn('h-4 w-4 shrink-0', value !== option.value && 'text-transparent')}
+                />
+                {#if children}
+                  {@render children({ option, selected: value === option.value })}
+                {:else}
+                  {option.label}
+                {/if}
+              </Command.Item>
+            {/each}
+          </Command.Group>
+        {/if}
       </Command.List>
     </Command.Root>
   </Popover.Content>

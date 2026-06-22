@@ -51,6 +51,15 @@
 
   let svgEl: SVGSVGElement;
 
+  let entityOptions = $derived(
+    ($page.data?.entities || []).map((e: any) => ({
+      value: e.id,
+      label: e.name,
+      group: e.type as string,
+      entity: e,
+    }))
+  );
+
   function entitiesByType(entities: { id: string; name: string; type: EntityType }[]) {
     const grouped = new Map<EntityType, typeof entities>();
     for (const t of entityTypeOrder) grouped.set(t, []);
@@ -270,36 +279,18 @@
             <ComboboxRich
               name="sourceId"
               bind:value={sourceId}
-              options={($page.data?.entities || []).map((e: any) => ({
-                value: e.id,
-                label: `${e.name} (${e.type})`,
-                entity: e,
-              }))}
+              options={entityOptions}
               placeholder="Select..."
-            >
-              {#snippet children({ option })}
-                 <span class="text-[0.65rem] font-medium uppercase text-muted-foreground/80">{option.entity.type}</span>
-                 {option.entity.name}
-              {/snippet}
-            </ComboboxRich>
+            />
           </div>
           <div class="space-y-1.5">
             <Label for="targetId">Target Entity</Label>
             <ComboboxRich
               name="targetId"
               bind:value={targetId}
-              options={($page.data?.entities || []).map((e: any) => ({
-                value: e.id,
-                label: `${e.name} (${e.type})`,
-                entity: e,
-              }))}
+              options={entityOptions}
               placeholder="Select..."
-            >
-              {#snippet children({ option })}
-                 <span class="text-[0.65rem] font-medium uppercase text-muted-foreground/80">{option.entity.type}</span>
-                 {option.entity.name}
-              {/snippet}
-            </ComboboxRich>
+            />
           </div>
         </div>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
