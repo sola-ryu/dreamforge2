@@ -17,6 +17,6 @@ jobs:
           node-version: 22
           cache: npm
 
-      - run: npm ci --ignore-scripts
+      - run: npm ci
       - run: npx svelte-kit sync
       - run: npx vitest run
