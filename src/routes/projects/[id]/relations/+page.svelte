@@ -1,16 +1,13 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { enhance } from '$app/forms';
-  import { onMount } from 'svelte';
-  import { goto } from '$app/navigation';
-  import * as d3 from 'd3';
-  import type { EntityType } from '$lib/types';
   import { Plus, Trash2, Share2 } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import { ComboboxRich } from '$lib/components/ui/combobox';
   import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
+  import RelationGraph from '$lib/components/RelationGraph.svelte';
 
   let showCreate = $state(false);
   let sourceId = $state('');
@@ -40,18 +37,6 @@
     'used_by'
   ];
 
-  const entityTypeOrder: EntityType[] = [
-    'character',
-    'organization',
-    'location',
-    'culture',
-    'species',
-    'item',
-    'note'
-  ];
-
-  let svgEl: SVGSVGElement;
-
   let entityOptions = $derived(
     ($page.data?.entities || []).map((e: any) => ({
       value: e.id,
@@ -61,186 +46,7 @@
     }))
   );
 
-  function entitiesByType(entities: { id: string; name: string; type: EntityType }[]) {
-    const grouped = new Map<EntityType, typeof entities>();
-    for (const t of entityTypeOrder) grouped.set(t, []);
-    for (const e of entities) {
-      grouped.get(e.type as EntityType)?.push(e);
-    }
-    return grouped;
-  }
 
-  function buildGraph() {
-    if (!svgEl || !$page.data?.relations) return;
-    const relations = $page.data.relations;
-    const allEntities: { id: string; name: string; type: EntityType }[] = $page.data.entities || [];
-    const entityMap = new Map(allEntities.map((e) => [e.id, e]));
-    const projectId = $page.params.id;
-
-    type SimNode = d3.SimulationNodeDatum & {
-      id: string;
-      name: string;
-      type: string;
-    };
-    type SimLink = d3.SimulationLinkDatum<SimNode> & { label: string };
-
-    const nodeMap = new Map<string, SimNode>();
-    const links: SimLink[] = [];
-
-    for (const rel of relations) {
-      if (!nodeMap.has(rel.sourceId) && entityMap.has(rel.sourceId)) {
-        const e = entityMap.get(rel.sourceId)!;
-        nodeMap.set(rel.sourceId, { id: e.id, name: e.name, type: e.type });
-      }
-      if (!nodeMap.has(rel.targetId) && entityMap.has(rel.targetId)) {
-        const e = entityMap.get(rel.targetId)!;
-        nodeMap.set(rel.targetId, { id: e.id, name: e.name, type: e.type });
-      }
-      links.push({
-        source: rel.sourceId,
-        target: rel.targetId,
-        label: rel.label || rel.relationType.replace(/_/g, ' ')
-      });
-    }
-
-    const nodes = [...nodeMap.values()];
-    if (nodes.length === 0) {
-      svgEl.innerHTML = '';
-      return;
-    }
-
-    const svgRect = svgEl.getBoundingClientRect();
-    const W = svgRect.width || 800;
-    const H = 450;
-    const nodeW = 100;
-    const nodeH = 36;
-
-    svgEl.innerHTML = '';
-
-    const svg = d3.select(svgEl);
-
-    const defs = svg.append('defs');
-    defs
-      .append('marker')
-      .attr('id', 'arrowhead')
-      .attr('markerWidth', '10')
-      .attr('markerHeight', '7')
-      .attr('refX', '10')
-      .attr('refY', '3.5')
-      .attr('orient', 'auto')
-      .append('polygon')
-      .attr('points', '0 0, 10 3.5, 0 7')
-      .attr('fill', 'var(--muted-foreground)');
-
-    const simulation = d3
-      .forceSimulation<SimNode>(nodes)
-      .force(
-        'link',
-        d3
-          .forceLink<SimNode, SimLink>(links)
-          .id((d) => d.id)
-          .distance(180)
-          .strength(0.8)
-      )
-      .force('charge', d3.forceManyBody<SimNode>().strength(-400))
-      .force('center', d3.forceCenter(W / 2, H / 2))
-      .force('collision', d3.forceCollide<SimNode>(80))
-      .stop();
-
-    for (let i = 0; i < 300; i++) simulation.tick();
-
-    const clamp = (val: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, val));
-    for (const n of nodes) {
-      n.x = clamp(n.x ?? W / 2, nodeW / 2 + 4, W - nodeW / 2 - 4);
-      n.y = clamp(n.y ?? H / 2, nodeH / 2 + 4, H - nodeH / 2 - 4);
-    }
-
-    const edgeGroup = svg.append('g');
-    const edgeLabelGroup = svg.append('g');
-    const nodeGroup = svg.append('g');
-
-    for (const link of links) {
-      const src = nodeMap.get(
-        typeof link.source === 'string' ? link.source : (link.source as SimNode).id
-      );
-      const tgt = nodeMap.get(
-        typeof link.target === 'string' ? link.target : (link.target as SimNode).id
-      );
-      if (!src || !tgt) continue;
-
-      const x1 = (src.x ?? 0) + nodeW / 2;
-      const y1 = (src.y ?? 0) + nodeH / 2;
-      const x2 = (tgt.x ?? 0) + nodeW / 2;
-      const y2 = (tgt.y ?? 0) + nodeH / 2;
-
-      const dx = x2 - x1;
-      const dy = y2 - y1;
-      const len = Math.sqrt(dx * dx + dy * dy) || 1;
-      const ex2 = x2 - (dx / len) * (nodeW / 2 + 6);
-      const ey2 = y2 - (dy / len) * (nodeH / 2 + 6);
-
-      edgeGroup
-        .append('line')
-        .attr('x1', x1)
-        .attr('y1', y1)
-        .attr('x2', ex2)
-        .attr('y2', ey2)
-        .attr('stroke', 'var(--muted-foreground)')
-        .attr('stroke-width', '1.5')
-        .attr('stroke-opacity', '0.6')
-        .attr('marker-end', 'url(#arrowhead)');
-
-      edgeLabelGroup
-        .append('text')
-        .attr('x', (x1 + x2) / 2)
-        .attr('y', (y1 + y2) / 2 - 4)
-        .attr('text-anchor', 'middle')
-        .attr('fill', 'var(--muted-foreground)')
-        .attr('font-size', '10')
-        .text(link.label);
-    }
-
-    for (const node of nodes) {
-      const nx = node.x ?? 0;
-      const ny = node.y ?? 0;
-      const entityUrl = `/projects/${projectId}/${node.type}/${node.id}`;
-
-      const g = nodeGroup
-        .append('g')
-        .attr('transform', `translate(${nx}, ${ny})`)
-        .attr('cursor', 'pointer')
-        .on('click', () => goto(entityUrl));
-
-      g.append('rect')
-        .attr('width', nodeW)
-        .attr('height', nodeH)
-        .attr('rx', '8')
-        .attr('fill', 'var(--card)')
-        .attr('stroke', 'var(--border)')
-        .attr('stroke-width', '1.5');
-
-      g.append('text')
-        .attr('x', nodeW / 2)
-        .attr('y', nodeH / 2 - 6)
-        .attr('text-anchor', 'middle')
-        .attr('dominant-baseline', 'middle')
-        .attr('fill', 'var(--foreground)')
-        .attr('font-size', '11')
-        .attr('font-weight', '500')
-        .text(node.name.length > 14 ? node.name.slice(0, 14) + '…' : node.name);
-
-      g.append('text')
-        .attr('x', nodeW / 2)
-        .attr('y', nodeH / 2 + 8)
-        .attr('text-anchor', 'middle')
-        .attr('dominant-baseline', 'middle')
-        .attr('fill', 'var(--muted-foreground)')
-        .attr('font-size', '9')
-        .text(node.type);
-    }
-  }
-
-  onMount(buildGraph);
 </script>
 
 <svelte:head>
@@ -268,7 +74,6 @@
             if (result.type === 'success') {
               showCreate = false;
               await update();
-              buildGraph();
             }
           };
         }}
@@ -324,10 +129,12 @@
     </div>
   {/if}
 
-  <!-- Graph -->
-  <div class="mb-6 overflow-hidden rounded-lg border border-border bg-card">
-    <svg bind:this={svgEl} width="100%" height="450" class="bg-card"></svg>
-  </div>
+  <RelationGraph
+    class="mb-4"
+    entities={$page.data?.entities || []}
+    relations={$page.data?.relations || []}
+    projectId={$page.params.id || ''}
+  />
 
   <!-- List -->
   <div class="space-y-2">
