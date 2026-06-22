@@ -24,6 +24,7 @@
   import { Label } from '$lib/components/ui/label';
   import { Textarea } from '$lib/components/ui/textarea';
   import { Combobox } from '$lib/components/ui/combobox';
+  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
 
   let role = $derived($page.data?.role || 'owner');
   let canEdit = $derived(role !== 'commenter');
@@ -146,17 +147,16 @@
       <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
         <div class="flex items-center gap-2">
           <label for="status-select" class="text-sm font-medium">Status:</label>
-          <select
-            id="status-select"
-            name="status"
-            bind:value={status}
-            disabled={!editing}
-            class="rounded border border-input bg-background px-2 py-1 text-sm"
-          >
-            <option value="draft">Draft</option>
-            <option value="wip">In Progress</option>
-            <option value="complete">Complete</option>
-          </select>
+          <Select type="single" bind:value={status} disabled={!editing}>
+            <SelectTrigger id="status-select" class="rounded px-2 py-1 text-sm">
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="wip">In Progress</SelectItem>
+              <SelectItem value="complete">Complete</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div class="flex items-center gap-2">
           <label for="tags-input" class="text-sm font-medium">Tags:</label>

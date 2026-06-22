@@ -8,6 +8,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
+  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
 
   let selectedType = $state<EntityType>('character');
   let newKey = $state('');
@@ -192,16 +193,17 @@
         <div class="grid grid-cols-2 gap-3">
           <div class="space-y-1">
             <Label for="field-type" class="text-xs text-muted-foreground">Field Type</Label>
-            <select
-              id="field-type"
-              name="fieldType"
-              bind:value={newFieldType}
-              class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-            >
-              {#each fieldTypes as ft}
-                <option value={ft.value}>{ft.label}</option>
-              {/each}
-            </select>
+            <Select type="single" bind:value={newFieldType}>
+              <SelectTrigger id="field-type" class="w-full">
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                {#each fieldTypes as ft}
+                  <SelectItem value={ft.value}>{ft.label}</SelectItem>
+                {/each}
+              </SelectContent>
+            </Select>
+            <input type="hidden" name="fieldType" value={newFieldType} />
           </div>
           <div class="space-y-1">
             <Label for="field-placeholder" class="text-xs text-muted-foreground">Placeholder</Label>
@@ -220,17 +222,18 @@
             <Label for="ref-entity-type" class="text-xs text-muted-foreground"
               >Referenced Entity Type</Label
             >
-            <select
-              id="ref-entity-type"
-              name="refEntityType"
-              bind:value={newRefEntityType}
-              class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-            >
-              <option value="">Select type...</option>
-              {#each entityTypes as et}
-                <option value={et}>{ENTITY_LABELS[et]}</option>
-              {/each}
-            </select>
+            <Select type="single" bind:value={newRefEntityType}>
+              <SelectTrigger id="ref-entity-type" class="w-full">
+                <SelectValue placeholder="Select type..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Select type...</SelectItem>
+                {#each entityTypes as et}
+                  <SelectItem value={et}>{ENTITY_LABELS[et]}</SelectItem>
+                {/each}
+              </SelectContent>
+            </Select>
+            <input type="hidden" name="refEntityType" value={newRefEntityType} />
           </div>
         {/if}
 
@@ -278,17 +281,24 @@
                   <span class="font-medium text-sm">{member.username}</span>
                   <span class="ml-2 text-xs text-muted-foreground">{member.email}</span>
                 </div>
-                <form method="POST" action="?/updateMemberRole" use:enhance>
+                <form method="POST" action="?/updateMemberRole" use:enhance id="member-role-form-{member.userId}">
                   <input type="hidden" name="userId" value={member.userId} />
-                  <select
-                    name="role"
-                    value={member.role}
-                    onchange={(e) => (e.target as HTMLSelectElement).form?.requestSubmit()}
-                    class="rounded border border-input bg-background px-2 py-0.5 text-xs"
-                  >
-                    <option value="editor">Editor</option>
-                    <option value="commenter">Commenter</option>
-                  </select>
+                  <input type="hidden" name="role" value={member.role} />
+                  <Select type="single" value={member.role} onValueChange={(v) => {
+                    member.role = v;
+                    requestAnimationFrame(() => {
+                      const formEl = document.getElementById(`member-role-form-${member.userId}`);
+                      if (formEl instanceof HTMLFormElement) formEl.requestSubmit();
+                    });
+                  }}>
+                    <SelectTrigger class="text-xs px-2 py-0.5">
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="editor">Editor</SelectItem>
+                      <SelectItem value="commenter">Commenter</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </form>
               </div>
               <form method="POST" action="?/removeMember" use:enhance>
@@ -334,15 +344,16 @@
           </div>
           <div class="space-y-1">
             <Label for="member-role" class="text-xs text-muted-foreground">Role</Label>
-            <select
-              id="member-role"
-              name="role"
-              bind:value={addMemberRole}
-              class="rounded border border-input bg-background px-2 py-1.5 text-sm"
-            >
-              <option value="editor">Editor</option>
-              <option value="commenter">Commenter</option>
-            </select>
+            <Select type="single" bind:value={addMemberRole}>
+              <SelectTrigger id="member-role" class="w-full">
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="editor">Editor</SelectItem>
+                <SelectItem value="commenter">Commenter</SelectItem>
+              </SelectContent>
+            </Select>
+            <input type="hidden" name="role" value={addMemberRole} />
           </div>
           <Button type="submit">
             <UserPlus class="h-4 w-4" />

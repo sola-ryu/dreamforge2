@@ -374,13 +374,18 @@
         onchange={(e) => setLang((e.target as HTMLSelectElement).value)}
         title="Editor language"
       >
-        <option value="en">EN</option>
-        <option value="fr">FR</option>
-        <option value="de">DE</option>
-        <option value="es">ES</option>
-        <option value="it">IT</option>
-        <option value="pt">PT</option>
-        <option value="nl">NL</option>
+        <option value="en">English</option>
+        <option value="de">Deutsch</option>
+        <option value="es">español</option>
+        <option value="fr">français</option>
+        <option value="it">italiano</option>
+        <option value="ja">日本語</option>
+        <option value="ko">한국어</option>
+        <option value="ms">بهاس ملايو</option>
+        <option value="nl">Nederlands</option>
+        <option value="pt">Português</option>
+        <option value="ru">Русский язык</option>
+        <option value="zh">中文</option>
       </select>
     </div>
   {/if}

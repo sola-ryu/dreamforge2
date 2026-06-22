@@ -23,6 +23,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import { Textarea } from '$lib/components/ui/textarea';
   import { Combobox } from '$lib/components/ui/combobox';
+  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
   import type { TimelineEvent, CalendarConfig } from '$lib/server/timelines';
 
   let showCreate = $state(false);
@@ -303,17 +304,18 @@
           </div>
           <div class="space-y-1">
             <Label for="new-month" class="text-xs text-muted-foreground">Month</Label>
-            <select
-              id="new-month"
-              name="month"
-              bind:value={newMonth}
-              class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-            >
-              <option value="">—</option>
-              {#each calendar.months as month, i}
-                <option value={i + 1}>{month}</option>
-              {/each}
-            </select>
+            <Select type="single" bind:value={newMonth}>
+              <SelectTrigger id="new-month" class="w-full">
+                <SelectValue placeholder="Month" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">—</SelectItem>
+                {#each calendar.months as month, i}
+                  <SelectItem value={String(i + 1)}>{month}</SelectItem>
+                {/each}
+              </SelectContent>
+            </Select>
+            <input type="hidden" name="month" value={newMonth} />
           </div>
           <div class="space-y-1">
             <Label for="new-day" class="text-xs text-muted-foreground">Day</Label>
@@ -347,16 +349,17 @@
         <div class="grid grid-cols-2 gap-3">
           <div class="space-y-1">
             <Label for="new-significance" class="text-xs text-muted-foreground">Significance</Label>
-            <select
-              id="new-significance"
-              name="significance"
-              bind:value={newSignificance}
-              class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-            >
-              <option value="major">Major</option>
-              <option value="minor">Minor</option>
-              <option value="trivial">Trivial</option>
-            </select>
+            <Select type="single" bind:value={newSignificance}>
+              <SelectTrigger id="new-significance" class="w-full">
+                <SelectValue placeholder="Significance" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="major">Major</SelectItem>
+                <SelectItem value="minor">Minor</SelectItem>
+                <SelectItem value="trivial">Trivial</SelectItem>
+              </SelectContent>
+            </Select>
+            <input type="hidden" name="significance" value={newSignificance} />
           </div>
           <div class="space-y-1">
             <Label for="new-entities" class="text-xs text-muted-foreground">Linked Entities</Label>
@@ -422,24 +425,28 @@
           class="w-full rounded-lg border border-input bg-background pl-8 pr-3 py-2 text-sm"
         />
       </div>
-      <select
-        class="rounded border border-input bg-background px-2 py-2 text-sm"
-        bind:value={filterSignificance}
-      >
-        <option value="">All significance</option>
-        <option value="major">Major</option>
-        <option value="minor">Minor</option>
-        <option value="trivial">Trivial</option>
-      </select>
-      <select
-        class="rounded border border-input bg-background px-2 py-2 text-sm"
-        bind:value={filterEra}
-      >
-        <option value="">All eras</option>
-        {#each eras as era}
-          <option value={era}>{era}</option>
-        {/each}
-      </select>
+      <Select type="single" bind:value={filterSignificance}>
+        <SelectTrigger class="text-sm">
+          <SelectValue placeholder="All significance" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="">All significance</SelectItem>
+          <SelectItem value="major">Major</SelectItem>
+          <SelectItem value="minor">Minor</SelectItem>
+          <SelectItem value="trivial">Trivial</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select type="single" bind:value={filterEra}>
+        <SelectTrigger class="text-sm">
+          <SelectValue placeholder="All eras" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="">All eras</SelectItem>
+          {#each eras as era}
+            <SelectItem value={era}>{era}</SelectItem>
+          {/each}
+        </SelectContent>
+      </Select>
       <Combobox
         bind:value={filterEntity}
         options={[
@@ -599,17 +606,18 @@
                 </div>
                 <div class="space-y-1">
                   <Label for="edit-month" class="text-xs text-muted-foreground">Month</Label>
-                  <select
-                    id="edit-month"
-                    name="month"
-                    bind:value={editMonth}
-                    class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-                  >
-                    <option value="">—</option>
-                    {#each calendar.months as month, i}
-                      <option value={i + 1}>{month}</option>
-                    {/each}
-                  </select>
+                  <Select type="single" bind:value={editMonth}>
+                    <SelectTrigger id="edit-month" class="w-full">
+                      <SelectValue placeholder="Month" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">—</SelectItem>
+                      {#each calendar.months as month, i}
+                        <SelectItem value={String(i + 1)}>{month}</SelectItem>
+                      {/each}
+                    </SelectContent>
+                  </Select>
+                  <input type="hidden" name="month" value={editMonth} />
                 </div>
                 <div class="space-y-1">
                   <Label for="edit-day" class="text-xs text-muted-foreground">Day</Label>
@@ -642,16 +650,17 @@
                   <Label for="edit-significance" class="text-xs text-muted-foreground"
                     >Significance</Label
                   >
-                  <select
-                    id="edit-significance"
-                    name="significance"
-                    bind:value={editSignificance}
-                    class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm"
-                  >
-                    <option value="major">Major</option>
-                    <option value="minor">Minor</option>
-                    <option value="trivial">Trivial</option>
-                  </select>
+                  <Select type="single" bind:value={editSignificance}>
+                    <SelectTrigger id="edit-significance" class="w-full">
+                      <SelectValue placeholder="Significance" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="major">Major</SelectItem>
+                      <SelectItem value="minor">Minor</SelectItem>
+                      <SelectItem value="trivial">Trivial</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <input type="hidden" name="significance" value={editSignificance} />
                 </div>
                 <div class="space-y-1">
                   <Label for="edit-entities" class="text-xs text-muted-foreground"

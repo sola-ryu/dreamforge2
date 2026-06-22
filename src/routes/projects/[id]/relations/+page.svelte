@@ -10,6 +10,7 @@
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import { ComboboxRich } from '$lib/components/ui/combobox';
+  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
 
   let showCreate = $state(false);
   let sourceId = $state('');
@@ -296,17 +297,17 @@
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div class="space-y-1.5">
             <Label for="relationType">Relation Type</Label>
-            <select
-              id="relationType"
-              name="relationType"
-              required
-              bind:value={relationType}
-              class="w-full rounded border border-input bg-background px-3 py-2 text-sm"
-            >
-              {#each relationTypes as rt}
-                <option value={rt}>{rt.replace(/_/g, ' ')}</option>
-              {/each}
-            </select>
+            <Select type="single" bind:value={relationType}>
+              <SelectTrigger id="relationType" class="w-full">
+                <SelectValue placeholder="Select relation..." />
+              </SelectTrigger>
+              <SelectContent>
+                {#each relationTypes as rt}
+                  <SelectItem value={rt}>{rt.replace(/_/g, ' ')}</SelectItem>
+                {/each}
+              </SelectContent>
+            </Select>
+            <input type="hidden" name="relationType" value={relationType} />
           </div>
           <div class="space-y-1.5">
             <Label for="label">Label (optional)</Label>

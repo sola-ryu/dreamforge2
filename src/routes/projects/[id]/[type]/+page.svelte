@@ -25,6 +25,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import { Textarea } from '$lib/components/ui/textarea';
   import { Combobox } from '$lib/components/ui/combobox';
+  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
 
   let showCreate = $state(false);
   let newName = $state('');
@@ -244,17 +245,20 @@
         {#if $page.data?.entityType === 'note' && ($page.data?.templates || []).length > 0}
           <div class="space-y-1.5">
             <Label for="template">Template (optional)</Label>
-            <select
-              id="template"
-              class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+            <Select type="single"
               value={selectedTemplate}
-              onchange={(e) => selectTemplate((e.target as HTMLSelectElement).value)}
+              onValueChange={(v) => selectTemplate(v)}
             >
-              <option value="">Blank note</option>
-              {#each $page.data?.templates || [] as tmpl}
-                <option value={tmpl.id}>{tmpl.name} — {tmpl.description}</option>
-              {/each}
-            </select>
+              <SelectTrigger id="template" class="w-full">
+                <SelectValue placeholder="Blank note" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Blank note</SelectItem>
+                {#each $page.data?.templates || [] as tmpl}
+                  <SelectItem value={tmpl.id}>{tmpl.name} — {tmpl.description}</SelectItem>
+                {/each}
+              </SelectContent>
+            </Select>
           </div>
           {#if newBody}
             <div class="space-y-1.5">
@@ -502,23 +506,28 @@
                 <!-- Status cell -->
                 <td class="px-3 py-2">
                   {#if canEdit}
-                    <select
+                    <Select type="single"
                       value={entity.status}
-                      onchange={(e) =>
-                        commitStatusChange(entity.id, (e.target as HTMLSelectElement).value)}
-                      class={cn(
-                        'rounded border px-1.5 py-0.5 text-xs bg-background',
-                        entity.status === 'complete' &&
-                          'border-green-500/40 text-green-600 dark:text-green-400',
-                        entity.status === 'wip' &&
-                          'border-yellow-500/40 text-yellow-600 dark:text-yellow-400',
-                        entity.status === 'draft' && 'border-border text-muted-foreground'
-                      )}
+                      onValueChange={(v) => commitStatusChange(entity.id, v)}
                     >
-                      <option value="draft">Draft</option>
-                      <option value="wip">In Progress</option>
-                      <option value="complete">Complete</option>
-                    </select>
+                      <SelectTrigger
+                        class={cn(
+                          'text-xs px-1.5 py-0.5',
+                          entity.status === 'complete' &&
+                            'text-green-600 dark:text-green-400 border-green-500/40',
+                          entity.status === 'wip' &&
+                            'text-yellow-600 dark:text-yellow-400 border-yellow-500/40',
+                          entity.status === 'draft' && 'text-muted-foreground border-border'
+                        )}
+                      >
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="wip">In Progress</SelectItem>
+                        <SelectItem value="complete">Complete</SelectItem>
+                      </SelectContent>
+                    </Select>
                   {:else}
                     <span
                       class={cn(

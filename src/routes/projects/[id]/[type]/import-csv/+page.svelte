@@ -7,6 +7,7 @@
   import type { EntityType } from '$lib/types';
   import { ArrowLeft, Upload } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
+  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
 
   const FIELD_TYPE_OPTIONS = [
     { value: 'text', label: 'Text' },
@@ -170,18 +171,18 @@
                 <tr class="border-b border-border/50">
                   <td class="px-2 py-1.5 font-mono text-xs align-top pt-3">{header}</td>
                   <td class="px-2 py-1.5 align-top">
-                    <select
-                      class="w-full rounded border border-input bg-background px-2 py-1 text-xs"
-                      value={mapping[header] || ''}
-                      onchange={(e) =>
-                        onMappingChange(header, (e.target as HTMLSelectElement).value)}
-                    >
-                      <option value="">— Skip —</option>
-                      <option value="__new__">— New field... —</option>
-                      {#each $page.data?.targetFields || [] as field}
-                        <option value={field.key}>{field.label}</option>
-                      {/each}
-                    </select>
+                    <Select type="single" value={mapping[header] || ''} onValueChange={(v) => onMappingChange(header, v)}>
+                      <SelectTrigger class="w-full text-xs">
+                        <SelectValue placeholder="Skip" />
+                      </SelectTrigger>
+                      <SelectContent class="text-xs">
+                        <SelectItem value="">— Skip —</SelectItem>
+                        <SelectItem value="__new__">— New field... —</SelectItem>
+                        {#each $page.data?.targetFields || [] as field}
+                          <SelectItem value={field.key}>{field.label}</SelectItem>
+                        {/each}
+                      </SelectContent>
+                    </Select>
                     {#if mapping[header] === '__new__'}
                       <div class="mt-1.5 space-y-1">
                         <input
@@ -199,23 +200,24 @@
                             };
                           }}
                         />
-                        <select
-                          class="w-full rounded border border-input bg-background px-2 py-1 text-xs"
-                          value={newFields[header]?.type ?? 'text'}
-                          onchange={(e) => {
-                            newFields = {
-                              ...newFields,
-                              [header]: {
-                                ...newFields[header],
-                                type: (e.target as HTMLSelectElement).value
-                              }
-                            };
-                          }}
-                        >
-                          {#each FIELD_TYPE_OPTIONS as opt}
-                            <option value={opt.value}>{opt.label}</option>
-                          {/each}
-                        </select>
+                        <Select type="single" value={newFields[header]?.type ?? 'text'} onValueChange={(v) => {
+                          newFields = {
+                            ...newFields,
+                            [header]: {
+                              ...newFields[header],
+                              type: v
+                            }
+                          };
+                        }}>
+                          <SelectTrigger class="w-full text-xs">
+                            <SelectValue placeholder="Text" />
+                          </SelectTrigger>
+                          <SelectContent class="text-xs">
+                            {#each FIELD_TYPE_OPTIONS as opt}
+                              <SelectItem value={opt.value}>{opt.label}</SelectItem>
+                            {/each}
+                          </SelectContent>
+                        </Select>
                       </div>
                     {/if}
                   </td>

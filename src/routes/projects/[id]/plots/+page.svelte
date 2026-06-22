@@ -8,6 +8,7 @@
   import { Label } from '$lib/components/ui/label';
   import { Badge } from '$lib/components/ui/badge';
   import { Combobox } from '$lib/components/ui/combobox';
+  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
 
   let showCreate = $state(false);
   let newTitle = $state('');
@@ -70,17 +71,18 @@
         </div>
         <div class="space-y-1.5">
           <Label for="template">Template</Label>
-          <select
-            id="template"
-            name="template"
-            bind:value={selectedTemplate}
-            class="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-          >
-            <option value="freeform">Freeform (no template)</option>
-            <option value="heros_journey">Hero's Journey</option>
-            <option value="save_the_cat">Save the Cat</option>
-            <option value="snowflake">Snowflake Method</option>
-          </select>
+          <Select type="single" bind:value={selectedTemplate}>
+            <SelectTrigger id="template" class="w-full mt-1">
+              <SelectValue placeholder="Select a template..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="freeform">Freeform (no template)</SelectItem>
+              <SelectItem value="heros_journey">Hero's Journey</SelectItem>
+              <SelectItem value="save_the_cat">Save the Cat</SelectItem>
+              <SelectItem value="snowflake">Snowflake Method</SelectItem>
+            </SelectContent>
+          </Select>
+          <input type="hidden" name="template" value={selectedTemplate} />
         </div>
         <div class="flex gap-2">
           <Button type="submit">Create</Button>
