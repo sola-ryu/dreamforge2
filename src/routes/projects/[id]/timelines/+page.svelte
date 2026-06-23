@@ -23,7 +23,13 @@
   import { Badge } from '$lib/components/ui/badge';
   import { Textarea } from '$lib/components/ui/textarea';
   import { Combobox } from '$lib/components/ui/combobox';
-  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
+  import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+  } from '$lib/components/ui/select';
   import type { TimelineEvent, CalendarConfig } from '$lib/server/timelines';
 
   let showCreate = $state(false);

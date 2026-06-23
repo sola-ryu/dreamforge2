@@ -7,7 +7,13 @@
   import type { EntityType } from '$lib/types';
   import { ArrowLeft, Upload } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
-  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
+  import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+  } from '$lib/components/ui/select';
 
   const FIELD_TYPE_OPTIONS = [
     { value: 'text', label: 'Text' },
@@ -171,7 +177,11 @@
                 <tr class="border-b border-border/50">
                   <td class="px-2 py-1.5 font-mono text-xs align-top pt-3">{header}</td>
                   <td class="px-2 py-1.5 align-top">
-                    <Select type="single" value={mapping[header] || ''} onValueChange={(v) => onMappingChange(header, v)}>
+                    <Select
+                      type="single"
+                      value={mapping[header] || ''}
+                      onValueChange={(v) => onMappingChange(header, v)}
+                    >
                       <SelectTrigger class="w-full text-xs">
                         <SelectValue placeholder="Skip" />
                       </SelectTrigger>
@@ -200,15 +210,19 @@
                             };
                           }}
                         />
-                        <Select type="single" value={newFields[header]?.type ?? 'text'} onValueChange={(v) => {
-                          newFields = {
-                            ...newFields,
-                            [header]: {
-                              ...newFields[header],
-                              type: v
-                            }
-                          };
-                        }}>
+                        <Select
+                          type="single"
+                          value={newFields[header]?.type ?? 'text'}
+                          onValueChange={(v) => {
+                            newFields = {
+                              ...newFields,
+                              [header]: {
+                                ...newFields[header],
+                                type: v
+                              }
+                            };
+                          }}
+                        >
                           <SelectTrigger class="w-full text-xs">
                             <SelectValue placeholder="Text" />
                           </SelectTrigger>

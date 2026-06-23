@@ -87,7 +87,9 @@ export const actions = {
       key,
       label,
       fieldType: fieldType as any,
-      refEntityType: (refEntityType && validEntityTypes.includes(refEntityType) ? refEntityType : null) as EntityType | null,
+      refEntityType: (refEntityType && validEntityTypes.includes(refEntityType)
+        ? refEntityType
+        : null) as EntityType | null,
       placeholder,
       required
     });

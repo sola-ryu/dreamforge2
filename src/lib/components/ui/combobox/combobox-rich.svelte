@@ -1,12 +1,12 @@
 <script lang="ts">
-  import CheckIcon from "@lucide/svelte/icons/check";
-  import ChevronsUpDownIcon from "@lucide/svelte/icons/chevrons-up-down";
-  import { tick } from "svelte";
-  import type { Snippet } from "svelte";
-  import * as Command from "$lib/components/ui/command";
-  import * as Popover from "$lib/components/ui/popover";
-  import { Button } from "$lib/components/ui/button";
-  import { cn } from "$lib/utils.js";
+  import CheckIcon from '@lucide/svelte/icons/check';
+  import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
+  import { tick } from 'svelte';
+  import type { Snippet } from 'svelte';
+  import * as Command from '$lib/components/ui/command';
+  import * as Popover from '$lib/components/ui/popover';
+  import { Button } from '$lib/components/ui/button';
+  import { cn } from '$lib/utils.js';
 
   type Option = { value: string; label: string; group?: string };
 
@@ -20,7 +20,7 @@
     disabled = false,
     class: className,
     onSelect,
-    children,
+    children
   }: {
     options: Option[];
     value?: string;
@@ -110,10 +110,7 @@
           {#each groups as group (group.heading ?? '')}
             <Command.Group heading={group.heading ?? undefined}>
               {#each group.items as option (option.value)}
-                <Command.Item
-                  value={option.label}
-                  onSelect={() => handleSelect(option.value)}
-                >
+                <Command.Item value={option.label} onSelect={() => handleSelect(option.value)}>
                   <CheckIcon
                     class={cn('h-4 w-4 shrink-0', value !== option.value && 'text-transparent')}
                   />
@@ -129,10 +126,7 @@
         {:else}
           <Command.Group value="options">
             {#each options as option (option.value)}
-              <Command.Item
-                value={option.label}
-                onSelect={() => handleSelect(option.value)}
-              >
+              <Command.Item value={option.label} onSelect={() => handleSelect(option.value)}>
                 <CheckIcon
                   class={cn('h-4 w-4 shrink-0', value !== option.value && 'text-transparent')}
                 />

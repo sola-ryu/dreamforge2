@@ -6,7 +6,13 @@
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import { ComboboxRich } from '$lib/components/ui/combobox';
-  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
+  import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+  } from '$lib/components/ui/select';
   import RelationGraph from '$lib/components/RelationGraph.svelte';
 
   let showCreate = $state(false);
@@ -42,11 +48,9 @@
       value: e.id,
       label: e.name,
       group: e.type as string,
-      entity: e,
+      entity: e
     }))
   );
-
-
 </script>
 
 <svelte:head>

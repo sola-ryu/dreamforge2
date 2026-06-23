@@ -24,7 +24,13 @@
   import { Label } from '$lib/components/ui/label';
   import { Textarea } from '$lib/components/ui/textarea';
   import { Combobox } from '$lib/components/ui/combobox';
-  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
+  import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+  } from '$lib/components/ui/select';
 
   let role = $derived($page.data?.role || 'owner');
   let canEdit = $derived(role !== 'commenter');

@@ -8,7 +8,13 @@
   import { Label } from '$lib/components/ui/label';
   import { Badge } from '$lib/components/ui/badge';
   import { Combobox } from '$lib/components/ui/combobox';
-  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
+  import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+  } from '$lib/components/ui/select';
 
   let showCreate = $state(false);
   let newTitle = $state('');

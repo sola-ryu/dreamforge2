@@ -1,0 +1,11 @@
+declare module 'cytoscape-fcose' {
+  import type cytoscape from 'cytoscape';
+  const ext: cytoscape.Ext;
+  export default ext;
+}
+
+declare module 'cytoscape-avsdf' {
+  import type cytoscape from 'cytoscape';
+  const ext: cytoscape.Ext;
+  export default ext;
+}

@@ -8,7 +8,13 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
-  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
+  import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+  } from '$lib/components/ui/select';
 
   let selectedType = $state<EntityType>('character');
   let newKey = $state('');
@@ -281,16 +287,25 @@
                   <span class="font-medium text-sm">{member.username}</span>
                   <span class="ml-2 text-xs text-muted-foreground">{member.email}</span>
                 </div>
-                <form method="POST" action="?/updateMemberRole" use:enhance id="member-role-form-{member.userId}">
+                <form
+                  method="POST"
+                  action="?/updateMemberRole"
+                  use:enhance
+                  id="member-role-form-{member.userId}"
+                >
                   <input type="hidden" name="userId" value={member.userId} />
                   <input type="hidden" name="role" value={member.role} />
-                  <Select type="single" value={member.role} onValueChange={(v) => {
-                    member.role = v;
-                    requestAnimationFrame(() => {
-                      const formEl = document.getElementById(`member-role-form-${member.userId}`);
-                      if (formEl instanceof HTMLFormElement) formEl.requestSubmit();
-                    });
-                  }}>
+                  <Select
+                    type="single"
+                    value={member.role}
+                    onValueChange={(v) => {
+                      member.role = v;
+                      requestAnimationFrame(() => {
+                        const formEl = document.getElementById(`member-role-form-${member.userId}`);
+                        if (formEl instanceof HTMLFormElement) formEl.requestSubmit();
+                      });
+                    }}
+                  >
                     <SelectTrigger class="text-xs px-2 py-0.5">
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>

@@ -25,7 +25,13 @@
   import { Badge } from '$lib/components/ui/badge';
   import { Textarea } from '$lib/components/ui/textarea';
   import { Combobox } from '$lib/components/ui/combobox';
-  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
+  import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+  } from '$lib/components/ui/select';
 
   let showCreate = $state(false);
   let newName = $state('');
@@ -245,10 +251,7 @@
         {#if $page.data?.entityType === 'note' && ($page.data?.templates || []).length > 0}
           <div class="space-y-1.5">
             <Label for="template">Template (optional)</Label>
-            <Select type="single"
-              value={selectedTemplate}
-              onValueChange={(v) => selectTemplate(v)}
-            >
+            <Select type="single" value={selectedTemplate} onValueChange={(v) => selectTemplate(v)}>
               <SelectTrigger id="template" class="w-full">
                 <SelectValue placeholder="Blank note" />
               </SelectTrigger>
@@ -506,7 +509,8 @@
                 <!-- Status cell -->
                 <td class="px-3 py-2">
                   {#if canEdit}
-                    <Select type="single"
+                    <Select
+                      type="single"
                       value={entity.status}
                       onValueChange={(v) => commitStatusChange(entity.id, v)}
                     >
