@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { enhance } from '$app/forms';
   import { goto } from '$app/navigation';
   import { ENTITY_LABELS } from '$lib/entityFields';
@@ -12,26 +12,26 @@
 
   function goToEntity(item: any) {
     if (item.entityType === 'image') {
-      goto(`/projects/${$page.params.id}/images/${item.entityId}`);
+      goto(`/projects/${page.params.id}/images/${item.entityId}`);
     } else {
       const route = entityTypeToRoute(item.entityType);
-      goto(`/projects/${$page.params.id}/${route}/${item.entityId}`);
+      goto(`/projects/${page.params.id}/${route}/${item.entityId}`);
     }
   }
 </script>
 
 <svelte:head>
-  <title>Trash — {$page.data?.project?.name || 'Project'} — DreamForge</title>
+  <title>Trash — {page.data?.project?.name || 'Project'} — DreamForge</title>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl p-6">
   <div class="mb-6">
     <a
-      href="/projects/{$page.params.id}"
+      href="/projects/{page.params.id}"
       class="mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
     >
       <ArrowLeft class="h-4 w-4" />
-      Back to {$page.data?.project?.name || 'Project'}
+      Back to {page.data?.project?.name || 'Project'}
     </a>
     <div class="flex items-center justify-between">
       <div>
@@ -40,7 +40,7 @@
           Deleted entities are stored here for 30 days before automatic permanent deletion.
         </p>
       </div>
-      {#if ($page.data?.items || []).length > 0}
+      {#if (page.data?.items || []).length > 0}
         <form method="POST" action="?/emptyTrash" use:enhance>
           <Button type="submit" variant="destructive">
             <Trash2 class="h-4 w-4" />
@@ -51,14 +51,14 @@
     </div>
   </div>
 
-  {#if ($page.data?.items || []).length === 0}
+  {#if (page.data?.items || []).length === 0}
     <div class="flex flex-col items-center gap-3 py-16 text-muted-foreground">
       <Trash2 class="h-12 w-12 opacity-30" />
       <p class="text-sm">Trash is empty</p>
     </div>
   {:else}
     <div class="space-y-2">
-      {#each $page.data.items as item}
+      {#each page.data.items as item}
         <div class="rounded-lg border border-border bg-card p-4">
           <div class="flex items-start justify-between">
             <div class="flex-1 min-w-0">

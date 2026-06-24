@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { enhance } from '$app/forms';
   import { goto } from '$app/navigation';
   import { ArrowLeft, Save, Trash2, Link2, Unlink, Image, ExternalLink } from '@lucide/svelte';
@@ -12,35 +12,35 @@
   import { Combobox } from '$lib/components/ui/combobox';
 
   let editing = $state(false);
-  let caption = $state($page.data?.image?.caption || '');
-  let altText = $state($page.data?.image?.altText || '');
+  let caption = $state(page.data?.image?.caption || '');
+  let altText = $state(page.data?.image?.altText || '');
   let showLinkPicker = $state(false);
   let selectedEntityId = $state('');
 
   $effect(() => {
-    if ($page.data?.image) {
-      caption = $page.data.image.caption || '';
-      altText = $page.data.image.altText || '';
+    if (page.data?.image) {
+      caption = page.data.image.caption || '';
+      altText = page.data.image.altText || '';
     }
   });
 
   function unlinkedEntities() {
-    const all = $page.data?.allEntities || [];
-    const linked = new Set($page.data?.linkedIds || []);
+    const all = page.data?.allEntities || [];
+    const linked = new Set(page.data?.linkedIds || []);
     return all.filter((e: any) => !linked.has(e.id));
   }
 </script>
 
 <svelte:head>
   <title
-    >{$page.data?.image?.originalName || 'Image'} — {$page.data?.project?.name || 'Project'} — DreamForge</title
+    >{page.data?.image?.originalName || 'Image'} — {page.data?.project?.name || 'Project'} — DreamForge</title
   >
 </svelte:head>
 
 <div class="mx-auto max-w-4xl p-6">
   <div class="mb-6">
     <a
-      href="/projects/{$page.params.id}/images"
+      href="/projects/{page.params.id}/images"
       class="mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
     >
       <ArrowLeft class="h-4 w-4" />
@@ -48,7 +48,7 @@
     </a>
 
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold">{$page.data?.image?.originalName || 'Image'}</h1>
+      <h1 class="text-2xl font-bold">{page.data?.image?.originalName || 'Image'}</h1>
       <div class="flex flex-wrap gap-2">
         {#if editing}
           <Button form="edit-form" type="submit">
@@ -71,8 +71,8 @@
 
   <div class="mb-6 overflow-hidden rounded-lg border border-border bg-card">
     <img
-      src={$page.data?.image?.url || ''}
-      alt={$page.data?.image?.altText || $page.data?.image?.originalName || ''}
+      src={page.data?.image?.url || ''}
+      alt={page.data?.image?.altText || page.data?.image?.originalName || ''}
       class="mx-auto max-h-[70vh] w-full object-contain"
     />
   </div>
@@ -115,24 +115,24 @@
         <div class="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
           <div>
             <span class="block font-medium">File</span>
-            <span>{$page.data?.image?.originalName || ''}</span>
+            <span>{page.data?.image?.originalName || ''}</span>
           </div>
           <div>
             <span class="block font-medium">Type</span>
-            <span>{$page.data?.image?.mimeType || ''}</span>
+            <span>{page.data?.image?.mimeType || ''}</span>
           </div>
           <div>
             <span class="block font-medium">Size</span>
             <span
-              >{$page.data?.image?.size
-                ? Math.round($page.data.image.size / 1024) + ' KB'
+              >{page.data?.image?.size
+                ? Math.round(page.data.image.size / 1024) + ' KB'
                 : ''}</span
             >
           </div>
           <div>
             <span class="block font-medium">URL</span>
             <a
-              href={$page.data?.image?.url}
+              href={page.data?.image?.url}
               target="_blank"
               class="underline hover:text-foreground"
             >
@@ -187,12 +187,12 @@
       {/if}
 
       <div class="space-y-1">
-        {#each $page.data?.image?.linkedEntities || [] as entity}
+        {#each page.data?.image?.linkedEntities || [] as entity}
           <div
             class="flex items-center justify-between rounded border border-border/50 px-2 py-1.5"
           >
             <a
-              href="/projects/{$page.params.id}/{entity.type}s/{entity.id}"
+              href="/projects/{page.params.id}/{entity.type}s/{entity.id}"
               class="flex items-center gap-1 text-xs hover:underline"
             >
               <Badge variant="secondary">{entity.type}</Badge>
@@ -220,7 +220,7 @@
             </form>
           </div>
         {/each}
-        {#if !$page.data?.image?.linkedEntities?.length}
+        {#if !page.data?.image?.linkedEntities?.length}
           <p class="py-4 text-center text-xs text-muted-foreground">
             <Image class="mx-auto mb-1 h-6 w-6 opacity-30" />
             No entities linked to this image

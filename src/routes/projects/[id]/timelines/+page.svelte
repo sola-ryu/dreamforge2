@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { enhance } from '$app/forms';
   import { goto } from '$app/navigation';
   import {
@@ -62,12 +62,12 @@
   let timelineEl = $state<HTMLDivElement | undefined>(undefined);
 
   const timeline = $derived(
-    $page.data?.timeline as { calendar: CalendarConfig; events: TimelineEvent[] } | undefined
+    page.data?.timeline as { calendar: CalendarConfig; events: TimelineEvent[] } | undefined
   );
   const events = $derived(timeline?.events || []);
   const calendar = $derived(timeline?.calendar || { name: 'Gregorian', months: [], epoch: 0 });
   const entities = $derived<Array<{ id: string; name: string; type: string }>>(
-    $page.data?.entities || []
+    page.data?.entities || []
   );
 
   const entityMap = $derived(new Map(entities.map((e) => [e.id, e])));
@@ -225,14 +225,14 @@
 </script>
 
 <svelte:head>
-  <title>Timelines — {$page.data?.projectName || 'Project'} — DreamForge</title>
+  <title>Timelines — {page.data?.projectName || 'Project'} — DreamForge</title>
 </svelte:head>
 
 <div class="mx-auto max-w-6xl p-6">
   <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <h1 class="text-2xl font-bold">Timelines</h1>
-      <p class="text-sm text-muted-foreground">{$page.data?.projectName || 'Project'}</p>
+      <p class="text-sm text-muted-foreground">{page.data?.projectName || 'Project'}</p>
     </div>
     <div class="flex flex-wrap gap-2">
       <Button variant="outline" onclick={() => (showCalendarSettings = !showCalendarSettings)}>

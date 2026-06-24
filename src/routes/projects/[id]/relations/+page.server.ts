@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { generateId } from '$lib/utils';
 import { getProjectAccess } from '$lib/server/members';
+import type { PageServerLoad } from './$types';
 
 const drizzleDb = drizzle(db);
 
@@ -31,7 +32,7 @@ function saveRelations(projectPath: string, relations: RelationEntry[]): void {
   fs.writeFileSync(path.join(projectPath, 'relations.json'), JSON.stringify(relations, null, 2));
 }
 
-export const load = async ({ params, locals }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
   if (!locals.user) throw redirect(302, '/login');
 
   const access = getProjectAccess(params.id, locals.user.id);

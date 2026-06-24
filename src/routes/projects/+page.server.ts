@@ -7,10 +7,11 @@ import { generateId } from '$lib/utils';
 import { getMemberProjects } from '$lib/server/members';
 import fs from 'node:fs';
 import path from 'node:path';
+import type { PageServerLoad } from './$types';
 
 const drizzleDb = drizzle(db);
 
-export const load = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals }) => {
   if (!locals.user) {
     throw redirect(302, '/login');
   }

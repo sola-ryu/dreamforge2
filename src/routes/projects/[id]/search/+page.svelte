@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { FileText, Search as SearchIcon } from '@lucide/svelte';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import { cn, formatDate } from '$lib/utils';
   import { Badge } from '$lib/components/ui/badge';
 
-  let query = $state($page.data?.query || '');
+  let query = $state(page.data?.query || '');
   let timer: ReturnType<typeof setTimeout>;
   let searching = $state(false);
 
@@ -25,13 +25,13 @@
 </script>
 
 <svelte:head>
-  <title>Search — {$page.data?.projectName || 'Project'} — DreamForge</title>
+  <title>Search — {page.data?.projectName || 'Project'} — DreamForge</title>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl p-6">
   <div class="mb-6">
     <h1 class="text-2xl font-bold">Search</h1>
-    <p class="text-sm text-muted-foreground">{$page.data?.projectName || 'Project'}</p>
+    <p class="text-sm text-muted-foreground">{page.data?.projectName || 'Project'}</p>
   </div>
 
   <div class="relative mb-6">
@@ -46,15 +46,15 @@
   </div>
 
   <div class="space-y-2">
-    {#if $page.data?.query && $page.data?.results?.length === 0}
+    {#if page.data?.query && page.data?.results?.length === 0}
       <p class="py-12 text-center text-muted-foreground">
-        No results for &ldquo;{$page.data.query}&rdquo;
+        No results for &ldquo;{page.data.query}&rdquo;
       </p>
     {/if}
 
-    {#each $page.data?.results || [] as entity}
+    {#each page.data?.results || [] as entity}
       <a
-        href="/projects/{$page.params.id}/{entityTypeToRoute(entity.type)}/{entity.id}"
+        href="/projects/{page.params.id}/{entityTypeToRoute(entity.type)}/{entity.id}"
         class="flex items-center gap-4 rounded-lg border border-border bg-card p-4 hover:bg-secondary/50"
       >
         <FileText class="h-5 w-5 text-muted-foreground" />

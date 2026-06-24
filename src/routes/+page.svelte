@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { Button } from '$lib/components/ui/button';
 </script>
@@ -9,7 +9,7 @@
 </svelte:head>
 
 <div class="flex min-h-screen items-center justify-center">
-  {#if $page.data?.user}
+  {#if page.data?.user}
     <div class="text-center">
       <h1 class="text-4xl font-bold">DreamForge</h1>
       <p class="mt-2 text-muted-foreground">Your worldbuilding companion</p>

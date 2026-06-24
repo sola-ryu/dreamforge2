@@ -2,8 +2,9 @@ import { fail, redirect } from '@sveltejs/kit';
 import { listPlotlines, createPlotline, deletePlotline } from '$lib/server/plots';
 import { listStories } from '$lib/server/stories';
 import { getProjectAccess } from '$lib/server/members';
+import type { PageServerLoad } from './$types';
 
-export const load = async ({ params, locals }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
   if (!locals.user) throw redirect(302, '/login');
 
   const access = getProjectAccess(params.id, locals.user.id);

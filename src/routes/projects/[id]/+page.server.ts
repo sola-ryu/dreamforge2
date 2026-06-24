@@ -1,7 +1,8 @@
 import { redirect } from '@sveltejs/kit';
 import { getProjectAccess } from '$lib/server/members';
+import type { PageServerLoad } from './$types';
 
-export const load = async ({ params, locals }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
   if (!locals.user) {
     throw redirect(302, '/login');
   }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { enhance } from '$app/forms';
   import { Plus, Trash2, Share2 } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
@@ -44,7 +44,7 @@
   ];
 
   let entityOptions = $derived(
-    ($page.data?.entities || []).map((e: any) => ({
+    (page.data?.entities || []).map((e: any) => ({
       value: e.id,
       label: e.name,
       group: e.type as string,
@@ -54,14 +54,14 @@
 </script>
 
 <svelte:head>
-  <title>Relations — {$page.data?.projectName || 'Project'} — DreamForge</title>
+  <title>Relations — {page.data?.projectName || 'Project'} — DreamForge</title>
 </svelte:head>
 
 <div class="mx-auto max-w-6xl p-6">
   <div class="mb-6 flex items-center justify-between">
     <div>
       <h1 class="text-2xl font-bold">Relations</h1>
-      <p class="text-sm text-muted-foreground">{$page.data?.projectName || 'Project'}</p>
+      <p class="text-sm text-muted-foreground">{page.data?.projectName || 'Project'}</p>
     </div>
     <Button onclick={() => (showCreate = !showCreate)}>
       <Plus class="h-4 w-4" /> Add Relation
@@ -135,16 +135,16 @@
 
   <RelationGraph
     class="mb-4"
-    entities={$page.data?.entities || []}
-    relations={$page.data?.relations || []}
-    projectId={$page.params.id || ''}
+    entities={page.data?.entities || []}
+    relations={page.data?.relations || []}
+    projectId={page.params.id || ''}
   />
 
   <!-- List -->
   <div class="space-y-2">
-    {#each $page.data?.relations || [] as rel}
-      {@const source = ($page.data?.entities || []).find((e: any) => e.id === rel.sourceId)}
-      {@const target = ($page.data?.entities || []).find((e: any) => e.id === rel.targetId)}
+    {#each page.data?.relations || [] as rel}
+      {@const source = (page.data?.entities || []).find((e: any) => e.id === rel.sourceId)}
+      {@const target = (page.data?.entities || []).find((e: any) => e.id === rel.targetId)}
       <div
         class="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3"
       >
@@ -152,7 +152,7 @@
           <Share2 class="h-4 w-4 text-muted-foreground" />
           {#if source}
             <a
-              href="/projects/{$page.params.id}/{source.type}/{source.id}"
+              href="/projects/{page.params.id}/{source.type}/{source.id}"
               class="font-medium hover:underline">{source.name}</a
             >
           {:else}
@@ -163,7 +163,7 @@
           >
           {#if target}
             <a
-              href="/projects/{$page.params.id}/{target.type}/{target.id}"
+              href="/projects/{page.params.id}/{target.type}/{target.id}"
               class="font-medium hover:underline">{target.name}</a
             >
           {:else}
@@ -178,7 +178,7 @@
         </form>
       </div>
     {/each}
-    {#if ($page.data?.relations || []).length === 0}
+    {#if (page.data?.relations || []).length === 0}
       <p class="py-12 text-center text-muted-foreground">
         No relations yet. Add one to start mapping your world.
       </p>

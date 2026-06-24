@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { enhance } from '$app/forms';
   import { invalidateAll } from '$app/navigation';
   import {
@@ -45,7 +45,7 @@
   let initialSceneHandled = $state(false);
 
   $effect(() => {
-    const sceneParam = $page.url.searchParams.get('scene');
+    const sceneParam = page.url.searchParams.get('scene');
     if (sceneParam && !initialSceneId) {
       initialSceneId = sceneParam;
     }
@@ -53,7 +53,7 @@
 
   $effect(() => {
     const sceneId = initialSceneId;
-    const chapters = $page.data?.chapters;
+    const chapters = page.data?.chapters;
     if (!sceneId || !chapters || chapters.length === 0 || initialSceneHandled) return;
 
     for (const ch of chapters) {
@@ -109,7 +109,7 @@
   function handleChapterDrop(e: DragEvent, targetId: string) {
     e.preventDefault();
     if (!dragChapterId || dragChapterId === targetId) return;
-    const chapters = $page.data?.chapters || [];
+    const chapters = page.data?.chapters || [];
     const ids = chapters.map((c: any) => c.id);
     const fromIdx = ids.indexOf(dragChapterId);
     const toIdx = ids.indexOf(targetId);
@@ -128,7 +128,7 @@
   function handleSceneDrop(e: DragEvent, chapterId: string, targetId: string) {
     e.preventDefault();
     if (!dragSceneId || dragSceneId === targetId) return;
-    const chapter = ($page.data?.chapters || []).find((c: any) => c.id === chapterId);
+    const chapter = (page.data?.chapters || []).find((c: any) => c.id === chapterId);
     if (!chapter) return;
     const ids = chapter.scenes.map((s: any) => s.id);
     const fromIdx = ids.indexOf(dragSceneId);
@@ -163,7 +163,7 @@
 
 <svelte:head>
   <title
-    >{$page.data?.story?.title || 'Story'} — {$page.data?.projectName || 'Project'} — DreamForge</title
+    >{page.data?.story?.title || 'Story'} — {page.data?.projectName || 'Project'} — DreamForge</title
   >
 </svelte:head>
 
@@ -172,17 +172,17 @@
   <div class="w-72 flex-shrink-0 overflow-y-auto border-r border-border bg-card p-4 sm:w-80">
     <div class="mb-4">
       <a
-        href="/projects/{$page.params.id}/stories"
+        href="/projects/{page.params.id}/stories"
         class="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft class="h-4 w-4" />
         Back
       </a>
       <div class="mt-2 flex items-center justify-between">
-        <h2 class="text-lg font-semibold">{$page.data?.story?.title || 'Story'}</h2>
+        <h2 class="text-lg font-semibold">{page.data?.story?.title || 'Story'}</h2>
         <div class="flex flex-wrap items-center gap-1">
           <Button
-            href="/projects/{$page.params.id}/stories/{$page.params.storyId}/export"
+            href="/projects/{page.params.id}/stories/{page.params.storyId}/export"
             target="_blank"
             variant="outline"
             size="xs"
@@ -191,7 +191,7 @@
             Export
           </Button>
           <Button
-            href="/projects/{$page.params.id}/stories/{$page.params.storyId}/summaries"
+            href="/projects/{page.params.id}/stories/{page.params.storyId}/summaries"
             variant="outline"
             size="xs"
           >
@@ -248,7 +248,7 @@
     {/if}
 
     <div class="space-y-2">
-      {#each $page.data?.chapters || [] as chapter, i}
+      {#each page.data?.chapters || [] as chapter, i}
         <div
           class="rounded-lg border border-border"
           draggable="true"
@@ -364,7 +364,7 @@
               isSaving = false;
               await update();
               if (activeSceneId) {
-                const chapters = $page.data?.chapters || [];
+                const chapters = page.data?.chapters || [];
                 for (const ch of chapters) {
                   const scene = (ch.scenes || []).find((s: any) => s.id === activeSceneId);
                   if (scene) {
@@ -483,7 +483,7 @@
         {#key activeSceneId}
           <Editor
             content={sceneBody}
-            entities={$page.data?.entities || []}
+            entities={page.data?.entities || []}
             onUpdate={(md) => (sceneBody = md)}
           />
         {/key}

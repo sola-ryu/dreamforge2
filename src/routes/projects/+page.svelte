@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { enhance } from '$app/forms';
   import { Plus, Pin, PinOff, ExternalLink } from '@lucide/svelte';
   import { cn, formatDate } from '$lib/utils';
@@ -63,13 +63,13 @@
   {/if}
 
   <div class="space-y-3">
-    {#if ($page.data?.projects?.length ?? 0) === 0 && ($page.data?.sharedProjects?.length ?? 0) === 0}
+    {#if (page.data?.projects?.length ?? 0) === 0 && (page.data?.sharedProjects?.length ?? 0) === 0}
       <p class="text-center text-muted-foreground py-12">
         No projects yet. Create one to get started.
       </p>
     {/if}
 
-    {#each $page.data?.projects || [] as project}
+    {#each page.data?.projects || [] as project}
       <div
         class={cn(
           'flex items-center justify-between rounded-lg border border-border bg-card p-4',
@@ -120,10 +120,10 @@
       </div>
     {/each}
 
-    {#if ($page.data?.sharedProjects?.length ?? 0) > 0}
+    {#if (page.data?.sharedProjects?.length ?? 0) > 0}
       <div class="mt-6">
         <h2 class="mb-3 text-sm font-medium text-muted-foreground">Shared with me</h2>
-        {#each $page.data.sharedProjects as project}
+        {#each page.data.sharedProjects as project}
           <div
             class="flex items-center justify-between rounded-lg border border-border bg-card p-4 mb-2"
           >
