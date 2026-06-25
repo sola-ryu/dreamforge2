@@ -12,9 +12,27 @@
     Share2,
     Settings,
     Trash2,
-    Image as ImageIcon
+    Image as ImageIcon,
+    RefreshCw
   } from '@lucide/svelte';
+  import Button from '$lib/components/ui/button/button.svelte';
   import type { EntityType } from '$lib/types';
+
+  let syncing = $state(false);
+
+  async function syncProject() {
+    syncing = true;
+    try {
+      const res = await fetch(`/api/projects/${page.params.id}/sync`, { method: 'POST' });
+      if (!res.ok) {
+        console.error('Sync failed', await res.text());
+      }
+    } catch (e) {
+      console.error('Sync error', e);
+    } finally {
+      syncing = false;
+    }
+  }
 
   const modules: Array<{
     type: EntityType | 'stories' | 'relations' | 'settings' | 'trash' | 'images';
@@ -42,10 +60,18 @@
 </svelte:head>
 
 <div class="mx-auto max-w-4xl p-6">
-  <h1 class="mb-2 text-2xl font-bold">{page.data?.project?.name || 'Project'}</h1>
-  {#if page.data?.project?.description}
-    <p class="mb-6 text-muted-foreground">{page.data.project.description}</p>
-  {/if}
+  <div class="mb-6 flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold">{page.data?.project?.name || 'Project'}</h1>
+      {#if page.data?.project?.description}
+        <p class="mt-1 text-muted-foreground">{page.data.project.description}</p>
+      {/if}
+    </div>
+    <Button onclick={syncProject} disabled={syncing} variant="outline">
+      <RefreshCw class="h-4 w-4 {syncing ? 'animate-spin' : ''}" />
+      {syncing ? 'Syncing...' : 'Sync Now'}
+    </Button>
+  </div>
 
   <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
     {#each modules as mod}
