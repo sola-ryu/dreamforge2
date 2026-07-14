@@ -10,14 +10,14 @@
   <title>DreamForge — Worldbuilding for Fiction Writers</title>
 </svelte:head>
 
-{#if $page.data?.user}
+{#if page.data?.user}
   <div class="flex min-h-screen items-center justify-center">
     <div class="text-center">
       <div class="mb-4 flex items-center justify-center gap-3">
         <BookOpen class="h-10 w-10 text-primary" />
         <h1 class="text-4xl font-bold">DreamForge</h1>
       </div>
-      <p class="text-lg text-muted-foreground">Welcome back, {$page.data.user.username}</p>
+      <p class="text-lg text-muted-foreground">Welcome back, {page.data.user.username}</p>
       <p class="mb-8 text-muted-foreground">Pick up where you left off</p>
       <Button size="lg" onclick={() => goto('/projects')}>Go to Projects</Button>
     </div>
