@@ -2,6 +2,10 @@ import { fail, redirect } from '@sveltejs/kit';
 import { listProjectImages, uploadImages, scanExistingImages } from '$lib/server/images';
 import { getProjectAccess } from '$lib/server/members';
 
+export const config = {
+  bodySizeLimit: parseInt(process.env.BODY_SIZE_LIMIT || '') || 20 * 1024 * 1024
+};
+
 export const load = async ({ params, locals }) => {
   if (!locals.user) throw redirect(302, '/login');
 

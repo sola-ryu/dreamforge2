@@ -58,10 +58,10 @@
       }}
       class="space-y-4"
     >
-      <div
+      <label
         class="flex items-center justify-center border-2 border-dashed border-border rounded-lg p-6"
       >
-        <label class="flex cursor-pointer flex-col items-center gap-2">
+        <div class="flex cursor-pointer flex-col items-center gap-2">
           <Upload class="h-8 w-8 text-muted-foreground" />
           <span class="text-sm text-muted-foreground">Click to select images</span>
           <span class="text-xs text-muted-foreground">PNG, JPG, GIF, WebP, SVG</span>
@@ -74,8 +74,8 @@
             class="hidden"
             onchange={handleFileSelect}
           />
-        </label>
-      </div>
+        </div>
+      </label>
 
       {#if previewUrls.length > 0}
         <div class="flex flex-wrap gap-3">

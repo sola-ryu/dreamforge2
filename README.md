@@ -40,6 +40,7 @@ Set via environment variables:
 | `PUBLIC_ALLOW_REGISTRATION` | `true`                   | Allow new user signups |
 | `ADMIN_EMAIL`               | `admin@dreamforge.local` | Initial admin email    |
 | `ADMIN_PASSWORD`            | `changeme`               | Initial admin password |
+| `BODY_SIZE_LIMIT`           | `20971520` (20 MB)      | Max upload size in bytes (e.g. `52428800` for 50 MB) |
 
 ## Development
 

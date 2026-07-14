@@ -1,12 +1,22 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { enhance } from '$app/forms';
-  import { Plus, Pin, PinOff, ExternalLink } from '@lucide/svelte';
+  import {
+    Plus,
+    Pin,
+    PinOff,
+    ExternalLink,
+    FolderOpen,
+    BookOpen,
+    Users,
+    Map
+  } from '@lucide/svelte';
   import { cn, formatDate } from '$lib/utils';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import { Textarea } from '$lib/components/ui/textarea';
+  import * as Card from '$lib/components/ui/card/index.js';
 
   let showCreate = $state(false);
   let name = $state('');
@@ -64,12 +74,61 @@
 
   <div class="space-y-3">
     {#if ($page.data?.projects?.length ?? 0) === 0 && ($page.data?.sharedProjects?.length ?? 0) === 0}
-      <p class="text-center text-muted-foreground py-12">
-        No projects yet. Create one to get started.
-      </p>
+      <div class="flex flex-col items-center py-16 text-center">
+        <FolderOpen class="mb-4 h-16 w-16 text-muted-foreground/40" />
+        <h2 class="mb-2 text-xl font-semibold">Welcome to DreamForge</h2>
+        <p class="mb-6 max-w-md text-muted-foreground">
+          Projects are where you build your world. Each project is a self-contained universe with
+          its own characters, locations, stories, and more.
+        </p>
+        <div class="mb-8 grid gap-4 sm:grid-cols-2">
+          <div class="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-left">
+            <BookOpen class="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div>
+              <p class="text-sm font-medium">Organized &amp; Self-Contained</p>
+              <p class="text-xs text-muted-foreground">
+                Every project keeps its entities, notes, and images together on disk as Markdown
+                files.
+              </p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-left">
+            <Users class="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div>
+              <p class="text-sm font-medium">Collaborate with Others</p>
+              <p class="text-xs text-muted-foreground">
+                Share projects with other writers and build your world together.
+              </p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-left">
+            <Map class="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div>
+              <p class="text-sm font-medium">Rich Entity Types</p>
+              <p class="text-xs text-muted-foreground">
+                Characters, locations, organizations, cultures, species, items, and notes — all with
+                structured fields.
+              </p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-left">
+            <Plus class="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div>
+              <p class="text-sm font-medium">Start Simple, Grow Big</p>
+              <p class="text-xs text-muted-foreground">
+                Begin with a single idea and expand as your world takes shape.
+              </p>
+            </div>
+          </div>
+        </div>
+        <Button onclick={() => (showCreate = true)} size="lg">
+          <Plus class="h-4 w-4" />
+          Create Your First Project
+        </Button>
+      </div>
     {/if}
 
-    {#each $page.data?.projects || [] as project}
+    {#each $page.data?.projects || [] as project (project.id)}
       <div
         class={cn(
           'flex items-center justify-between rounded-lg border border-border bg-card p-4',
@@ -123,7 +182,7 @@
     {#if ($page.data?.sharedProjects?.length ?? 0) > 0}
       <div class="mt-6">
         <h2 class="mb-3 text-sm font-medium text-muted-foreground">Shared with me</h2>
-        {#each $page.data.sharedProjects as project}
+        {#each $page.data.sharedProjects as project (project.id)}
           <div
             class="flex items-center justify-between rounded-lg border border-border bg-card p-4 mb-2"
           >
