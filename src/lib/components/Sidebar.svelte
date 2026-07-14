@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { toggleTheme } from '$lib/stores/theme.svelte';
   import { getZenMode } from '$lib/stores/zenMode.svelte';
   import * as Sidebar from '$lib/components/ui/sidebar/index.js';
@@ -35,7 +35,7 @@
         <Sidebar.Menu>
           <Sidebar.MenuItem>
             <Sidebar.MenuButton
-              isActive={$page.url.pathname === '/projects'}
+              isActive={page.url.pathname === '/projects'}
               tooltipContent="Projects"
             >
               {#snippet child({ props })}
@@ -50,18 +50,18 @@
       </Sidebar.GroupContent>
     </Sidebar.Group>
 
-    {#if $page.params?.id}
+    {#if page.params?.id}
       <Sidebar.Group>
         <Sidebar.GroupLabel>Current Project</Sidebar.GroupLabel>
         <Sidebar.GroupContent>
           <Sidebar.Menu>
             <Sidebar.MenuItem>
               <Sidebar.MenuButton
-                isActive={$page.url.pathname === `/projects/${$page.params.id}`}
+                isActive={page.url.pathname === `/projects/${page.params.id}`}
                 tooltipContent="Dashboard"
               >
                 {#snippet child({ props })}
-                  <a href={`/projects/${$page.params.id}`} {...props}>
+                  <a href={`/projects/${page.params.id}`} {...props}>
                     <LayoutDashboard class="h-4 w-4" />
                     <span>Dashboard</span>
                   </a>
@@ -72,7 +72,7 @@
             <Sidebar.MenuItem>
               <Sidebar.MenuButton tooltipContent="Stories">
                 {#snippet child({ props })}
-                  <a href={`/projects/${$page.params.id}/stories`} {...props}>
+                  <a href={`/projects/${page.params.id}/stories`} {...props}>
                     <BookOpenText class="h-4 w-4" />
                     <span>Stories</span>
                   </a>
@@ -83,7 +83,7 @@
             <Sidebar.MenuItem>
               <Sidebar.MenuButton tooltipContent="Timelines">
                 {#snippet child({ props })}
-                  <a href={`/projects/${$page.params.id}/timelines`} {...props}>
+                  <a href={`/projects/${page.params.id}/timelines`} {...props}>
                     <Clock class="h-4 w-4" />
                     <span>Timelines</span>
                   </a>
@@ -94,7 +94,7 @@
             <Sidebar.MenuItem>
               <Sidebar.MenuButton tooltipContent="Relations">
                 {#snippet child({ props })}
-                  <a href={`/projects/${$page.params.id}/relations`} {...props}>
+                  <a href={`/projects/${page.params.id}/relations`} {...props}>
                     <GitBranch class="h-4 w-4" />
                     <span>Relations</span>
                   </a>
@@ -105,7 +105,7 @@
             <Sidebar.MenuItem>
               <Sidebar.MenuButton tooltipContent="Search">
                 {#snippet child({ props })}
-                  <a href={`/projects/${$page.params.id}/search`} {...props}>
+                  <a href={`/projects/${page.params.id}/search`} {...props}>
                     <Search class="h-4 w-4" />
                     <span>Search</span>
                   </a>
@@ -116,7 +116,7 @@
         </Sidebar.GroupContent>
       </Sidebar.Group>
 
-      {#if $page.data?.bookmarks?.length > 0}
+      {#if page.data?.bookmarks?.length > 0}
         <Sidebar.Group>
           <Sidebar.GroupLabel>
             <div class="flex items-center gap-2">
@@ -126,12 +126,12 @@
           </Sidebar.GroupLabel>
           <Sidebar.GroupContent>
             <Sidebar.Menu>
-              {#each $page.data.bookmarks as bm (bm.entityId)}
+              {#each page.data.bookmarks as bm (bm.entityId)}
                 <Sidebar.MenuItem>
                   <Sidebar.MenuButton tooltipContent={bm.entityName || bm.entityId}>
                     {#snippet child({ props })}
                       <a
-                        href={`/projects/${$page.params.id}/${bm.entityType}s/${bm.entityId}`}
+                        href={`/projects/${page.params.id}/${bm.entityType}s/${bm.entityId}`}
                         {...props}
                       >
                         <span class="truncate">{bm.entityName || bm.entityId}</span>
@@ -149,11 +149,11 @@
 
   <Sidebar.Footer>
     <Sidebar.Menu>
-      {#if $page.params?.id}
+      {#if page.params?.id}
         <Sidebar.MenuItem>
           <Sidebar.MenuButton tooltipContent="Export Project">
             {#snippet child({ props }: { props: Record<string, unknown> })}
-              <a href="/projects/{$page.params.id}/export" {...props} target="_blank">
+              <a href="/projects/{page.params.id}/export" {...props} target="_blank">
                 <Download class="h-4 w-4" />
                 <span>Export Project</span>
               </a>

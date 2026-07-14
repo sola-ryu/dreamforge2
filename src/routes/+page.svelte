@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { BookOpen, Map, Users, GitBranch, Timeline, ScrollText, Network } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';

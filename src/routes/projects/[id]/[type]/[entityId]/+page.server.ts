@@ -15,8 +15,9 @@ import {
 import { mergeFields } from '$lib/entityFields';
 import { ENTITY_FIELDS } from '$lib/entityFields';
 import { getProjectAccess } from '$lib/server/members';
+import type { PageServerLoad } from './$types';
 
-export const load = async ({ params, locals }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
   if (!locals.user) throw redirect(302, '/login');
 
   const entityType = routeToEntityType(params.type);

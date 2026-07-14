@@ -11,10 +11,11 @@ import { entities as entitiesTable } from '$lib/server/schema';
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { getProjectAccess } from '$lib/server/members';
+import type { PageServerLoad } from './$types';
 
 const drizzleDb = drizzle(db);
 
-export const load = async ({ params, locals }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
   if (!locals.user) throw redirect(302, '/login');
 
   const access = getProjectAccess(params.id, locals.user.id);

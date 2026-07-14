@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { enhance } from '$app/forms';
   import { goto } from '$app/navigation';
   import { Plus, BookOpen, Trash2 } from '@lucide/svelte';
@@ -14,14 +14,14 @@
 </script>
 
 <svelte:head>
-  <title>Stories — {$page.data?.projectName || 'Project'} — DreamForge</title>
+  <title>Stories — {page.data?.projectName || 'Project'} — DreamForge</title>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl p-6">
   <div class="mb-6 flex items-center justify-between">
     <div>
       <h1 class="text-2xl font-bold">Stories</h1>
-      <p class="text-sm text-muted-foreground">{$page.data?.projectName || 'Project'}</p>
+      <p class="text-sm text-muted-foreground">{page.data?.projectName || 'Project'}</p>
     </div>
     <Button onclick={() => (showCreate = !showCreate)}>
       <Plus class="h-4 w-4" />
@@ -39,7 +39,7 @@
             if (result.type === 'success') {
               const d = result.data as { storyId?: string; sceneId?: string };
               if (d?.storyId && d?.sceneId) {
-                await goto(`/projects/${$page.params.id}/stories/${d.storyId}?scene=${d.sceneId}`);
+                await goto(`/projects/${page.params.id}/stories/${d.storyId}?scene=${d.sceneId}`);
               } else {
                 showCreate = false;
                 title = '';
@@ -70,14 +70,14 @@
   {/if}
 
   <div class="space-y-3">
-    {#if ($page.data?.stories || []).length === 0}
+    {#if (page.data?.stories || []).length === 0}
       <p class="py-12 text-center text-muted-foreground">No stories yet.</p>
     {/if}
 
-    {#each $page.data?.stories || [] as story}
+    {#each page.data?.stories || [] as story}
       <div class="group relative rounded-lg border border-border bg-card">
         <a
-          href="/projects/{$page.params.id}/stories/{story.id}"
+          href="/projects/{page.params.id}/stories/{story.id}"
           class="flex items-center gap-4 px-4 py-3"
         >
           <BookOpen class="h-5 w-5 text-primary" />

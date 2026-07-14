@@ -10,8 +10,9 @@ import { listEntities } from '$lib/server/entities';
 import { routeToEntityType } from '$lib/utils/entityTypes';
 import { getProjectAccess } from '$lib/server/members';
 import type { EntityType } from '$lib/types';
+import type { PageServerLoad } from './$types';
 
-export const load = async ({ params, locals }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
   if (!locals.user) throw redirect(302, '/login');
 
   const access = getProjectAccess(params.id, locals.user.id);

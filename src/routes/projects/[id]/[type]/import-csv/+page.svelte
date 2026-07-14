@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { enhance } from '$app/forms';
   import { goto } from '$app/navigation';
   import { ENTITY_PLURAL } from '$lib/entityFields';
@@ -44,8 +44,8 @@
   }
 
   function downloadCsv() {
-    const route = entityTypeToRoute($page.data?.entityType || 'character');
-    window.open(`/projects/${$page.params.id}/${route}/export-csv`, '_blank');
+    const route = entityTypeToRoute(page.data?.entityType || 'character');
+    window.open(`/projects/${page.params.id}/${route}/export-csv`, '_blank');
   }
 
   function onMappingChange(header: string, value: string) {
@@ -62,27 +62,27 @@
 
 <svelte:head>
   <title
-    >Import CSV — {$page.data?.entityType
-      ? ENTITY_PLURAL[$page.data.entityType as EntityType]
-      : 'Entities'} — {$page.data?.projectName || 'Project'} — DreamForge</title
+    >Import CSV — {page.data?.entityType
+      ? ENTITY_PLURAL[page.data.entityType as EntityType]
+      : 'Entities'} — {page.data?.projectName || 'Project'} — DreamForge</title
   >
 </svelte:head>
 
 <div class="mx-auto max-w-4xl p-6">
   <div class="mb-6">
     <a
-      href="/projects/{$page.params.id}/{entityTypeToRoute($page.data?.entityType || 'character')}"
+      href="/projects/{page.params.id}/{entityTypeToRoute(page.data?.entityType || 'character')}"
       class="mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
     >
       <ArrowLeft class="h-4 w-4" />
-      Back to {$page.data?.entityType
-        ? ENTITY_PLURAL[$page.data.entityType as EntityType]
+      Back to {page.data?.entityType
+        ? ENTITY_PLURAL[page.data.entityType as EntityType]
         : 'Entities'}
     </a>
     <h1 class="text-2xl font-bold">Import CSV</h1>
     <p class="text-sm text-muted-foreground">
-      Upload a CSV file to create or update {$page.data?.entityType
-        ? ENTITY_PLURAL[$page.data.entityType as EntityType].toLowerCase()
+      Upload a CSV file to create or update {page.data?.entityType
+        ? ENTITY_PLURAL[page.data.entityType as EntityType].toLowerCase()
         : 'entities'}. Rows are matched by ID first, then by name.
       <Button variant="link" class="h-auto p-0 text-sm" onclick={downloadCsv}
         >Download a CSV template</Button
@@ -122,8 +122,8 @@
         <Button
           variant="outline"
           onclick={() => {
-            const route = entityTypeToRoute($page.data?.entityType || 'character');
-            goto(`/projects/${$page.params.id}/${route}`);
+            const route = entityTypeToRoute(page.data?.entityType || 'character');
+            goto(`/projects/${page.params.id}/${route}`);
           }}
         >
           Back to List
@@ -188,7 +188,7 @@
                       <SelectContent class="text-xs">
                         <SelectItem value="">— Skip —</SelectItem>
                         <SelectItem value="__new__">— New field... —</SelectItem>
-                        {#each $page.data?.targetFields || [] as field}
+                        {#each page.data?.targetFields || [] as field}
                           <SelectItem value={field.key}>{field.label}</SelectItem>
                         {/each}
                       </SelectContent>
@@ -317,7 +317,7 @@
               csvHeaders = d.csvHeaders;
               preview = d.preview;
               rawData = d.data;
-              const targetKeys = ($page.data?.targetFields || []).map(
+              const targetKeys = (page.data?.targetFields || []).map(
                 (f: { key: string }) => f.key
               );
               mapping = buildAutoMapping(d.csvHeaders, targetKeys);

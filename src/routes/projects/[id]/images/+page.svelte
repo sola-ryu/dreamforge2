@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { enhance } from '$app/forms';
   import { ArrowLeft, Upload, Image, X } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
@@ -23,21 +23,21 @@
 </script>
 
 <svelte:head>
-  <title>Images — {$page.data?.project?.name || 'Project'} — DreamForge</title>
+  <title>Images — {page.data?.project?.name || 'Project'} — DreamForge</title>
 </svelte:head>
 
 <div class="mx-auto max-w-5xl p-6">
   <div class="mb-6">
     <a
-      href="/projects/{$page.params.id}"
+      href="/projects/{page.params.id}"
       class="mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
     >
       <ArrowLeft class="h-4 w-4" />
-      Back to {$page.data?.project?.name || 'Project'}
+      Back to {page.data?.project?.name || 'Project'}
     </a>
     <h1 class="text-2xl font-bold">Images</h1>
     <p class="text-sm text-muted-foreground">
-      Manage images for {$page.data?.project?.name || 'this project'}
+      Manage images for {page.data?.project?.name || 'this project'}
     </p>
   </div>
 
@@ -114,16 +114,16 @@
   </div>
 
   <div>
-    {#if ($page.data?.images || []).length === 0}
+    {#if (page.data?.images || []).length === 0}
       <div class="flex flex-col items-center gap-3 py-16 text-muted-foreground">
         <Image class="h-12 w-12 opacity-30" />
         <p class="text-sm">No images yet</p>
       </div>
     {:else}
       <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        {#each $page.data.images as img}
+        {#each page.data.images as img}
           <a
-            href="/projects/{$page.params.id}/images/{img.id}"
+            href="/projects/{page.params.id}/images/{img.id}"
             class="group rounded-lg border border-border bg-card overflow-hidden hover:border-primary/50"
           >
             <div class="aspect-square overflow-hidden bg-secondary">

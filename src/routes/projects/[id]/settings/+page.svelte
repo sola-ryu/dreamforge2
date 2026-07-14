@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { enhance } from '$app/forms';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import { ENTITY_LABELS } from '$lib/entityFields';
@@ -63,32 +63,32 @@
   }
 
   let typeFields = $derived(
-    ($page.data?.customFields || []).filter((f: any) => f.entityType === selectedType)
+    (page.data?.customFields || []).filter((f: any) => f.entityType === selectedType)
   );
 
   let fieldError = $state<string | null>(null);
   let addMemberQuery = $state('');
   let addMemberRole = $state<'editor' | 'commenter'>('editor');
   let memberError = $state<string | null>(null);
-  let isOwner = $derived($page.data?.role === 'owner');
+  let isOwner = $derived(page.data?.role === 'owner');
 </script>
 
 <svelte:head>
-  <title>Settings — {$page.data?.project?.name || 'Project'} — DreamForge</title>
+  <title>Settings — {page.data?.project?.name || 'Project'} — DreamForge</title>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl p-6">
   <div class="mb-6">
     <a
-      href="/projects/{$page.params.id}"
+      href="/projects/{page.params.id}"
       class="mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
     >
       <ArrowLeft class="h-4 w-4" />
-      Back to {$page.data?.project?.name || 'Project'}
+      Back to {page.data?.project?.name || 'Project'}
     </a>
     <h1 class="text-2xl font-bold">Project Settings</h1>
     <p class="text-sm text-muted-foreground">
-      Customize entity fields for {$page.data?.project?.name || 'this project'}
+      Customize entity fields for {page.data?.project?.name || 'this project'}
     </p>
   </div>
 
@@ -274,13 +274,13 @@
         Members
       </h2>
 
-      {#if ($page.data?.members || []).length === 0}
+      {#if (page.data?.members || []).length === 0}
         <p class="mb-4 text-sm text-muted-foreground">
           No members added yet. Only you have access.
         </p>
       {:else}
         <div class="mb-4 space-y-2">
-          {#each $page.data.members as member}
+          {#each page.data.members as member}
             <div class="flex items-center justify-between rounded border border-border px-3 py-2">
               <div class="flex items-center gap-3">
                 <div>

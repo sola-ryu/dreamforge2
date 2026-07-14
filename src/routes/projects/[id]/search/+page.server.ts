@@ -2,8 +2,9 @@ import { redirect } from '@sveltejs/kit';
 import { searchEntities } from '$lib/server/entities';
 import { getProjectAccess } from '$lib/server/members';
 import { scanProject, watchProject } from '$lib/server/watcher';
+import type { PageServerLoad } from './$types';
 
-export const load = async ({ params, locals, url }) => {
+export const load: PageServerLoad = async ({ params, locals, url }) => {
   if (!locals.user) throw redirect(302, '/login');
 
   const access = getProjectAccess(params.id, locals.user.id);

@@ -1,6 +1,6 @@
 <script lang="ts">
   import '../app.css';
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { getTheme } from '$lib/stores/theme.svelte';
   const theme = getTheme();
   import { getZenMode } from '$lib/stores/zenMode.svelte';
@@ -12,7 +12,7 @@
 
   let { children } = $props();
 
-  let hasSidebar = $derived(!!$page.data?.user && !zen.active);
+  let hasSidebar = $derived(!!page.data?.user && !zen.active);
 
   $effect(() => {
     document.documentElement.className = theme.value === 'dark' ? 'dark' : '';

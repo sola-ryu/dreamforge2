@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { enhance } from '$app/forms';
   import { goto, invalidateAll } from '$app/navigation';
   import { ENTITY_LABELS } from '$lib/entityFields';
@@ -32,7 +32,7 @@
     SelectValue
   } from '$lib/components/ui/select';
 
-  let role = $derived($page.data?.role || 'owner');
+  let role = $derived(page.data?.role || 'owner');
   let canEdit = $derived(role !== 'commenter');
 
   let editing = $state(false);
@@ -40,20 +40,20 @@
   let convertStoryId = $state('');
   let convertChapterId = $state('');
   let selectedImageId = $state('');
-  let name = $state($page.data?.entity?.name || '');
-  let body = $state($page.data?.entity?.body || '');
+  let name = $state(page.data?.entity?.name || '');
+  let body = $state(page.data?.entity?.body || '');
   let fields = $state<Record<string, unknown>>({});
   let tags = $state('');
-  let status = $state($page.data?.entity?.status || 'draft');
+  let status = $state(page.data?.entity?.status || 'draft');
   $effect(() => {
-    if ($page.data?.entity) {
-      name = $page.data.entity.name;
-      body = $page.data.entity.body;
-      tags = ($page.data.entity.tags || []).join(', ');
-      status = $page.data.entity.status;
+    if (page.data?.entity) {
+      name = page.data.entity.name;
+      body = page.data.entity.body;
+      tags = (page.data.entity.tags || []).join(', ');
+      status = page.data.entity.status;
       const f: Record<string, unknown> = {};
-      for (const field of $page.data?.customFields || []) {
-        f[field.key] = $page.data.entity.frontmatter?.[field.key];
+      for (const field of page.data?.customFields || []) {
+        f[field.key] = page.data.entity.frontmatter?.[field.key];
       }
       fields = f;
     }
@@ -70,21 +70,21 @@
 
 <svelte:head>
   <title
-    >{$page.data?.entity?.name || 'Entity'} — {$page.data?.entityType
-      ? ENTITY_LABELS[$page.data.entityType as EntityType]
-      : ''} — {$page.data?.project?.name || 'Project'} — DreamForge</title
+    >{page.data?.entity?.name || 'Entity'} — {page.data?.entityType
+      ? ENTITY_LABELS[page.data.entityType as EntityType]
+      : ''} — {page.data?.project?.name || 'Project'} — DreamForge</title
   >
 </svelte:head>
 
 <div class="mx-auto max-w-4xl p-6">
   <div class="mb-6">
     <a
-      href="/projects/{$page.params.id}/{entityTypeToRoute($page.data?.entityType || 'character')}"
+      href="/projects/{page.params.id}/{entityTypeToRoute(page.data?.entityType || 'character')}"
       class="mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
     >
       <ArrowLeft class="h-4 w-4" />
-      Back to {$page.data?.entityType
-        ? ENTITY_LABELS[$page.data.entityType as EntityType] + 's'
+      Back to {page.data?.entityType
+        ? ENTITY_LABELS[page.data.entityType as EntityType] + 's'
         : ''}
     </a>
 
@@ -107,7 +107,7 @@
           </Button>
           <Button variant="outline" onclick={toggleEdit}>Cancel</Button>
         {:else}
-          {#if canEdit && $page.data?.entityType === 'note'}
+          {#if canEdit && page.data?.entityType === 'note'}
             <Button variant="outline" onclick={() => (showConvert = !showConvert)}>
               <SwitchCamera class="h-4 w-4" />
               Convert to Scene
@@ -115,7 +115,7 @@
           {/if}
           <form method="POST" action="?/toggleBookmark" use:enhance>
             <Button type="submit" variant="outline">
-              {#if $page.data?.bookmarked}
+              {#if page.data?.bookmarked}
                 <BookmarkMinus class="h-4 w-4" />
                 Unbookmark
               {:else}
@@ -178,9 +178,9 @@
         </div>
       </div>
 
-      {#if ($page.data?.customFields || []).length > 0}
+      {#if (page.data?.customFields || []).length > 0}
         <div class="space-y-4">
-          {#each $page.data.customFields as field}
+          {#each page.data.customFields as field}
             <div>
               <Label for={field.key} class="mb-1">
                 {field.label}
@@ -241,7 +241,7 @@
         <h2 class="text-sm font-medium">Images</h2>
         {#if editing}
           <a
-            href="/projects/{$page.params.id}/images"
+            href="/projects/{page.params.id}/images"
             class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
           >
             <ImagePlus class="h-3 w-3" />
@@ -249,13 +249,13 @@
           </a>
         {/if}
       </div>
-      {#if ($page.data?.entityImages || []).length === 0}
+      {#if (page.data?.entityImages || []).length === 0}
         <p class="py-2 text-xs text-muted-foreground">No images linked to this entity.</p>
       {:else}
         <div class="flex flex-wrap gap-2">
-          {#each $page.data.entityImages as img}
+          {#each page.data.entityImages as img}
             <div class="group relative">
-              <a href="/projects/{$page.params.id}/images/{img.id}" class="block">
+              <a href="/projects/{page.params.id}/images/{img.id}" class="block">
                 <img
                   src={img.url}
                   alt={img.altText || img.originalName}
@@ -286,9 +286,9 @@
         <div class="mt-3 flex gap-2">
           <Combobox
             bind:value={selectedImageId}
-            options={($page.data?.projectImages || [])
+            options={(page.data?.projectImages || [])
               .filter(
-                (img: any) => !($page.data?.entityImages || []).some((ei: any) => ei.id === img.id)
+                (img: any) => !(page.data?.entityImages || []).some((ei: any) => ei.id === img.id)
               )
               .map((img: any) => ({
                 value: img.id,
@@ -317,12 +317,12 @@
 
     <div class="rounded-lg border border-border bg-card p-4">
       <Label for="body" class="mb-2">Content</Label>
-      {#if $page.data?.entityType === 'note'}
+      {#if page.data?.entityType === 'note'}
         <input type="hidden" name="body" value={body} />
         {#if editing}
           <Editor
             content={body}
-            entities={$page.data?.entities || []}
+            entities={page.data?.entities || []}
             onUpdate={(md) => (body = md)}
           />
         {:else}
@@ -340,7 +340,7 @@
         />
         {#if !editing}
           <div class="mt-4 prose prose-sm max-w-none">
-            {@html $page.data?.entity?.body || ''}
+            {@html page.data?.entity?.body || ''}
           </div>
         {/if}
       {/if}
@@ -348,11 +348,11 @@
   </form>
 
   <Comments
-    projectId={$page.params.id || ''}
+    projectId={page.params.id || ''}
     targetType="entity"
-    targetId={$page.params.entityId || ''}
-    currentUserId={$page.data?.currentUserId || ''}
-    projectOwnerId={$page.data?.projectOwnerId || ''}
+    targetId={page.params.entityId || ''}
+    currentUserId={page.data?.currentUserId || ''}
+    projectOwnerId={page.data?.projectOwnerId || ''}
     {role}
   />
 
@@ -364,9 +364,9 @@
         use:enhance={() => {
           return async ({ result }) => {
             if (result.type === 'success') {
-              const type = $page.data?.entityType;
+              const type = page.data?.entityType;
               if (type) {
-                goto(`/projects/${$page.params.id}/${entityTypeToRoute(type)}`);
+                goto(`/projects/${page.params.id}/${entityTypeToRoute(type)}`);
               }
             }
           };
@@ -380,7 +380,7 @@
     </div>
   {/if}
 
-  {#if showConvert && $page.data?.entityType === 'note'}
+  {#if showConvert && page.data?.entityType === 'note'}
     <div class="mt-4 rounded-lg border border-border bg-card p-4">
       <h3 class="mb-3 text-sm font-medium">Convert Note to Scene</h3>
       <form method="POST" action="?/convertToScene" use:enhance class="space-y-3">
@@ -389,7 +389,7 @@
           <Combobox
             name="storyId"
             bind:value={convertStoryId}
-            options={($page.data?.stories || []).map((s: any) => ({ value: s.id, label: s.title }))}
+            options={(page.data?.stories || []).map((s: any) => ({ value: s.id, label: s.title }))}
             placeholder="Select a story..."
           />
         </div>
@@ -403,7 +403,7 @@
             options={[
               { value: '', label: 'New chapter...' },
               ...(
-                ($page.data?.stories || []).find((s: any) => s.id === convertStoryId)?.chapters ||
+                (page.data?.stories || []).find((s: any) => s.id === convertStoryId)?.chapters ||
                 []
               ).map((ch: any) => ({ value: ch.id, label: ch.title }))
             ]}
@@ -422,11 +422,11 @@
 
   <div class="mt-4 rounded-lg border border-border bg-card p-4">
     <p class="text-xs text-muted-foreground">
-      Created: {$page.data?.entity?.createdAt
-        ? new Date($page.data.entity.createdAt).toLocaleString()
+      Created: {page.data?.entity?.createdAt
+        ? new Date(page.data.entity.createdAt).toLocaleString()
         : ''}
-      &middot; Modified: {$page.data?.entity?.modifiedAt
-        ? new Date($page.data.entity.modifiedAt).toLocaleString()
+      &middot; Modified: {page.data?.entity?.modifiedAt
+        ? new Date(page.data.entity.modifiedAt).toLocaleString()
         : ''}
     </p>
   </div>

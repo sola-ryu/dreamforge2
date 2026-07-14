@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { enhance } from '$app/forms';
   import { goto } from '$app/navigation';
   import { ENTITY_LABELS, ENTITY_PLURAL } from '$lib/entityFields';
@@ -47,10 +47,10 @@
   let editingCell = $state<{ entityId: string; field: string } | null>(null);
   let editingValue = $state('');
 
-  let role = $derived($page.data?.role || 'owner');
+  let role = $derived(page.data?.role || 'owner');
   let canEdit = $derived(role !== 'commenter');
 
-  const LAYOUT_KEY = $derived(`entity-layout-${$page.data?.entityType || 'entity'}`);
+  const LAYOUT_KEY = $derived(`entity-layout-${page.data?.entityType || 'entity'}`);
 
   $effect(() => {
     const stored = localStorage.getItem(LAYOUT_KEY);
@@ -79,20 +79,20 @@
 
   function selectTemplate(templateId: string) {
     selectedTemplate = templateId;
-    const templates = $page.data?.templates || [];
+    const templates = page.data?.templates || [];
     const tpl = templates.find((t: any) => t.id === templateId);
     newBody = tpl?.body || '';
   }
 
   function downloadCsv() {
-    const route = entityTypeToRoute($page.data?.entityType || 'character');
-    window.open(`/projects/${$page.params.id}/${route}/export-csv`, '_blank');
+    const route = entityTypeToRoute(page.data?.entityType || 'character');
+    window.open(`/projects/${page.params.id}/${route}/export-csv`, '_blank');
   }
 
-  let allEntities = $state<any[]>($page.data?.entities || []);
+  let allEntities = $state<any[]>(page.data?.entities || []);
 
   $effect(() => {
-    allEntities = $page.data?.entities || [];
+    allEntities = page.data?.entities || [];
   });
 
   let entities = $derived(
@@ -111,13 +111,13 @@
     if (!editingCell || editingCell.entityId !== entityId || editingCell.field !== field) return;
     editingCell = null;
 
-    const route = entityTypeToRoute($page.data?.entityType || 'character');
+    const route = entityTypeToRoute(page.data?.entityType || 'character');
     const body = new FormData();
     body.set('entityId', entityId);
     body.set('field', field);
     body.set('value', editingValue);
 
-    const res = await fetch(`/projects/${$page.params.id}/${route}?/quickUpdate`, {
+    const res = await fetch(`/projects/${page.params.id}/${route}?/quickUpdate`, {
       method: 'POST',
       body
     });
@@ -136,13 +136,13 @@
   }
 
   async function commitStatusChange(entityId: string, newStatus: string) {
-    const route = entityTypeToRoute($page.data?.entityType || 'character');
+    const route = entityTypeToRoute(page.data?.entityType || 'character');
     const body = new FormData();
     body.set('entityId', entityId);
     body.set('field', 'status');
     body.set('value', newStatus);
 
-    const res = await fetch(`/projects/${$page.params.id}/${route}?/quickUpdate`, {
+    const res = await fetch(`/projects/${page.params.id}/${route}?/quickUpdate`, {
       method: 'POST',
       body
     });
@@ -153,7 +153,7 @@
   }
 
   let simpleCustomFields = $derived(
-    ($page.data?.customFields || []).filter(
+    (page.data?.customFields || []).filter(
       (f: any) =>
         ['text', 'number', 'date', 'boolean'].includes(f.type) &&
         !['name', 'status', 'tags'].includes(f.key)
@@ -163,7 +163,7 @@
 
 <svelte:head>
   <title
-    >{$page.data?.entityType ? ENTITY_PLURAL[$page.data.entityType as EntityType] : 'Entities'} — {$page
+    >{page.data?.entityType ? ENTITY_PLURAL[page.data.entityType as EntityType] : 'Entities'} — {page
       .data?.projectName || 'Project'} — DreamForge</title
   >
 </svelte:head>
@@ -172,10 +172,10 @@
   <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <h1 class="text-2xl font-bold">
-        {$page.data?.entityType ? ENTITY_PLURAL[$page.data.entityType as EntityType] : 'Entities'}
+        {page.data?.entityType ? ENTITY_PLURAL[page.data.entityType as EntityType] : 'Entities'}
       </h1>
       <p class="text-sm text-muted-foreground">
-        {$page.data?.projectName || 'Project'}
+        {page.data?.projectName || 'Project'}
       </p>
     </div>
     <div class="flex items-center gap-2">
@@ -206,8 +206,8 @@
       {#if canEdit}
         <Button
           variant="outline"
-          href="/projects/{$page.params.id}/{entityTypeToRoute(
-            $page.data?.entityType || 'character'
+          href="/projects/{page.params.id}/{entityTypeToRoute(
+            page.data?.entityType || 'character'
           )}/import-csv"
         >
           <Upload class="h-4 w-4" />
@@ -215,7 +215,7 @@
         </Button>
         <Button onclick={() => (showCreate = !showCreate)}>
           <Plus class="h-4 w-4" />
-          New {$page.data?.entityType ? ENTITY_LABELS[$page.data.entityType as EntityType] : ''}
+          New {page.data?.entityType ? ENTITY_LABELS[page.data.entityType as EntityType] : ''}
         </Button>
       {/if}
     </div>
@@ -248,7 +248,7 @@
             placeholder="Enter name..."
           />
         </div>
-        {#if $page.data?.entityType === 'note' && ($page.data?.templates || []).length > 0}
+        {#if page.data?.entityType === 'note' && (page.data?.templates || []).length > 0}
           <div class="space-y-1.5">
             <Label for="template">Template (optional)</Label>
             <Select type="single" value={selectedTemplate} onValueChange={(v) => selectTemplate(v)}>
@@ -257,7 +257,7 @@
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">Blank note</SelectItem>
-                {#each $page.data?.templates || [] as tmpl}
+                {#each page.data?.templates || [] as tmpl}
                   <SelectItem value={tmpl.id}>{tmpl.name} — {tmpl.description}</SelectItem>
                 {/each}
               </SelectContent>
@@ -269,16 +269,16 @@
               <input type="hidden" name="body" value={newBody} />
               <Editor
                 content={newBody}
-                entities={$page.data?.entities || []}
+                entities={page.data?.entities || []}
                 onUpdate={(md) => (newBody = md)}
               />
             </div>
           {/if}
         {/if}
-        {#if ($page.data?.customFields || []).length > 0}
+        {#if (page.data?.customFields || []).length > 0}
           <div class="border-t border-border pt-3">
             <p class="mb-2 text-xs font-medium text-muted-foreground">Custom Fields</p>
-            {#each $page.data.customFields as field}
+            {#each page.data.customFields as field}
               <div class="mb-2">
                 <Label for="cf-{field.key}" class="text-xs text-muted-foreground mb-0.5">
                   {field.label}
@@ -340,8 +340,8 @@
     <div class="space-y-2">
       {#if entities.length === 0}
         <p class="py-12 text-center text-muted-foreground">
-          No {$page.data?.entityType
-            ? ENTITY_PLURAL[$page.data.entityType as EntityType].toLowerCase()
+          No {page.data?.entityType
+            ? ENTITY_PLURAL[page.data.entityType as EntityType].toLowerCase()
             : 'entities'} yet. Create one to get started.
         </p>
       {/if}
@@ -349,7 +349,7 @@
       {#each entities as entity}
         <div class="group relative rounded-lg border border-border bg-card hover:bg-secondary/50">
           <a
-            href="/projects/{$page.params.id}/{entityTypeToRoute(entity.type)}/{entity.id}"
+            href="/projects/{page.params.id}/{entityTypeToRoute(entity.type)}/{entity.id}"
             class="flex items-center gap-4 px-4 py-3"
           >
             <div
@@ -439,8 +439,8 @@
     <div class="rounded-lg border border-border overflow-x-auto">
       {#if entities.length === 0}
         <p class="py-12 text-center text-muted-foreground">
-          No {$page.data?.entityType
-            ? ENTITY_PLURAL[$page.data.entityType as EntityType].toLowerCase()
+          No {page.data?.entityType
+            ? ENTITY_PLURAL[page.data.entityType as EntityType].toLowerCase()
             : 'entities'} yet.
         </p>
       {:else}
@@ -476,7 +476,7 @@
                   {:else}
                     <div class="flex items-center gap-1 group/cell">
                       <a
-                        href="/projects/{$page.params.id}/{entityTypeToRoute(
+                        href="/projects/{page.params.id}/{entityTypeToRoute(
                           entity.type
                         )}/{entity.id}"
                         class="truncate hover:underline"
@@ -552,7 +552,7 @@
                 <!-- Tags cell -->
                 <td class="px-3 py-2 max-w-32">
                   <a
-                    href="/projects/{$page.params.id}/{entityTypeToRoute(entity.type)}/{entity.id}"
+                    href="/projects/{page.params.id}/{entityTypeToRoute(entity.type)}/{entity.id}"
                     class="text-xs text-muted-foreground hover:text-foreground truncate block"
                   >
                     {(entity.tags || []).join(', ') || '—'}
@@ -585,13 +585,13 @@
                             entity.frontmatter?.[field.key] === 'true'}
                           onchange={async (e) => {
                             const val = (e.target as HTMLInputElement).checked ? 'true' : 'false';
-                            const route = entityTypeToRoute($page.data?.entityType || 'character');
+                            const route = entityTypeToRoute(page.data?.entityType || 'character');
                             const body = new FormData();
                             body.set('entityId', entity.id);
                             body.set('field', field.key);
                             body.set('value', val);
                             const res = await fetch(
-                              `/projects/${$page.params.id}/${route}?/quickUpdate`,
+                              `/projects/${page.params.id}/${route}?/quickUpdate`,
                               { method: 'POST', body }
                             );
                             if (res.ok) {

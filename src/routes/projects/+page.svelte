@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { enhance } from '$app/forms';
   import {
     Plus,
@@ -73,7 +73,7 @@
   {/if}
 
   <div class="space-y-3">
-    {#if ($page.data?.projects?.length ?? 0) === 0 && ($page.data?.sharedProjects?.length ?? 0) === 0}
+    {#if (page.data?.projects?.length ?? 0) === 0 && (page.data?.sharedProjects?.length ?? 0) === 0}
       <div class="flex flex-col items-center py-16 text-center">
         <FolderOpen class="mb-4 h-16 w-16 text-muted-foreground/40" />
         <h2 class="mb-2 text-xl font-semibold">Welcome to DreamForge</h2>
@@ -128,7 +128,7 @@
       </div>
     {/if}
 
-    {#each $page.data?.projects || [] as project (project.id)}
+    {#each page.data?.projects || [] as project (project.id)}
       <div
         class={cn(
           'flex items-center justify-between rounded-lg border border-border bg-card p-4',
@@ -179,10 +179,10 @@
       </div>
     {/each}
 
-    {#if ($page.data?.sharedProjects?.length ?? 0) > 0}
+    {#if (page.data?.sharedProjects?.length ?? 0) > 0}
       <div class="mt-6">
         <h2 class="mb-3 text-sm font-medium text-muted-foreground">Shared with me</h2>
-        {#each $page.data.sharedProjects as project (project.id)}
+        {#each page.data.sharedProjects as project (project.id)}
           <div
             class="flex items-center justify-between rounded-lg border border-border bg-card p-4 mb-2"
           >

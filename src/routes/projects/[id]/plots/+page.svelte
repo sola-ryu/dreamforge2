@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { enhance } from '$app/forms';
   import { Plus, Trash2, Edit, GripVertical } from '@lucide/svelte';
   import { formatDate } from '$lib/utils';
@@ -23,14 +23,14 @@
 </script>
 
 <svelte:head>
-  <title>Plotlines — {$page.data?.projectName || 'Project'} — DreamForge</title>
+  <title>Plotlines — {page.data?.projectName || 'Project'} — DreamForge</title>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl p-6">
   <div class="mb-6 flex items-center justify-between">
     <div>
       <h1 class="text-2xl font-bold">Plotlines</h1>
-      <p class="text-sm text-muted-foreground">{$page.data?.projectName || 'Project'}</p>
+      <p class="text-sm text-muted-foreground">{page.data?.projectName || 'Project'}</p>
     </div>
     <Button onclick={() => (showCreate = !showCreate)}>
       <Plus class="h-4 w-4" />
@@ -71,7 +71,7 @@
           <Combobox
             name="storyId"
             bind:value={newStory}
-            options={($page.data?.stories || []).map((s: any) => ({ value: s.id, label: s.title }))}
+            options={(page.data?.stories || []).map((s: any) => ({ value: s.id, label: s.title }))}
             placeholder="Select a story..."
           />
         </div>
@@ -101,16 +101,16 @@
   {/if}
 
   <div class="space-y-3">
-    {#if ($page.data?.plotlines || []).length === 0}
+    {#if (page.data?.plotlines || []).length === 0}
       <p class="py-12 text-center text-muted-foreground">
         No plotlines yet. Create one to get started.
       </p>
     {/if}
 
-    {#each $page.data?.plotlines || [] as plotline}
+    {#each page.data?.plotlines || [] as plotline}
       <div class="rounded-lg border border-border bg-card hover:bg-secondary/50">
         <a
-          href="/projects/{$page.params.id}/plots/{plotline.id}"
+          href="/projects/{page.params.id}/plots/{plotline.id}"
           class="flex items-center gap-4 px-4 py-3"
         >
           <GripVertical class="h-4 w-4 text-muted-foreground opacity-40" />

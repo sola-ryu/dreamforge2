@@ -3,10 +3,11 @@ import db from '$lib/server/db';
 import { sessions } from '$lib/server/schema';
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
+import type { PageServerLoad } from './$types';
 
 const drizzleDb = drizzle(db);
 
-export const load = async ({ cookies }) => {
+export const load: PageServerLoad = async ({ cookies }) => {
   const sessionId = cookies.get('dreamforge-session');
 
   if (sessionId) {
