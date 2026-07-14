@@ -417,3 +417,220 @@ describe('searchEntities', () => {
     expect(results).toEqual([]);
   });
 });
+
+describe('createEntity - all entity types', () => {
+  const entityTypes = [
+    'character',
+    'organization',
+    'location',
+    'culture',
+    'species',
+    'item',
+    'note'
+  ] as const;
+
+  for (const type of entityTypes) {
+    it(`creates ${type} entity and persists to disk`, () => {
+      const entity = createEntity(TEST_PROJECT_ID, tmpDir, type, { name: `Test ${type}` });
+      expect(entity.id).toBeTruthy();
+      expect(entity.type).toBe(type);
+      expect(entity.name).toBe(`Test ${type}`);
+
+      const fetched = getEntity(TEST_PROJECT_ID, tmpDir, type, entity.id);
+      expect(fetched).not.toBeNull();
+      expect(fetched!.id).toBe(entity.id);
+      expect(fetched!.name).toBe(`Test ${type}`);
+      expect(fetched!.type).toBe(type);
+      expect(fetched!.status).toBe('draft');
+      expect(fetched!.tags).toEqual([]);
+    });
+  }
+});
+
+describe('createEntity - field persistence', () => {
+  it('persists tags to disk and reads them back as an array', () => {
+    const entity = createEntity(TEST_PROJECT_ID, tmpDir, 'character', {
+      name: 'Tagged Hero',
+      tags: ['brave', 'strong']
+    });
+    const fetched = getEntity(TEST_PROJECT_ID, tmpDir, 'character', entity.id);
+    expect(fetched!.tags).toEqual(['brave', 'strong']);
+  });
+
+  it('persists status to disk', () => {
+    const entity = createEntity(TEST_PROJECT_ID, tmpDir, 'character', { name: 'Hero' });
+    expect(entity.status).toBe('draft');
+    const fetched = getEntity(TEST_PROJECT_ID, tmpDir, 'character', entity.id);
+    expect(fetched!.status).toBe('draft');
+  });
+
+  it('persists custom text fields to disk', () => {
+    const entity = createEntity(TEST_PROJECT_ID, tmpDir, 'character', {
+      name: 'Hero',
+      personalityType: 'INTJ'
+    });
+    const fetched = getEntity(TEST_PROJECT_ID, tmpDir, 'character', entity.id);
+    expect(fetched!.frontmatter.personalityType).toBe('INTJ');
+  });
+
+  it('persists custom textarea fields to disk', () => {
+    const entity = createEntity(TEST_PROJECT_ID, tmpDir, 'character', {
+      name: 'Hero',
+      motivations: 'Revenge and justice'
+    });
+    const fetched = getEntity(TEST_PROJECT_ID, tmpDir, 'character', entity.id);
+    expect(fetched!.frontmatter.motivations).toBe('Revenge and justice');
+  });
+
+  it('persists multiline textarea fields to disk without data loss', () => {
+    const entity = createEntity(TEST_PROJECT_ID, tmpDir, 'character', {
+      name: 'Hero',
+      motivations: 'Line one\nLine two\nLine three'
+    });
+    const fetched = getEntity(TEST_PROJECT_ID, tmpDir, 'character', entity.id);
+    expect(fetched!.frontmatter.motivations).toBe('Line one\nLine two\nLine three');
+  });
+
+  it('persists tag-type entity fields (traits) as arrays', () => {
+    const entity = createEntity(TEST_PROJECT_ID, tmpDir, 'character', {
+      name: 'Hero',
+      traits: ['brave', 'cunning']
+    });
+    const fetched = getEntity(TEST_PROJECT_ID, tmpDir, 'character', entity.id);
+    expect(fetched!.frontmatter.traits).toEqual(['brave', 'cunning']);
+  });
+});
+
+describe('updateEntity - field persistence', () => {
+  it('persists updated tags as array', () => {
+    const entity = createEntity(TEST_PROJECT_ID, tmpDir, 'character', { name: 'Hero' });
+    updateEntity(TEST_PROJECT_ID, tmpDir, 'character', entity.id, { tags: ['epic', 'wise'] });
+    const fetched = getEntity(TEST_PROJECT_ID, tmpDir, 'character', entity.id);
+    expect(fetched!.tags).toEqual(['epic', 'wise']);
+  });
+
+  it('persists updated status', () => {
+    const entity = createEntity(TEST_PROJECT_ID, tmpDir, 'character', { name: 'Hero' });
+    updateEntity(TEST_PROJECT_ID, tmpDir, 'character', entity.id, { status: 'complete' });
+    const fetched = getEntity(TEST_PROJECT_ID, tmpDir, 'character', entity.id);
+    expect(fetched!.status).toBe('complete');
+  });
+
+  it('persists tag-type fields as arrays', () => {
+    const entity = createEntity(TEST_PROJECT_ID, tmpDir, 'character', { name: 'Hero' });
+    updateEntity(TEST_PROJECT_ID, tmpDir, 'character', entity.id, {
+      traits: ['brave', 'strong']
+    });
+    const fetched = getEntity(TEST_PROJECT_ID, tmpDir, 'character', entity.id);
+    expect(fetched!.frontmatter.traits).toEqual(['brave', 'strong']);
+  });
+
+  it('preserves existing tag-type fields as arrays after re-read', () => {
+    const entity = createEntity(TEST_PROJECT_ID, tmpDir, 'character', {
+      name: 'Hero',
+      traits: ['brave']
+    });
+    updateEntity(TEST_PROJECT_ID, tmpDir, 'character', entity.id, {
+      traits: ['brave', 'cunning']
+    });
+    const fetched = getEntity(TEST_PROJECT_ID, tmpDir, 'character', entity.id);
+    expect(Array.isArray(fetched!.frontmatter.traits)).toBe(true);
+    expect(fetched!.frontmatter.traits).toEqual(['brave', 'cunning']);
+  });
+
+  it('persists multiline field content without data loss', () => {
+    const entity = createEntity(TEST_PROJECT_ID, tmpDir, 'character', { name: 'Hero' });
+    const backstory = 'Born in the north.\nTrained by monks.\nSeeking redemption.';
+    updateEntity(TEST_PROJECT_ID, tmpDir, 'character', entity.id, { backstory });
+    const fetched = getEntity(TEST_PROJECT_ID, tmpDir, 'character', entity.id);
+    expect(fetched!.frontmatter.backstory).toBe(backstory);
+  });
+
+  it('preserves all fields across multiple updates', () => {
+    const entity = createEntity(TEST_PROJECT_ID, tmpDir, 'character', {
+      name: 'Hero',
+      tags: ['warrior'],
+      traits: ['brave'],
+      motivations: 'Protect the realm'
+    });
+
+    updateEntity(TEST_PROJECT_ID, tmpDir, 'character', entity.id, { status: 'wip' });
+
+    const fetched = getEntity(TEST_PROJECT_ID, tmpDir, 'character', entity.id);
+    expect(fetched!.name).toBe('Hero');
+    expect(fetched!.tags).toEqual(['warrior']);
+    expect(fetched!.frontmatter.traits).toEqual(['brave']);
+    expect(fetched!.frontmatter.motivations).toBe('Protect the realm');
+    expect(fetched!.status).toBe('wip');
+  });
+
+  it('persists location fields', () => {
+    const entity = createEntity(TEST_PROJECT_ID, tmpDir, 'location', { name: 'Dark Forest' });
+    updateEntity(TEST_PROJECT_ID, tmpDir, 'location', entity.id, {
+      geology: 'Rocky terrain\nAncient stone',
+      landOwnership: 'Crown land'
+    });
+    const fetched = getEntity(TEST_PROJECT_ID, tmpDir, 'location', entity.id);
+    expect(fetched!.frontmatter.geology).toBe('Rocky terrain\nAncient stone');
+    expect(fetched!.frontmatter.landOwnership).toBe('Crown land');
+  });
+
+  it('persists culture tag-type fields (languages) as arrays', () => {
+    const entity = createEntity(TEST_PROJECT_ID, tmpDir, 'culture', { name: 'Elves' });
+    updateEntity(TEST_PROJECT_ID, tmpDir, 'culture', entity.id, {
+      languages: ['Elvish', 'Common']
+    });
+    const fetched = getEntity(TEST_PROJECT_ID, tmpDir, 'culture', entity.id);
+    expect(fetched!.frontmatter.languages).toEqual(['Elvish', 'Common']);
+  });
+
+  it('persists species tag-type fields as arrays', () => {
+    const entity = createEntity(TEST_PROJECT_ID, tmpDir, 'species', { name: 'Dragon' });
+    updateEntity(TEST_PROJECT_ID, tmpDir, 'species', entity.id, {
+      traits: ['fire-breathing', 'flying'],
+      subtypes: ['red', 'black']
+    });
+    const fetched = getEntity(TEST_PROJECT_ID, tmpDir, 'species', entity.id);
+    expect(Array.isArray(fetched!.frontmatter.traits)).toBe(true);
+    expect(fetched!.frontmatter.traits).toEqual(['fire-breathing', 'flying']);
+    expect(Array.isArray(fetched!.frontmatter.subtypes)).toBe(true);
+    expect(fetched!.frontmatter.subtypes).toEqual(['red', 'black']);
+  });
+});
+
+describe('syncEntityToDb', () => {
+  it('creates a new DB record if none exists', () => {
+    const id = generateId();
+    const frontmatter = {
+      id,
+      name: 'DB Test',
+      slug: 'db-test',
+      type: 'character',
+      tags: ['a', 'b'],
+      status: 'wip',
+      imagePath: null,
+      created: '2024-01-01T00:00:00.000Z',
+      modified: '2024-01-02T00:00:00.000Z'
+    };
+    syncEntityToDb(TEST_PROJECT_ID, 'character', id, frontmatter);
+
+    const results = searchEntities(TEST_PROJECT_ID, 'DB Test');
+    expect(results).toHaveLength(1);
+    expect(results[0].id).toBe(id);
+    expect(results[0].name).toBe('DB Test');
+    expect(results[0].status).toBe('wip');
+  });
+
+  it('updates existing DB record', () => {
+    const entity = createEntity(TEST_PROJECT_ID, tmpDir, 'character', { name: 'Update Me' });
+    syncEntityToDb(TEST_PROJECT_ID, 'character', entity.id, {
+      ...entity.frontmatter,
+      name: 'Updated Name',
+      status: 'complete'
+    });
+
+    const results = searchEntities(TEST_PROJECT_ID, 'Updated Name');
+    expect(results).toHaveLength(1);
+    expect(results[0].status).toBe('complete');
+  });
+});

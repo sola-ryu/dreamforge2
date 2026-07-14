@@ -317,9 +317,7 @@
               csvHeaders = d.csvHeaders;
               preview = d.preview;
               rawData = d.data;
-              const targetKeys = (page.data?.targetFields || []).map(
-                (f: { key: string }) => f.key
-              );
+              const targetKeys = (page.data?.targetFields || []).map((f: { key: string }) => f.key);
               mapping = buildAutoMapping(d.csvHeaders, targetKeys);
             }
           };

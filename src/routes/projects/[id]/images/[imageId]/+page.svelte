@@ -124,18 +124,12 @@
           <div>
             <span class="block font-medium">Size</span>
             <span
-              >{page.data?.image?.size
-                ? Math.round(page.data.image.size / 1024) + ' KB'
-                : ''}</span
+              >{page.data?.image?.size ? Math.round(page.data.image.size / 1024) + ' KB' : ''}</span
             >
           </div>
           <div>
             <span class="block font-medium">URL</span>
-            <a
-              href={page.data?.image?.url}
-              target="_blank"
-              class="underline hover:text-foreground"
-            >
+            <a href={page.data?.image?.url} target="_blank" class="underline hover:text-foreground">
               <ExternalLink class="inline h-3 w-3" />
             </a>
           </div>

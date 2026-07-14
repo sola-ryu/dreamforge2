@@ -126,6 +126,58 @@ Some body content`;
     expect(reparsed.frontmatter.tags).toEqual(['forest', 'ancient']);
     expect(reparsed.body.trim()).toBe('Some body content');
   });
+
+  it('round-trips multiline string values correctly', () => {
+    const frontmatter = {
+      id: 'multi',
+      name: 'Multi',
+      backstory: 'Line one\nLine two\nLine three'
+    };
+    const serialized = serializeMarkdown(frontmatter, 'body');
+    const reparsed = parseMarkdown(serialized);
+    expect(reparsed.frontmatter.backstory).toBe('Line one\nLine two\nLine three');
+  });
+
+  it('round-trips multiline strings with special characters', () => {
+    const frontmatter = {
+      id: 'special',
+      name: 'Special',
+      notes: 'First: intro\nSecond: "quoted"\nThird: [list]'
+    };
+    const serialized = serializeMarkdown(frontmatter, 'body');
+    const reparsed = parseMarkdown(serialized);
+    expect(reparsed.frontmatter.notes).toBe('First: intro\nSecond: "quoted"\nThird: [list]');
+  });
+});
+
+describe('parseMarkdown - block scalar backward compat', () => {
+  it('parses legacy block scalar (|) multiline values', () => {
+    const content = `---
+id: legacy
+name: Legacy
+type: character
+backstory: |
+  Once upon a time
+  in a land far away
+---
+body`;
+    const result = parseMarkdown(content);
+    expect(result.frontmatter.backstory).toBe('Once upon a time\nin a land far away');
+  });
+
+  it('continues parsing after a block scalar', () => {
+    const content = `---
+id: test
+backstory: |
+  line one
+  line two
+status: wip
+---
+body`;
+    const result = parseMarkdown(content);
+    expect(result.frontmatter.backstory).toBe('line one\nline two');
+    expect(result.frontmatter.status).toBe('wip');
+  });
 });
 
 describe('readMarkdownFile', () => {

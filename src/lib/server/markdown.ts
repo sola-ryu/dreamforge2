@@ -62,8 +62,27 @@ export function writeMarkdownFile(
 function parseYaml(text: string): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   const lines = text.split('\n');
+  let blockKey: string | null = null;
+  let blockLines: string[] = [];
+
+  const flushBlock = () => {
+    if (blockKey !== null) {
+      result[blockKey] = blockLines.join('\n').trimEnd();
+      blockKey = null;
+      blockLines = [];
+    }
+  };
 
   for (const line of lines) {
+    if (blockKey !== null) {
+      if (line.startsWith('  ')) {
+        blockLines.push(line.slice(2));
+        continue;
+      } else {
+        flushBlock();
+      }
+    }
+
     const match = line.match(/^(\w[\w_-]*?):\s*(.*)$/);
     if (!match) continue;
 
@@ -72,6 +91,10 @@ function parseYaml(text: string): Record<string, unknown> {
 
     if (value === '' || value === 'null') {
       value = null;
+    } else if (value === '|') {
+      blockKey = key;
+      blockLines = [];
+      continue;
     } else if (value === 'true') {
       value = true;
     } else if (value === 'false') {
@@ -87,12 +110,17 @@ function parseYaml(text: string): Record<string, unknown> {
         .map((s) => s.trim().replace(/^["']|["']$/g, ''))
         .filter(Boolean);
     } else if ((value as string).startsWith('"') && (value as string).endsWith('"')) {
-      value = (value as string).slice(1, -1);
+      try {
+        value = JSON.parse(value as string);
+      } catch {
+        value = (value as string).slice(1, -1);
+      }
     }
 
     result[key] = value;
   }
 
+  flushBlock();
   return result;
 }
 
@@ -107,10 +135,7 @@ function serializeYaml(data: Record<string, unknown>): string {
       lines.push(`${key}: ${JSON.stringify(value)}`);
     } else if (typeof value === 'string') {
       if (value.includes('\n')) {
-        lines.push(`${key}: |`);
-        for (const line of value.split('\n')) {
-          lines.push(`  ${line}`);
-        }
+        lines.push(`${key}: ${JSON.stringify(value)}`);
       } else {
         lines.push(`${key}: ${value}`);
       }

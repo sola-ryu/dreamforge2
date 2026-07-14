@@ -84,10 +84,27 @@ export const actions = {
     if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
     const { project } = access;
 
+    const customFieldDefs = getCustomFieldDefs(params.id, entityType);
+    const tagFields = new Set<string>(['tags']);
+    for (const f of ENTITY_FIELDS[entityType]) {
+      if (f.type === 'tags') tagFields.add(f.key);
+    }
+    for (const f of customFieldDefs) {
+      if (f.fieldType === 'tags') tagFields.add(f.key);
+    }
+
+    const boolFields = new Set<string>();
+    for (const f of ENTITY_FIELDS[entityType]) {
+      if (f.type === 'boolean') boolFields.add(f.key);
+    }
+    for (const f of customFieldDefs) {
+      if (f.fieldType === 'boolean') boolFields.add(f.key);
+    }
+
     const form = await request.formData();
     const data: Record<string, unknown> = {};
     for (const [key, value] of form.entries()) {
-      if (key === 'tags') {
+      if (tagFields.has(key)) {
         data[key] = (value as string)
           .split(',')
           .map((s) => s.trim())
@@ -95,6 +112,9 @@ export const actions = {
       } else {
         data[key] = value;
       }
+    }
+    for (const key of boolFields) {
+      if (!(key in data)) data[key] = false;
     }
     updateEntity(params.id, project.dataPath, entityType, params.entityId, data);
     return { success: true };

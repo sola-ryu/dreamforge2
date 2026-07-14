@@ -13,7 +13,6 @@ These are things not yet implemented but worth eventually adding. When something
 - Stored in Markdown as `[@Elara Voss](mention://character/char_001)`
 - On load, parse mentions and hydrate hover card data
 
-
 ## PDF Export
 
 **Files:** `src/routes/projects/[id]/stories/[storyId]/export/+server.ts`
@@ -26,7 +25,6 @@ These are things not yet implemented but worth eventually adding. When something
 - Use `puppeteer` (HTML → PDF) or `pandoc` (Markdown → PDF) or `jsPDF`
 - For Docker: bundle puppeteer with Chromium or use pandoc installed in the image
 - Formatting: custom CSS for print layout
-
 
 ## Custom Entity Types
 
@@ -57,7 +55,6 @@ Stored as JSON in `templates/entity-schemas/`:
 - Custom types appear alongside built-in types in the project dashboard
 - Custom types are stored as `.md` files in a directory named after the type
 
-
 ## Import from Other Tools
 
 **Files:** `src/lib/server/importers/`
@@ -80,7 +77,6 @@ Stored as JSON in `templates/entity-schemas/`:
 3. Parses into intermediate format (normalized entity objects)
 4. Shows preview with field mapping
 5. On confirm, creates entities and writes Markdown files
-
 
 ## New Modules
 
@@ -108,7 +104,6 @@ Stored as JSON in `templates/entity-schemas/`:
 - Kanban-style board or list view
 - Stored as `project/todo.json`
 
-
 ## Cross-Project Import / Duplicate
 
 **Files:** `src/lib/server/importProject.ts`, `src/routes/projects/[id]/import/`
@@ -127,7 +122,6 @@ Stored as JSON in `templates/entity-schemas/`:
 - Creates a copy: `name (Copy)` with new ID
 - Duplicates all fields, body, tags, image references
 - Relations targeting the original are NOT copied (user can re-link)
-
 
 ## Real-Time Collaboration
 
@@ -151,7 +145,6 @@ Stored as JSON in `templates/entity-schemas/`:
 
 - Same session cookie or API key for WebSocket auth
 - User presence: show who's viewing/editing each scene
-
 
 ## Share Projects / Stories Online
 

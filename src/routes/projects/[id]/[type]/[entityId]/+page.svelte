@@ -83,9 +83,7 @@
       class="mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
     >
       <ArrowLeft class="h-4 w-4" />
-      Back to {page.data?.entityType
-        ? ENTITY_LABELS[page.data.entityType as EntityType] + 's'
-        : ''}
+      Back to {page.data?.entityType ? ENTITY_LABELS[page.data.entityType as EntityType] + 's' : ''}
     </a>
 
     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -137,9 +135,12 @@
     method="POST"
     action="?/update"
     use:enhance={() => {
-      return async ({ result }) => {
+      return async ({ result, update }) => {
         if (result.type === 'success') {
+          await update();
           editing = false;
+        } else {
+          await update();
         }
       };
     }}
@@ -336,7 +337,7 @@
           name="body"
           disabled={!editing}
           class="min-h-[20rem] font-mono"
-          value={body}
+          bind:value={body}
         />
         {#if !editing}
           <div class="mt-4 prose prose-sm max-w-none">
@@ -403,8 +404,7 @@
             options={[
               { value: '', label: 'New chapter...' },
               ...(
-                (page.data?.stories || []).find((s: any) => s.id === convertStoryId)?.chapters ||
-                []
+                (page.data?.stories || []).find((s: any) => s.id === convertStoryId)?.chapters || []
               ).map((ch: any) => ({ value: ch.id, label: ch.title }))
             ]}
             placeholder="New chapter..."
