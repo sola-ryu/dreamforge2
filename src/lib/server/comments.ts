@@ -80,11 +80,16 @@ export function createComment(
 }
 
 export function deleteComment(
+  projectId: string,
   commentId: string,
   requestingUserId: string,
   projectOwnerUserId: string
 ): boolean {
-  const comment = drizzleDb.select().from(comments).where(eq(comments.id, commentId)).get();
+  const comment = drizzleDb
+    .select()
+    .from(comments)
+    .where(and(eq(comments.id, commentId), eq(comments.projectId, projectId)))
+    .get();
   if (!comment) return false;
 
   const canDelete = comment.userId === requestingUserId || projectOwnerUserId === requestingUserId;
@@ -94,11 +99,11 @@ export function deleteComment(
   return true;
 }
 
-export function resolveComment(commentId: string, resolved: boolean): boolean {
+export function resolveComment(projectId: string, commentId: string, resolved: boolean): boolean {
   const result = drizzleDb
     .update(comments)
     .set({ resolved })
-    .where(eq(comments.id, commentId))
+    .where(and(eq(comments.id, commentId), eq(comments.projectId, projectId)))
     .run();
   return result.changes > 0;
 }

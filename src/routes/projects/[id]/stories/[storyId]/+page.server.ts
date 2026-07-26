@@ -16,6 +16,7 @@ import {
 import { searchEntities } from '$lib/server/entities';
 import { sceneToNote } from '$lib/server/conversion';
 import { getProjectAccess } from '$lib/server/members';
+import { isSafePathSegment } from '$lib/utils';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -86,7 +87,9 @@ export const actions = {
     if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
     const { project } = access;
     const form = await request.formData();
-    deleteChapter(project.dataPath, params.storyId, form.get('chapterId') as string);
+    const chapterId = form.get('chapterId') as string;
+    if (!isSafePathSegment(chapterId)) return fail(400, { error: 'Invalid chapter ID' });
+    deleteChapter(project.dataPath, params.storyId, chapterId);
     return { success: true };
   },
 
@@ -98,6 +101,7 @@ export const actions = {
     const { project } = access;
     const form = await request.formData();
     const chapterId = form.get('chapterId') as string;
+    if (!isSafePathSegment(chapterId)) return fail(400, { error: 'Invalid chapter ID' });
     createScene(project.dataPath, params.storyId, chapterId);
     return { success: true };
   },
@@ -111,6 +115,9 @@ export const actions = {
     const form = await request.formData();
     const chapterId = form.get('chapterId') as string;
     const sceneId = form.get('sceneId') as string;
+    if (!isSafePathSegment(chapterId) || !isSafePathSegment(sceneId)) {
+      return fail(400, { error: 'Invalid chapter or scene ID' });
+    }
     const data: Record<string, unknown> = {};
     for (const [key, value] of form.entries()) {
       if (key === 'participants')
@@ -131,12 +138,12 @@ export const actions = {
     if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
     const { project } = access;
     const form = await request.formData();
-    deleteScene(
-      project.dataPath,
-      params.storyId,
-      form.get('chapterId') as string,
-      form.get('sceneId') as string
-    );
+    const chapterId = form.get('chapterId') as string;
+    const sceneId = form.get('sceneId') as string;
+    if (!isSafePathSegment(chapterId) || !isSafePathSegment(sceneId)) {
+      return fail(400, { error: 'Invalid chapter or scene ID' });
+    }
+    deleteScene(project.dataPath, params.storyId, chapterId, sceneId);
     return { success: true };
   },
 
@@ -147,7 +154,10 @@ export const actions = {
     if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
     const { project } = access;
     const form = await request.formData();
-    const chapterIds = JSON.parse(form.get('chapterIds') as string);
+    const chapterIds = JSON.parse(form.get('chapterIds') as string) as string[];
+    if (!Array.isArray(chapterIds) || !chapterIds.every(isSafePathSegment)) {
+      return fail(400, { error: 'Invalid chapter IDs' });
+    }
     reorderChapters(project.dataPath, params.storyId, chapterIds);
     return { success: true };
   },
@@ -161,6 +171,9 @@ export const actions = {
     const form = await request.formData();
     const chapterId = form.get('chapterId') as string;
     const sceneId = form.get('sceneId') as string;
+    if (!isSafePathSegment(chapterId) || !isSafePathSegment(sceneId)) {
+      return fail(400, { error: 'Invalid chapter or scene ID' });
+    }
     const note = sceneToNote(params.id, project.dataPath, params.storyId, chapterId, sceneId);
     if (!note) return fail(500, { error: 'Conversion failed' });
     return { success: true, noteId: note.id };
@@ -174,7 +187,14 @@ export const actions = {
     const { project } = access;
     const form = await request.formData();
     const chapterId = form.get('chapterId') as string;
-    const sceneIds = JSON.parse(form.get('sceneIds') as string);
+    const sceneIds = JSON.parse(form.get('sceneIds') as string) as string[];
+    if (
+      !isSafePathSegment(chapterId) ||
+      !Array.isArray(sceneIds) ||
+      !sceneIds.every(isSafePathSegment)
+    ) {
+      return fail(400, { error: 'Invalid chapter or scene IDs' });
+    }
     reorderScenes(project.dataPath, params.storyId, chapterId, sceneIds);
     return { success: true };
   }

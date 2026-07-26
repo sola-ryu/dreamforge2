@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { generateId } from '$lib/utils';
+import { generateId, isSafePathSegment } from '$lib/utils';
 
 interface StoryMeta {
   id: string;
@@ -43,7 +43,14 @@ interface SceneData {
   modifiedAt: string;
 }
 
+// IDs reach these helpers straight from URL params and form fields, so they are
+// rejected unless they are a single path segment — otherwise `..` escapes the project.
+function assertSafeId(id: string): void {
+  if (!isSafePathSegment(id)) throw new Error(`Unsafe id: ${JSON.stringify(id)}`);
+}
+
 function getStoryDir(projectPath: string, storyId: string): string {
+  assertSafeId(storyId);
   return path.join(projectPath, 'stories', storyId);
 }
 
@@ -52,11 +59,22 @@ function getChaptersDir(projectPath: string, storyId: string): string {
 }
 
 function getChapterDir(projectPath: string, storyId: string, chapterId: string): string {
+  assertSafeId(chapterId);
   return path.join(getChaptersDir(projectPath, storyId), chapterId);
 }
 
 function getScenesDir(projectPath: string, storyId: string, chapterId: string): string {
   return path.join(getChapterDir(projectPath, storyId, chapterId), 'scenes');
+}
+
+function getScenePath(
+  projectPath: string,
+  storyId: string,
+  chapterId: string,
+  sceneId: string
+): string {
+  assertSafeId(sceneId);
+  return path.join(getScenesDir(projectPath, storyId, chapterId), `${sceneId}.md`);
 }
 
 // --- Stories ---
@@ -80,6 +98,7 @@ export function listStories(projectPath: string): StoryMeta[] {
 }
 
 export function getStoryMeta(projectPath: string, storyId: string): StoryMeta | null {
+  if (!isSafePathSegment(storyId)) return null;
   const filePath = path.join(getStoryDir(projectPath, storyId), 'story.json');
   try {
     const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
@@ -129,6 +148,7 @@ export function updateStory(
 }
 
 export function deleteStory(projectPath: string, storyId: string): boolean {
+  if (!isSafePathSegment(storyId)) return false;
   const dir = getStoryDir(projectPath, storyId);
   if (!fs.existsSync(dir)) return false;
   fs.rmSync(dir, { recursive: true, force: true });
@@ -138,6 +158,7 @@ export function deleteStory(projectPath: string, storyId: string): boolean {
 // --- Chapters ---
 
 export function listChapters(projectPath: string, storyId: string): ChapterMeta[] {
+  if (!isSafePathSegment(storyId)) return [];
   const dir = getChaptersDir(projectPath, storyId);
   if (!fs.existsSync(dir)) return [];
 
@@ -160,6 +181,7 @@ export function getChapterMeta(
   storyId: string,
   chapterId: string
 ): ChapterMeta | null {
+  if (!isSafePathSegment(storyId) || !isSafePathSegment(chapterId)) return null;
   const filePath = path.join(getChapterDir(projectPath, storyId, chapterId), 'chapter.md');
   try {
     const content = fs.readFileSync(filePath, 'utf-8');
@@ -230,6 +252,7 @@ export function updateChapter(
 }
 
 export function deleteChapter(projectPath: string, storyId: string, chapterId: string): boolean {
+  if (!isSafePathSegment(storyId) || !isSafePathSegment(chapterId)) return false;
   const dir = getChapterDir(projectPath, storyId, chapterId);
   if (!fs.existsSync(dir)) return false;
   fs.rmSync(dir, { recursive: true, force: true });
@@ -239,6 +262,7 @@ export function deleteChapter(projectPath: string, storyId: string, chapterId: s
 // --- Scenes ---
 
 export function listScenes(projectPath: string, storyId: string, chapterId: string): SceneData[] {
+  if (!isSafePathSegment(storyId) || !isSafePathSegment(chapterId)) return [];
   const dir = getScenesDir(projectPath, storyId, chapterId);
   if (!fs.existsSync(dir)) return [];
 
@@ -394,7 +418,7 @@ export function updateScene(
   const now = new Date().toISOString();
   const updated = { ...scene, ...data, modifiedAt: now };
 
-  const filePath = path.join(getScenesDir(projectPath, storyId, chapterId), `${sceneId}.md`);
+  const filePath = getScenePath(projectPath, storyId, chapterId, sceneId);
   const content = `---\nid: ${updated.id}\nchapterId: ${updated.chapterId}\ntitle: ${updated.title || ''}\nnarrator: ${updated.narrator || ''}\ntime: ${updated.time || ''}\nplace: ${updated.place || ''}\nparticipants: ${JSON.stringify(updated.participants)}\nbackgroundImage: ${updated.backgroundImage || ''}\nsummary: ${updated.summary || ''}\nplotThreads: ${JSON.stringify(updated.plotThreads)}\nsortOrder: ${updated.sortOrder}\ncreatedAt: ${updated.createdAt}\nmodifiedAt: ${updated.modifiedAt}\n---\n\n${updated.body}\n`;
   fs.writeFileSync(filePath, content);
 
@@ -407,7 +431,10 @@ export function deleteScene(
   chapterId: string,
   sceneId: string
 ): boolean {
-  const filePath = path.join(getScenesDir(projectPath, storyId, chapterId), `${sceneId}.md`);
+  if (!isSafePathSegment(storyId) || !isSafePathSegment(chapterId) || !isSafePathSegment(sceneId)) {
+    return false;
+  }
+  const filePath = getScenePath(projectPath, storyId, chapterId, sceneId);
   if (!fs.existsSync(filePath)) return false;
   fs.unlinkSync(filePath);
   return true;

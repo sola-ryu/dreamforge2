@@ -343,6 +343,35 @@ export function syncEntityToDb(
   }
 }
 
+export function pruneMissingEntities(projectId: string, existingIds: Set<string>): void {
+  const rows = drizzleDb
+    .select({ id: entitiesTable.id })
+    .from(entitiesTable)
+    .where(eq(entitiesTable.projectId, projectId))
+    .all();
+
+  for (const row of rows) {
+    if (existingIds.has(row.id)) continue;
+    drizzleDb
+      .delete(entitiesTable)
+      .where(and(eq(entitiesTable.id, row.id), eq(entitiesTable.projectId, projectId)))
+      .run();
+  }
+}
+
+export function removeEntityFromDbBySlug(projectId: string, type: EntityType, slug: string): void {
+  drizzleDb
+    .delete(entitiesTable)
+    .where(
+      and(
+        eq(entitiesTable.projectId, projectId),
+        eq(entitiesTable.type, type),
+        eq(entitiesTable.slug, slug)
+      )
+    )
+    .run();
+}
+
 export function searchEntities(
   projectId: string,
   query: string,

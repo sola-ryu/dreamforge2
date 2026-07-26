@@ -239,3 +239,26 @@ describe('updateCalendar', () => {
     expect(reloaded.calendar.name).toBe('Persisted Calendar');
   });
 });
+
+describe('updateEvent re-sorting', () => {
+  it('returns the updated event even when the sort order changes', () => {
+    const base = {
+      month: null,
+      day: null,
+      era: 'CE',
+      description: '',
+      significance: 'major' as const,
+      entityIds: []
+    };
+    addEvent(tmpDir, { ...base, year: 100, title: 'First' });
+    const second = addEvent(tmpDir, { ...base, year: 200, title: 'Second' });
+
+    // Moving 'Second' before 'First' re-sorts the array under it.
+    const result = updateEvent(tmpDir, second.id, { year: 50 });
+
+    expect(result?.id).toBe(second.id);
+    expect(result?.title).toBe('Second');
+    expect(result?.year).toBe(50);
+    expect(loadTimeline(tmpDir).events.map((e) => e.title)).toEqual(['Second', 'First']);
+  });
+});

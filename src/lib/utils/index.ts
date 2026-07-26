@@ -25,6 +25,16 @@ export function slugify(text: string): string {
     .replace(/-+/g, '-');
 }
 
+export function isSafePathSegment(segment: unknown): segment is string {
+  return (
+    typeof segment === 'string' &&
+    segment.length > 0 &&
+    segment !== '.' &&
+    segment !== '..' &&
+    !/[/\\\0]/.test(segment)
+  );
+}
+
 export function formatDate(date: string): string {
   return new Date(date).toLocaleDateString('en-US', {
     year: 'numeric',

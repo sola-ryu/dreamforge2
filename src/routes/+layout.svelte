@@ -15,7 +15,7 @@
   let hasSidebar = $derived(!!page.data?.user && !zen.active);
 
   $effect(() => {
-    document.documentElement.className = theme.value === 'dark' ? 'dark' : '';
+    document.documentElement.classList.toggle('dark', theme.value === 'dark');
   });
 </script>
 

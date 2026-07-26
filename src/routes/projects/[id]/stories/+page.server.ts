@@ -7,6 +7,7 @@ import {
   deleteStory
 } from '$lib/server/stories';
 import { getProjectAccess } from '$lib/server/members';
+import { isSafePathSegment } from '$lib/utils';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -52,6 +53,7 @@ export const actions = {
 
     const form = await request.formData();
     const storyId = form.get('storyId') as string;
+    if (!isSafePathSegment(storyId)) return fail(400, { error: 'Invalid story ID' });
     deleteStory(project.dataPath, storyId);
 
     return { success: true };

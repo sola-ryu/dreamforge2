@@ -407,3 +407,33 @@ describe('reorderScenes', () => {
     expect(scenes[2].id).toBe(s2.id);
   });
 });
+
+describe('path traversal guards', () => {
+  it('deleteStory refuses ids that escape the stories directory', () => {
+    const victim = fs.mkdtempSync(path.join(os.tmpdir(), 'df-victim-'));
+    fs.writeFileSync(path.join(victim, 'keep.txt'), 'important');
+
+    const escape = path.relative(path.join(tmpDir, 'stories'), victim);
+    expect(deleteStory(tmpDir, escape)).toBe(false);
+    expect(fs.existsSync(path.join(victim, 'keep.txt'))).toBe(true);
+
+    fs.rmSync(victim, { recursive: true, force: true });
+  });
+
+  it('deleteScene refuses ids that escape the scenes directory', () => {
+    const story = createStory(tmpDir, 'S');
+    const chapter = createChapter(tmpDir, story.id, 'C');
+    const outside = path.join(tmpDir, 'outside.md');
+    fs.writeFileSync(outside, 'keep');
+
+    expect(deleteScene(tmpDir, story.id, chapter.id, '../../../../outside')).toBe(false);
+    expect(fs.existsSync(outside)).toBe(true);
+  });
+
+  it('read helpers return empty results for unsafe ids', () => {
+    expect(getStoryMeta(tmpDir, '../../../etc')).toBeNull();
+    expect(listChapters(tmpDir, '..')).toEqual([]);
+    expect(listScenes(tmpDir, 'a', '../..')).toEqual([]);
+    expect(getChapterMeta(tmpDir, '..', '..')).toBeNull();
+  });
+});

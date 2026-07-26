@@ -173,19 +173,17 @@
     });
   }
 
-  function buildLayoutOptions(name: string) {
-    const base: Record<string, any> = { name, animate: false };
+  function buildLayoutOptions(name: string): cytoscape.LayoutOptions {
+    const base: Record<string, unknown> = { name, animate: false };
     if (name === 'avsdf') {
       base.nodeSeparation = 140;
       base.padding = 20;
     }
-    return base;
+    return base as unknown as cytoscape.LayoutOptions;
   }
 
   function updateLayout(name: string) {
     layoutName = name;
-    if (!cy) return;
-    cy.layout({ ...buildLayoutOptions(name), animate: true, animationDuration: 500 }).run();
   }
 
   $effect(() => {
@@ -193,6 +191,13 @@
     relations;
     layoutName;
     buildGraph();
+
+    return () => {
+      if (cy) {
+        cy.destroy();
+        cy = null;
+      }
+    };
   });
 </script>
 

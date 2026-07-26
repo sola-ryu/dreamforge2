@@ -1,7 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import db from './db';
-import { trashItems as trashTable, entities, projectImages, imageEntityLinks } from './schema';
+import {
+  trashItems as trashTable,
+  entities,
+  projectImages,
+  imageEntityLinks,
+  projects
+} from './schema';
 import { eq, and, lt } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { readMarkdownFile } from './markdown';
@@ -354,8 +360,35 @@ export function listTrashItems(projectId: string, projectPath: string): TrashIte
 export function purgeExpiredTrashItems(): void {
   const now = new Date().toISOString();
   const expired = drizzleDb.select().from(trashTable).where(lt(trashTable.expiresAt, now)).all();
+  if (expired.length === 0) return;
+
+  const projectPaths = new Map(
+    drizzleDb
+      .select({ id: projects.id, dataPath: projects.dataPath })
+      .from(projects)
+      .all()
+      .map((p) => [p.id, p.dataPath])
+  );
 
   for (const item of expired) {
+    const projectPath = projectPaths.get(item.projectId);
+
+    if (projectPath) {
+      const trashPath =
+        item.kind === 'image'
+          ? getTrashImagePath(
+              projectPath,
+              (JSON.parse(item.metadata || '{}').filename as string) || item.entityId
+            )
+          : getTrashEntityPath(projectPath, item.entityType as EntityType, item.entityId);
+
+      try {
+        if (fs.existsSync(trashPath)) fs.unlinkSync(trashPath);
+      } catch {
+        // Leave the DB row removal to proceed even if the file cannot be unlinked
+      }
+    }
+
     drizzleDb.delete(trashTable).where(eq(trashTable.id, item.id)).run();
   }
 }

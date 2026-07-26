@@ -5,6 +5,7 @@ import { eq, desc, and } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { generateId } from '$lib/utils';
 import { getMemberProjects } from '$lib/server/members';
+import { getDataDir } from '$lib/server/paths';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { PageServerLoad } from './$types';
@@ -46,7 +47,7 @@ export const actions = {
 
     const projectId = generateId();
     const now = new Date().toISOString();
-    const dataPath = path.join(process.cwd(), 'data', 'projects', projectId);
+    const dataPath = path.join(getDataDir(), projectId);
 
     fs.mkdirSync(dataPath, { recursive: true });
     fs.mkdirSync(path.join(dataPath, 'characters'), { recursive: true });

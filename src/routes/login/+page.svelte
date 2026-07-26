@@ -1,6 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import { goto } from '$app/navigation';
+  import { page } from '$app/state';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
@@ -56,9 +57,11 @@
       <Button type="submit" class="w-full">Log In</Button>
     </form>
 
-    <p class="text-center text-sm text-muted-foreground">
-      Don't have an account?
-      <a href="/register" class="text-primary hover:underline">Register</a>
-    </p>
+    {#if page.data?.allowRegistration}
+      <p class="text-center text-sm text-muted-foreground">
+        Don't have an account?
+        <a href="/register" class="text-primary hover:underline">Register</a>
+      </p>
+    {/if}
   </div>
 </div>

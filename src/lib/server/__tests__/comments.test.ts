@@ -91,7 +91,7 @@ describe('deleteComment', () => {
   it('allows comment author to delete', () => {
     const { userId, projectId, ownerId } = seedData();
     const comment = createComment(projectId, 'entity', 'target-1', userId, 'Delete me');
-    const result = deleteComment(comment.id, userId, ownerId);
+    const result = deleteComment(projectId, comment.id, userId, ownerId);
     expect(result).toBe(true);
     expect(getComments(projectId, 'entity', 'target-1')).toHaveLength(0);
   });
@@ -99,7 +99,7 @@ describe('deleteComment', () => {
   it('allows project owner to delete any comment', () => {
     const { userId, projectId, ownerId } = seedData();
     const comment = createComment(projectId, 'entity', 'target-1', userId, 'Delete me');
-    const result = deleteComment(comment.id, ownerId, ownerId);
+    const result = deleteComment(projectId, comment.id, ownerId, ownerId);
     expect(result).toBe(true);
   });
 
@@ -111,14 +111,14 @@ describe('deleteComment', () => {
     );
 
     const comment = createComment(projectId, 'entity', 'target-1', userId, 'Keep me');
-    const result = deleteComment(comment.id, otherUserId, 'some-owner');
+    const result = deleteComment(projectId, comment.id, otherUserId, 'some-owner');
     expect(result).toBe(false);
     expect(getComments(projectId, 'entity', 'target-1')).toHaveLength(1);
   });
 
   it('returns false for non-existent comment', () => {
-    const { userId, ownerId } = seedData();
-    expect(deleteComment('nonexistent', userId, ownerId)).toBe(false);
+    const { userId, ownerId, projectId } = seedData();
+    expect(deleteComment(projectId, 'nonexistent', userId, ownerId)).toBe(false);
   });
 });
 
@@ -126,7 +126,7 @@ describe('resolveComment', () => {
   it('marks a comment as resolved', () => {
     const { userId, projectId } = seedData();
     const comment = createComment(projectId, 'entity', 'target-1', userId, 'Fix this');
-    const result = resolveComment(comment.id, true);
+    const result = resolveComment(projectId, comment.id, true);
     expect(result).toBe(true);
 
     const comments = getComments(projectId, 'entity', 'target-1');
@@ -136,9 +136,9 @@ describe('resolveComment', () => {
   it('marks a comment as unresolved', () => {
     const { userId, projectId } = seedData();
     const comment = createComment(projectId, 'entity', 'target-1', userId, 'Done');
-    resolveComment(comment.id, true);
-    resolveComment(comment.id, false);
-    const result = resolveComment(comment.id, false);
+    resolveComment(projectId, comment.id, true);
+    resolveComment(projectId, comment.id, false);
+    const result = resolveComment(projectId, comment.id, false);
     expect(result).toBe(true);
 
     const comments = getComments(projectId, 'entity', 'target-1');
@@ -146,6 +146,7 @@ describe('resolveComment', () => {
   });
 
   it('returns false for non-existent comment', () => {
-    expect(resolveComment('nonexistent', true)).toBe(false);
+    const { projectId } = seedData();
+    expect(resolveComment(projectId, 'nonexistent', true)).toBe(false);
   });
 });

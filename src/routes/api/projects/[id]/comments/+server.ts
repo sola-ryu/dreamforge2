@@ -49,7 +49,7 @@ export const DELETE = async ({ params, locals, url }) => {
   const commentId = url.searchParams.get('commentId');
   if (!commentId) throw error(400, 'commentId is required');
 
-  const ok = deleteComment(commentId, locals.user.id, access.project.userId);
+  const ok = deleteComment(params.id, commentId, locals.user.id, access.project.userId);
   if (!ok) throw error(403, 'Cannot delete this comment');
 
   return json({ success: true });
@@ -67,7 +67,7 @@ export const PATCH = async ({ params, locals, url, request }) => {
   if (!commentId) throw error(400, 'commentId is required');
 
   const body = await request.json();
-  resolveComment(commentId, Boolean(body.resolved));
+  resolveComment(params.id, commentId, Boolean(body.resolved));
 
   return json({ success: true });
 };

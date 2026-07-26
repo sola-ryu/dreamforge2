@@ -39,7 +39,9 @@
       </p>
       <div class="flex justify-center gap-4">
         <Button href="/login" size="lg">Log In</Button>
-        <Button href="/register" variant="outline" size="lg">Register</Button>
+        {#if page.data?.allowRegistration}
+          <Button href="/register" variant="outline" size="lg">Register</Button>
+        {/if}
       </div>
     </div>
 
@@ -111,9 +113,11 @@
       </Card.Root>
     </div>
 
-    <div class="mt-16 text-center">
-      <p class="mb-2 text-sm text-muted-foreground">Ready to start building?</p>
-      <Button href="/register" size="lg">Create Your Account</Button>
-    </div>
+    {#if page.data?.allowRegistration}
+      <div class="mt-16 text-center">
+        <p class="mb-2 text-sm text-muted-foreground">Ready to start building?</p>
+        <Button href="/register" size="lg">Create Your Account</Button>
+      </div>
+    {/if}
   </div>
 {/if}

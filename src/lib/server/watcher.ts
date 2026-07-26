@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import chokidar, { type FSWatcher } from 'chokidar';
 import { readMarkdownFile } from './markdown';
-import { syncEntityToDb } from './entities';
+import { syncEntityToDb, removeEntityFromDbBySlug, pruneMissingEntities } from './entities';
 import type { EntityType } from '$lib/types';
 
 const watchers = new Map<string, FSWatcher>();
@@ -39,17 +39,23 @@ export function watchProject(projectId: string, projectPath: string): void {
   watcher.on('unlink', (filePath) => {
     if (!filePath.endsWith('.md')) return;
     const relPath = path.relative(projectPath, filePath);
-    const id = path.basename(filePath, '.md');
-    const dir = path.dirname(relPath);
-    const dirName = path.basename(dir);
+    const dirName = path.basename(path.dirname(relPath));
 
-    if (dirName === '_project' || dirName === '_story') {
-      handleNoteFileChange(projectId, filePath);
-    } else if (dirName === 'scenes') {
+    if (dirName === 'scenes') {
       handleSceneFileChange(projectId, filePath);
-    } else if (dirName === 'chapters') {
-      handleChapterFileChange(projectId, filePath);
+      return;
     }
+    if (dirName === 'chapters') {
+      handleChapterFileChange(projectId, filePath);
+      return;
+    }
+
+    // The file is gone, so its frontmatter id is unreadable — drop the index row by slug.
+    const entityType =
+      dirName === '_project' || dirName === '_story' ? 'note' : ENTITY_PATTERNS[dirName];
+    if (!entityType) return;
+
+    removeEntityFromDbBySlug(projectId, entityType, path.basename(filePath, '.md'));
   });
 
   watchers.set(projectId, watcher);
@@ -109,33 +115,29 @@ function handleChapterFileChange(_projectId: string, _filePath: string): void {
 }
 
 export function scanProject(projectId: string, projectPath: string): void {
-  const entityDirs = ['characters', 'organizations', 'locations', 'cultures', 'species', 'items'];
+  if (!fs.existsSync(projectPath)) return;
 
-  for (const dir of entityDirs) {
-    const fullDir = path.join(projectPath, dir);
-    if (!fs.existsSync(fullDir)) continue;
+  const seenIds = new Set<string>();
 
-    const files = fs.readdirSync(fullDir).filter((f) => f.endsWith('.md'));
-    const entityType = ENTITY_PATTERNS[dir];
-    if (!entityType) continue;
-
-    for (const file of files) {
-      const filePath = path.join(fullDir, file);
-      const md = readMarkdownFile(filePath);
+  const scanDir = (fullDir: string, entityType: EntityType) => {
+    if (!fs.existsSync(fullDir)) return;
+    for (const file of fs.readdirSync(fullDir).filter((f) => f.endsWith('.md'))) {
+      const md = readMarkdownFile(path.join(fullDir, file));
       if (!md) continue;
-      syncEntityToDb(projectId, entityType, md.frontmatter.id as string, md.frontmatter);
+      const id = md.frontmatter.id as string;
+      if (!id) continue;
+      seenIds.add(id);
+      syncEntityToDb(projectId, entityType, id, md.frontmatter);
     }
+  };
+
+  for (const [dir, entityType] of Object.entries(ENTITY_PATTERNS)) {
+    scanDir(path.join(projectPath, dir), entityType);
   }
 
   // Scan notes (project-wide and per-story)
-  const notesProjectDir = path.join(projectPath, 'notes', '_project');
-  if (fs.existsSync(notesProjectDir)) {
-    const files = fs.readdirSync(notesProjectDir).filter((f) => f.endsWith('.md'));
-    for (const file of files) {
-      const filePath = path.join(notesProjectDir, file);
-      const md = readMarkdownFile(filePath);
-      if (!md) continue;
-      syncEntityToDb(projectId, 'note', md.frontmatter.id as string, md.frontmatter);
-    }
-  }
+  scanDir(path.join(projectPath, 'notes', '_project'), 'note');
+
+  // The filesystem is the source of truth — drop index rows with no backing file.
+  pruneMissingEntities(projectId, seenIds);
 }

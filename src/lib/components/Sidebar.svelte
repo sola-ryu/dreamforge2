@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
+  import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import { toggleTheme } from '$lib/stores/theme.svelte';
   import { getZenMode } from '$lib/stores/zenMode.svelte';
   import * as Sidebar from '$lib/components/ui/sidebar/index.js';
@@ -131,7 +132,7 @@
                   <Sidebar.MenuButton tooltipContent={bm.entityName || bm.entityId}>
                     {#snippet child({ props })}
                       <a
-                        href={`/projects/${page.params.id}/${bm.entityType}s/${bm.entityId}`}
+                        href={`/projects/${page.params.id}/${entityTypeToRoute(bm.entityType)}/${bm.entityId}`}
                         {...props}
                       >
                         <span class="truncate">{bm.entityName || bm.entityId}</span>

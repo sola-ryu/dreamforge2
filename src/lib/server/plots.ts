@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { generateId } from '$lib/utils';
+import { generateId, isSafePathSegment } from '$lib/utils';
 import { getTemplateBeats } from './plotTemplates';
 
 export interface PlotBeat {
@@ -49,6 +49,7 @@ export function listPlotlines(projectPath: string): Plotline[] {
 }
 
 export function getPlotline(projectPath: string, plotlineId: string): Plotline | null {
+  if (!isSafePathSegment(plotlineId)) return null;
   const filePath = getPlotlinePath(projectPath, plotlineId);
   try {
     const data = fs.readFileSync(filePath, 'utf-8');
@@ -110,6 +111,7 @@ export function updatePlotline(
 }
 
 export function deletePlotline(projectPath: string, plotlineId: string): boolean {
+  if (!isSafePathSegment(plotlineId)) return false;
   const filePath = getPlotlinePath(projectPath, plotlineId);
   if (!fs.existsSync(filePath)) return false;
   fs.unlinkSync(filePath);

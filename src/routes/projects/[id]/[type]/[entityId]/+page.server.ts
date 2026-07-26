@@ -15,6 +15,7 @@ import {
 import { mergeFields } from '$lib/entityFields';
 import { ENTITY_FIELDS } from '$lib/entityFields';
 import { getProjectAccess } from '$lib/server/members';
+import { isSafePathSegment } from '$lib/utils';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -147,6 +148,11 @@ export const actions = {
     const chapterId = (form.get('chapterId') as string) || null;
     const newChapterTitle = form.get('newChapterTitle') as string;
 
+    if (!isSafePathSegment(storyId)) return fail(400, { error: 'Invalid story ID' });
+    if (chapterId !== null && !isSafePathSegment(chapterId)) {
+      return fail(400, { error: 'Invalid chapter ID' });
+    }
+
     const scene = noteToScene(
       params.id,
       project.dataPath,
@@ -161,6 +167,8 @@ export const actions = {
 
   toggleBookmark: async ({ params, locals }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
+    if (!getProjectAccess(params.id, locals.user.id))
+      return fail(404, { error: 'Project not found' });
     if (isBookmarked(locals.user.id, params.id, params.entityId)) {
       removeBookmark(locals.user.id, params.id, params.entityId);
     } else {

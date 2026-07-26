@@ -94,18 +94,19 @@ export function updateEvent(
   const data = loadTimeline(projectPath);
   const idx = data.events.findIndex((e) => e.id === eventId);
   if (idx === -1) return null;
-  data.events[idx] = {
+  const updated: TimelineEvent = {
     ...data.events[idx],
     ...updates,
     modifiedAt: new Date().toISOString()
   };
+  data.events[idx] = updated;
   data.events.sort((a, b) => {
     if (a.year !== b.year) return a.year - b.year;
     if ((a.month ?? 0) !== (b.month ?? 0)) return (a.month ?? 0) - (b.month ?? 0);
     return (a.day ?? 0) - (b.day ?? 0);
   });
   saveTimeline(projectPath, data);
-  return data.events[idx];
+  return updated;
 }
 
 export function deleteEvent(projectPath: string, eventId: string): boolean {

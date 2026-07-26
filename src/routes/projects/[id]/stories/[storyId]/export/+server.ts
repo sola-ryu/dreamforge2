@@ -206,10 +206,12 @@ ${chaptersWithScenes
 </body>
 </html>`;
 
+  const safeFilename = `${story.title.replace(/[^a-zA-Z0-9 _-]/g, '_').trim() || 'story'}-export.html`;
+
   return new Response(html, {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Content-Disposition': `inline; filename="${escapeHtml(story.title)}-export.html`
+      'Content-Disposition': `inline; filename="${safeFilename}"`
     }
   });
 };

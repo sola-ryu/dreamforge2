@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cn, generateId, slugify, formatDate } from '../index';
+import { cn, generateId, slugify, formatDate, isSafePathSegment } from '../index';
 
 describe('cn', () => {
   it('merges class names', () => {
@@ -70,5 +70,28 @@ describe('formatDate', () => {
     const result = formatDate('2024-06-15T12:00:00.000Z');
     expect(result).toContain('2024');
     expect(result).toContain('15');
+  });
+});
+
+describe('isSafePathSegment', () => {
+  it('accepts ordinary ids', () => {
+    expect(isSafePathSegment('92d98fa9-6991-4009-9041-83ea5f7d561e')).toBe(true);
+    expect(isSafePathSegment('my-slug_1')).toBe(true);
+  });
+
+  it('rejects traversal and separators', () => {
+    expect(isSafePathSegment('..')).toBe(false);
+    expect(isSafePathSegment('.')).toBe(false);
+    expect(isSafePathSegment('../../etc')).toBe(false);
+    expect(isSafePathSegment('a/b')).toBe(false);
+    expect(isSafePathSegment('a\\b')).toBe(false);
+    expect(isSafePathSegment('a\0b')).toBe(false);
+  });
+
+  it('rejects empty and non-strings', () => {
+    expect(isSafePathSegment('')).toBe(false);
+    expect(isSafePathSegment(null)).toBe(false);
+    expect(isSafePathSegment(undefined)).toBe(false);
+    expect(isSafePathSegment(42)).toBe(false);
   });
 });

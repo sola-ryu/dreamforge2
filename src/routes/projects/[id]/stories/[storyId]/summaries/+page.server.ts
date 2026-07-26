@@ -2,6 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import { getStoryMeta, listChapters, listScenes, updateScene } from '$lib/server/stories';
 import { listPlotlines } from '$lib/server/plots';
 import { getProjectAccess } from '$lib/server/members';
+import { isSafePathSegment } from '$lib/utils';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -37,6 +38,7 @@ export const actions = {
     const sceneId = form.get('sceneId') as string;
     const field = form.get('field') as string;
     const value = form.get('value') as string;
+    if (!isSafePathSegment(chapterId) || !isSafePathSegment(sceneId)) return { success: false };
     if (field === 'summary') {
       updateScene(project.dataPath, params.storyId, chapterId, sceneId, { summary: value || null });
     }

@@ -73,6 +73,38 @@
     });
   }
 
+  function escapeHtml(value: string) {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function renderMentionItems(props: any) {
+    return props.items
+      .map(
+        (item: any, i: number) =>
+          `<button class="${i === props.selectedIndex ? 'bg-accent' : ''} flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-accent" data-index="${i}">${escapeHtml(item.label)}<span class="ml-auto text-xs text-muted-foreground">${escapeHtml(item.type)}</span></button>`
+      )
+      .join('');
+  }
+
+  function bindMentionItems(dom: HTMLElement, props: any) {
+    dom.innerHTML = renderMentionItems(props);
+    dom.querySelectorAll('button').forEach((btn) => {
+      btn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        const idx = parseInt(btn.dataset.index || '0', 10);
+        props.command({
+          id: props.items[idx].id,
+          type: props.items[idx].type,
+          label: props.items[idx].label
+        });
+      });
+    });
+  }
+
   function positionDropdown(dom: HTMLElement, rect: DOMRect) {
     dom.style.position = 'fixed';
     dom.style.left = `${rect.left}px`;
@@ -98,46 +130,11 @@
               dom.className = 'mention-dropdown';
               document.body.appendChild(dom);
               if (props.clientRect) positionDropdown(dom, props.clientRect());
-              const update = () => {
-                dom.innerHTML = props.items
-                  .map(
-                    (item: any, i: number) =>
-                      `<button class="${i === props.selectedIndex ? 'bg-accent' : ''} flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-accent" data-index="${i}">${item.label}<span class="ml-auto text-xs text-muted-foreground">${item.type}</span></button>`
-                  )
-                  .join('');
-                dom.querySelectorAll('button').forEach((btn) => {
-                  btn.addEventListener('mousedown', (e) => {
-                    e.preventDefault();
-                    const idx = parseInt(btn.dataset.index || '0', 10);
-                    props.command({
-                      id: props.items[idx].id,
-                      type: props.items[idx].type,
-                      label: props.items[idx].label
-                    });
-                  });
-                });
-              };
-              update();
+              bindMentionItems(dom, props);
             },
             onUpdate: (props: any) => {
               if (props.clientRect) positionDropdown(dom, props.clientRect());
-              dom.innerHTML = props.items
-                .map(
-                  (item: any, i: number) =>
-                    `<button class="${i === props.selectedIndex ? 'bg-accent' : ''} flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-accent" data-index="${i}">${item.label}<span class="ml-auto text-xs text-muted-foreground">${item.type}</span></button>`
-                )
-                .join('');
-              dom.querySelectorAll('button').forEach((btn) => {
-                btn.addEventListener('mousedown', (e) => {
-                  e.preventDefault();
-                  const idx = parseInt(btn.dataset.index || '0', 10);
-                  props.command({
-                    id: props.items[idx].id,
-                    type: props.items[idx].type,
-                    label: props.items[idx].label
-                  });
-                });
-              });
+              bindMentionItems(dom, props);
             },
             onExit: () => {
               if (dom) dom.remove();

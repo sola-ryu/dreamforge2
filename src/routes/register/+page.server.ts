@@ -5,15 +5,19 @@ import { users, sessions } from '$lib/server/schema';
 import { eq, or } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { generateId } from '$lib/utils';
-import { env } from '$env/dynamic/private';
+import { registrationAllowed } from '$lib/server/registration';
+import type { PageServerLoad } from './$types';
 
 const drizzleDb = drizzle(db);
 
+export const load: PageServerLoad = async () => {
+  if (!registrationAllowed()) throw redirect(302, '/login');
+  return {};
+};
+
 export const actions = {
   register: async ({ request, cookies }) => {
-    const allowRegistration = env.PUBLIC_ALLOW_REGISTRATION !== 'false';
-
-    if (!allowRegistration) {
+    if (!registrationAllowed()) {
       return fail(403, { error: 'Registration is disabled' });
     }
 

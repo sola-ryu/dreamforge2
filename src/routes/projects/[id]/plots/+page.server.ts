@@ -2,6 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { listPlotlines, createPlotline, deletePlotline } from '$lib/server/plots';
 import { listStories } from '$lib/server/stories';
 import { getProjectAccess } from '$lib/server/members';
+import { isSafePathSegment } from '$lib/utils';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -48,6 +49,7 @@ export const actions = {
 
     const form = await request.formData();
     const plotlineId = form.get('plotlineId') as string;
+    if (!isSafePathSegment(plotlineId)) return fail(400, { error: 'Invalid plotline ID' });
     deletePlotline(project.dataPath, plotlineId);
     return { success: true };
   }

@@ -14,7 +14,7 @@ export async function GET({ params, locals }) {
 
   archive.on('data', (chunk: Buffer) => chunks.push(chunk));
 
-  return new Promise((resolve) => {
+  return new Promise<Response>((resolve) => {
     archive.on('end', () => {
       const zipBuffer = Buffer.concat(chunks);
       resolve(
@@ -27,7 +27,12 @@ export async function GET({ params, locals }) {
       );
     });
 
-    archive.directory(project.dataPath, false);
+    archive.on('error', (err: Error) => {
+      console.error('Project export failed', err);
+      resolve(new Response('Export failed', { status: 500 }));
+    });
+
+    archive.glob('**/*', { cwd: project.dataPath, dot: true, ignore: ['.trash/**'] });
     archive.finalize();
   });
 }

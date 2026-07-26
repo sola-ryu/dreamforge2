@@ -1,5 +1,6 @@
 import type { LayoutServerLoad } from './$types';
 import { getBookmarks } from '$lib/server/bookmarks';
+import { registrationAllowed } from '$lib/server/registration';
 import db from '$lib/server/db';
 import { entities } from '$lib/server/schema';
 import { eq, and } from 'drizzle-orm';
@@ -40,9 +41,16 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
   }
 
   return {
-    user: locals.user || null,
-    theme: 'dark',
+    user: locals.user
+      ? {
+          id: locals.user.id,
+          email: locals.user.email,
+          username: locals.user.username,
+          createdAt: locals.user.createdAt
+        }
+      : null,
     bookmarks,
-    projectId
+    projectId,
+    allowRegistration: registrationAllowed()
   };
 };
