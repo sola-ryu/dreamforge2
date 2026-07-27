@@ -147,23 +147,12 @@ save — the mention degrades to plain text and the hover card stops resolving.
 
 ## 13. Module-level Svelte state is shared across SSR requests
 
-**Status:** `theme.svelte.ts`, `compactMode.svelte.ts`, and `zenMode.svelte.ts` declare
-`$state` at module scope. On the server that module is a singleton shared by every
-concurrent request, so one user's zen/compact toggle can bleed into another user's
-server-rendered HTML. Only mild today because all three are toggled client-side, but it is
-a real cross-request leak.
+**Status:** `theme.svelte.ts` and `zenMode.svelte.ts` declare `$state` at module scope.
+On the server that module is a singleton shared by every concurrent request, so one
+user's theme/zen toggle can bleed into another user's server-rendered HTML. Only mild
+today because both are toggled client-side, but it is a real cross-request leak.
 
 **Files:** `src/lib/stores/*.svelte.ts`, `src/routes/+layout.svelte`
 
 **Steps:** convert each to the context pattern — `setContext(KEY, createXState())` in
 `+layout.svelte`, `getContext(KEY)` in consumers — so each request gets its own instance.
-
----
-
-## 14. Compact mode is not wired to anything
-
-**Status:** `src/lib/stores/compactMode.svelte.ts` exports `getCompactMode()` with a
-`toggle()`, and nothing imports it. There is no toggle control and no styles react to it.
-
-**Steps:** either delete the store, or add a sidebar toggle plus a `compact` class on the
-layout wrapper with the corresponding density rules in `app.css`.

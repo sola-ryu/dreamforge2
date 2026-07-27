@@ -27,7 +27,7 @@ src/
     components/     — Editor.svelte (Tiptap), Sidebar.svelte (nav/bookmarks)
     server/          — All server-only code (db, auth, entities, markdown, stories, etc.)
       __tests__/     — Server unit tests (vitest)
-    stores/          — Svelte runes stores (theme.svelte.ts, zenMode.svelte.ts, compactMode.svelte.ts)
+    stores/          — Svelte runes stores (theme.svelte.ts, zenMode.svelte.ts)
     types/           — TypeScript interfaces (EntityType, Story, Scene, etc.)
     utils/           — Shared helpers (cn, generateId, slugify, formatDate)
       __tests__/     — Util unit tests
