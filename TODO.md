@@ -126,19 +126,6 @@ module has been built.
 
 ---
 
-## 9. Dead mention code
-
-**Status:** `src/lib/components/MentionList.svelte`, `src/lib/components/MentionHover.svelte`,
-and `src/lib/extensions/Mention.ts` are not imported anywhere. `Editor.svelte` hand-rolls
-the mention dropdown with `innerHTML` and does hover cards inline. `IDEAS.md` still lists
-"@Mentions with Hover Cards" as unimplemented even though a working version ships.
-
-**Steps:** either delete the three dead files, or replace the `innerHTML` dropdown in
-`Editor.svelte` with `MentionList.svelte` rendered via `mount()` (nicer: no manual HTML
-escaping needed). Then drop the @Mentions section from `IDEAS.md`.
-
----
-
 ## 10. Mentions are not persisted as links
 
 **Status:** `IDEAS.md` specifies mentions should round-trip through Markdown as

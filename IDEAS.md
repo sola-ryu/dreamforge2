@@ -2,17 +2,6 @@
 
 These are things not yet implemented but worth eventually adding. When something is implemented, it should be removed from this document.
 
-## @Mentions with Hover Cards
-
-**Files:** `src/lib/components/MentionList.svelte`, `src/lib/extensions/Mention.ts`
-
-- Register a Tiptap extension that triggers on `@` keypress
-- Dropdown list of all entities in the project (filtered by type)
-- Insert as `<span data-mention data-id="char_001">@Elara Voss</span>`
-- Hover popup card: shows entity name, type, status, first 100 chars of body
-- Stored in Markdown as `[@Elara Voss](mention://character/char_001)`
-- On load, parse mentions and hydrate hover card data
-
 ## PDF Export
 
 **Files:** `src/routes/projects/[id]/stories/[storyId]/export/+server.ts`
