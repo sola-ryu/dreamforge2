@@ -29,15 +29,6 @@ export const projects = sqliteTable('projects', {
   modifiedAt: text('modified_at').notNull()
 });
 
-export const tags = sqliteTable('tags', {
-  id: text('id').primaryKey(),
-  projectId: text('project_id')
-    .notNull()
-    .references(() => projects.id),
-  name: text('name').notNull(),
-  color: text('color')
-});
-
 export const entities = sqliteTable('entities', {
   id: text('id').primaryKey(),
   projectId: text('project_id')
@@ -51,55 +42,6 @@ export const entities = sqliteTable('entities', {
   imagePath: text('image_path'),
   createdAt: text('created_at').notNull(),
   modifiedAt: text('modified_at').notNull()
-});
-
-export const stories = sqliteTable('stories', {
-  id: text('id').primaryKey(),
-  projectId: text('project_id')
-    .notNull()
-    .references(() => projects.id),
-  title: text('title').notNull(),
-  description: text('description'),
-  sortOrder: integer('sort_order').notNull().default(0),
-  createdAt: text('created_at').notNull(),
-  modifiedAt: text('modified_at').notNull()
-});
-
-export const chapters = sqliteTable('chapters', {
-  id: text('id').primaryKey(),
-  storyId: text('story_id')
-    .notNull()
-    .references(() => stories.id),
-  title: text('title').notNull(),
-  sortOrder: integer('sort_order').notNull().default(0),
-  createdAt: text('created_at').notNull(),
-  modifiedAt: text('modified_at').notNull()
-});
-
-export const scenes = sqliteTable('scenes', {
-  id: text('id').primaryKey(),
-  chapterId: text('chapter_id')
-    .notNull()
-    .references(() => chapters.id),
-  title: text('title'),
-  narrator: text('narrator'),
-  time: text('time'),
-  place: text('place'),
-  participants: text('participants', { mode: 'json' }).$type<string[]>().default([]),
-  sortOrder: integer('sort_order').notNull().default(0),
-  createdAt: text('created_at').notNull(),
-  modifiedAt: text('modified_at').notNull()
-});
-
-export const relations = sqliteTable('relations', {
-  id: text('id').primaryKey(),
-  projectId: text('project_id')
-    .notNull()
-    .references(() => projects.id),
-  sourceId: text('source_id').notNull(),
-  targetId: text('target_id').notNull(),
-  relationType: text('relation_type').notNull(),
-  label: text('label')
 });
 
 export const bookmarks = sqliteTable('bookmarks', {

@@ -92,40 +92,6 @@ and scenes call `fs.rmSync` / `fs.unlinkSync` directly — one misclick is unrec
 
 ---
 
-## 6. Unused `stories` / `chapters` / `scenes` / `tags` DB tables
-
-**Status:** `migrate.ts` creates them and `schema.ts` declares them, but story data is
-100% file-based and nothing reads or writes these four tables. Dead weight that misleads
-anyone reading the schema, and it means stories are invisible to any query-based feature
-(including search, item 3).
-
-**Files:** `src/lib/server/migrate.ts`, `src/lib/server/schema.ts`
-
-**Steps — pick one:**
-
-- **Remove:** delete the four `sqliteTable` declarations and their `CREATE TABLE`
-  statements. Leave existing DBs alone (`CREATE TABLE IF NOT EXISTS` just stops running).
-- **Or use:** index stories/chapters/scenes from `scanProject` the same way entities are,
-  which also unblocks searching scene text.
-
-The `tags` table is unused either way — entity tags live in frontmatter and in the
-`entities.tags` JSON column. Remove it.
-
----
-
-## 7. Watcher never indexes scenes or chapters
-
-**Status:** `handleSceneFileChange` and `handleChapterFileChange` in `watcher.ts` are
-empty stubs with the comment "Will be implemented when scenes module is built". The scenes
-module has been built.
-
-**Files:** `src/lib/server/watcher.ts`
-
-**Steps:** depends on item 6. If the tables stay, parse the file and upsert into
-`scenes`/`chapters`; if they go, delete the two stubs and the branches that call them.
-
----
-
 ## 10. Mentions are not persisted as links
 
 **Status:** `IDEAS.md` specifies mentions should round-trip through Markdown as

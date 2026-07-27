@@ -27,13 +27,6 @@ export function migrate() {
       modified_at TEXT NOT NULL
     );
 
-    CREATE TABLE IF NOT EXISTS tags (
-      id TEXT PRIMARY KEY,
-      project_id TEXT NOT NULL REFERENCES projects(id),
-      name TEXT NOT NULL,
-      color TEXT
-    );
-
     CREATE TABLE IF NOT EXISTS entities (
       id TEXT PRIMARY KEY,
       project_id TEXT NOT NULL REFERENCES projects(id),
@@ -45,47 +38,6 @@ export function migrate() {
       image_path TEXT,
       created_at TEXT NOT NULL,
       modified_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS stories (
-      id TEXT PRIMARY KEY,
-      project_id TEXT NOT NULL REFERENCES projects(id),
-      title TEXT NOT NULL,
-      description TEXT,
-      sort_order INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT NOT NULL,
-      modified_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS chapters (
-      id TEXT PRIMARY KEY,
-      story_id TEXT NOT NULL REFERENCES stories(id),
-      title TEXT NOT NULL,
-      sort_order INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT NOT NULL,
-      modified_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS scenes (
-      id TEXT PRIMARY KEY,
-      chapter_id TEXT NOT NULL REFERENCES chapters(id),
-      title TEXT,
-      narrator TEXT,
-      time TEXT,
-      place TEXT,
-      participants TEXT DEFAULT '[]',
-      sort_order INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT NOT NULL,
-      modified_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS relations (
-      id TEXT PRIMARY KEY,
-      project_id TEXT NOT NULL REFERENCES projects(id),
-      source_id TEXT NOT NULL,
-      target_id TEXT NOT NULL,
-      relation_type TEXT NOT NULL,
-      label TEXT
     );
 
     CREATE TABLE IF NOT EXISTS bookmarks (

@@ -41,14 +41,10 @@ export function watchProject(projectId: string, projectPath: string): void {
     const relPath = path.relative(projectPath, filePath);
     const dirName = path.basename(path.dirname(relPath));
 
-    if (dirName === 'scenes') {
-      handleSceneFileChange(projectId, filePath);
-      return;
-    }
-    if (dirName === 'chapters') {
-      handleChapterFileChange(projectId, filePath);
-      return;
-    }
+    // Stories/chapters/scenes are not indexed in the entities table (they're
+    // metadata-in-frontmatter files read directly by stories.ts), so there's no
+    // index row to clean up here — only entities and project-wide notes are.
+    if (dirName === 'scenes' || dirName === 'chapters') return;
 
     // The file is gone, so its frontmatter id is unreadable — drop the index row by slug.
     const entityType =
@@ -79,15 +75,8 @@ function handleFileChange(projectId: string, projectPath: string, filePath: stri
     return;
   }
 
-  if (dirName === 'scenes') {
-    handleSceneFileChange(projectId, filePath);
-    return;
-  }
-
-  if (dirName === 'chapters') {
-    handleChapterFileChange(projectId, filePath);
-    return;
-  }
+  // Stories/chapters/scenes are read directly by stories.ts, not indexed here.
+  if (dirName === 'scenes' || dirName === 'chapters') return;
 
   const entityDir = path.basename(dir);
   const entityType = ENTITY_PATTERNS[entityDir];
@@ -104,14 +93,6 @@ function handleNoteFileChange(projectId: string, filePath: string): void {
   const md = readMarkdownFile(filePath);
   if (!md) return;
   syncEntityToDb(projectId, 'note', md.frontmatter.id as string, md.frontmatter);
-}
-
-function handleSceneFileChange(_projectId: string, _filePath: string): void {
-  // Will be implemented when scenes module is built
-}
-
-function handleChapterFileChange(_projectId: string, _filePath: string): void {
-  // Will be implemented when chapters module is built
 }
 
 export function scanProject(projectId: string, projectPath: string): void {
