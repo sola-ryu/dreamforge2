@@ -24,7 +24,6 @@
   import { Label } from '$lib/components/ui/label';
   import { Badge } from '$lib/components/ui/badge';
   import { Textarea } from '$lib/components/ui/textarea';
-  import { Combobox } from '$lib/components/ui/combobox';
   import {
     Select,
     SelectContent,

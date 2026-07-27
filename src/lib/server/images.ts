@@ -6,7 +6,6 @@ import { eq, and, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { generateId } from '$lib/utils';
 import { softDeleteImage } from '$lib/server/trash';
-import type { EntityType } from '$lib/types';
 
 const drizzleDb = drizzle(db);
 
@@ -98,7 +97,7 @@ export function uploadImages(
   return results;
 }
 
-export function listProjectImages(projectId: string, projectPath: string): ProjectImage[] {
+export function listProjectImages(projectId: string, _projectPath: string): ProjectImage[] {
   const rows = drizzleDb
     .select()
     .from(projectImages)

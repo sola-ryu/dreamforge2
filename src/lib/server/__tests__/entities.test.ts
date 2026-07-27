@@ -294,7 +294,7 @@ describe('createEntity', () => {
 
   it('creates directory if it does not exist', () => {
     const freshDir = fs.mkdtempSync(path.join(os.tmpdir(), 'df-fresh-'));
-    const entity = createEntity(TEST_PROJECT_ID, freshDir, 'character', { name: 'Fresh' });
+    createEntity(TEST_PROJECT_ID, freshDir, 'character', { name: 'Fresh' });
     expect(fs.existsSync(freshDir)).toBe(true);
     expect(fs.existsSync(path.join(freshDir, 'characters'))).toBe(true);
     fs.rmSync(freshDir, { recursive: true, force: true });

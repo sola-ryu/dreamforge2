@@ -39,12 +39,17 @@
   let layout: cytoscape.Layouts | null = null;
   let layoutName = $state('fcose');
 
+  interface GraphData {
+    nodes: cytoscape.ElementDefinition[];
+    edges: cytoscape.ElementDefinition[];
+  }
+
   // Derived (not set from buildGraph) so the empty state is already correct during
   // SSR, where cytoscape never runs.
-  let graph = $derived.by(() => {
+  let graph: GraphData = $derived.by(() => {
     const entityMap = new Map(entities.map((e) => [e.id, e]));
 
-    const edges = relations
+    const edges: cytoscape.ElementDefinition[] = relations
       .filter((r) => entityMap.has(r.sourceId) && entityMap.has(r.targetId))
       .map((r) => ({
         data: {
@@ -58,11 +63,11 @@
 
     const relatedIds = new Set<string>();
     for (const e of edges) {
-      relatedIds.add(e.data.source);
-      relatedIds.add(e.data.target);
+      relatedIds.add(e.data.source as string);
+      relatedIds.add(e.data.target as string);
     }
 
-    const nodes = entities
+    const nodes: cytoscape.ElementDefinition[] = entities
       .filter((e) => relatedIds.has(e.id))
       .map((e) => ({ data: { id: e.id, name: e.name, type: e.type } }));
 
@@ -120,16 +125,14 @@
     layout = null;
   }
 
-  function buildGraph() {
-    if (!container) return;
-
+  function buildGraph({ nodes, edges }: GraphData, currentLayout: string) {
     stopLayout();
     if (cy) {
       cy.destroy();
       cy = null;
     }
 
-    const { nodes, edges } = graph;
+    if (!container) return;
 
     // fcose throws from its internals when asked to lay out an empty graph, which
     // happens whenever entities exist but none of them are related to each other.
@@ -188,7 +191,7 @@
 
     // Run the layout explicitly rather than via the constructor so it can be
     // stopped on teardown instead of settling against a destroyed instance.
-    layout = cy.layout(buildLayoutOptions(layoutName));
+    layout = cy.layout(buildLayoutOptions(currentLayout));
     layout.run();
 
     cy.on('tap', 'node', (evt) => {
@@ -211,11 +214,9 @@
   }
 
   $effect(() => {
-    // Read dependencies here: buildGraph bails before touching them if the
-    // container is not bound yet, which would leave the effect with none.
-    graph;
-    layoutName;
-    buildGraph();
+    // Passed as arguments rather than read inside buildGraph so the effect always
+    // registers both dependencies, even on a run that bails early.
+    buildGraph(graph, layoutName);
   });
 
   // Not an $effect teardown: that also fires between re-runs, and tapping a node

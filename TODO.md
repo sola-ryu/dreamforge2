@@ -146,22 +146,6 @@ module has been built.
 
 ---
 
-## 8. `npm run lint` is broken
-
-**Status:** `package.json` runs `prettier --check . && eslint .`, but there is no
-`eslint.config.js` anywhere in the repo, so eslint exits with a config error every time.
-`eslint-plugin-svelte` and `globals` are installed but unused. CI does not catch this
-because `.github/workflows/ci.yml` only runs `vitest`.
-
-**Steps:**
-
-1. Add an `eslint.config.js` with the flat-config preset:
-   `js.configs.recommended`, `ts.configs.recommended`, `svelte.configs.recommended`,
-   `globals.browser`/`globals.node`, and `ignores: ['build/', '.svelte-kit/', 'data/']`.
-2. Add `npm run check` and `npm run lint` steps to `ci.yml` so this cannot regress.
-
----
-
 ## 9. Dead mention code
 
 **Status:** `src/lib/components/MentionList.svelte`, `src/lib/components/MentionHover.svelte`,

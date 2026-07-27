@@ -7,7 +7,6 @@ import { getNoteTemplates } from '$lib/server/templates';
 import { getCustomFieldDefs } from '$lib/server/customFields';
 import { mergeFields, ENTITY_FIELDS } from '$lib/entityFields';
 import { getProjectAccess } from '$lib/server/members';
-import type { EntityType } from '$lib/types';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals, url }) => {

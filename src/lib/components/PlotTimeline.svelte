@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { GripVertical, Link2, Link2Off } from '@lucide/svelte';
+  import { GripVertical, Link2 } from '@lucide/svelte';
 
   interface Beat {
     title: string;
@@ -54,10 +54,6 @@
     if (!sceneId) return '';
     const scene = scenes.find((s) => s.id === sceneId);
     return scene ? scene.title || 'Untitled Scene' : sceneId;
-  }
-
-  function isLinked(sceneId: string | null): boolean {
-    return sceneId !== null && scenes.some((s) => s.id === sceneId);
   }
 </script>
 

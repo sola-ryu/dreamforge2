@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import { ArrowLeft, FileText } from '@lucide/svelte';
+  import { ArrowLeft } from '@lucide/svelte';
   import SummariesView from '$lib/components/SummariesView.svelte';
 
   let plotlines = $derived(

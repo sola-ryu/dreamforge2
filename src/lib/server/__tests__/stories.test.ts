@@ -309,7 +309,7 @@ describe('getScene', () => {
 describe('findSceneById', () => {
   it('finds a scene across all chapters', () => {
     const story = createStory(tmpDir, 'Story');
-    const ch1 = createChapter(tmpDir, story.id, 'Ch 1');
+    createChapter(tmpDir, story.id, 'Ch 1');
     const ch2 = createChapter(tmpDir, story.id, 'Ch 2');
     const scene = createScene(tmpDir, story.id, ch2.id, 'In Ch2');
     const found = findSceneById(tmpDir, story.id, scene.id);

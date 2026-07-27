@@ -7,6 +7,7 @@
   import type { EntityType } from '$lib/types';
   import Editor from '$lib/components/Editor.svelte';
   import { marked } from 'marked';
+  import DOMPurify from 'isomorphic-dompurify';
   import Comments from '$lib/components/Comments.svelte';
   import {
     ArrowLeft,
@@ -328,7 +329,8 @@
           />
         {:else}
           <div class="mt-4 prose prose-sm max-w-none">
-            {@html marked.parse(body || '')}
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized with DOMPurify -->
+            {@html DOMPurify.sanitize(marked.parse(body || '', { async: false }))}
           </div>
         {/if}
       {:else}
@@ -341,7 +343,8 @@
         />
         {#if !editing}
           <div class="mt-4 prose prose-sm max-w-none">
-            {@html page.data?.entity?.body || ''}
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized with DOMPurify -->
+            {@html DOMPurify.sanitize(page.data?.entity?.body || '')}
           </div>
         {/if}
       {/if}

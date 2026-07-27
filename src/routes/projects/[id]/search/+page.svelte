@@ -3,19 +3,26 @@
   import { goto } from '$app/navigation';
   import { FileText, Search as SearchIcon } from '@lucide/svelte';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
-  import { cn, formatDate } from '$lib/utils';
+  import { formatDate } from '$lib/utils';
   import { Badge } from '$lib/components/ui/badge';
 
   let query = $state(page.data?.query || '');
   let timer: ReturnType<typeof setTimeout>;
   let searching = $state(false);
 
-  function doSearch() {
+  // The load's query results replace page.data once navigation resolves, which
+  // marks the end of the in-flight search regardless of how it was triggered.
+  $effect(() => {
+    void page.data?.query;
+    searching = false;
+  });
+
+  async function doSearch() {
     searching = true;
     const url = new URL(window.location.href);
     if (query) url.searchParams.set('q', query);
     else url.searchParams.delete('q');
-    goto(url.toString());
+    await goto(url.toString());
   }
 
   function onInput() {
@@ -41,8 +48,16 @@
       placeholder="Search across all entities..."
       bind:value={query}
       oninput={onInput}
-      class="w-full rounded-lg border border-input bg-background pl-9 pr-4 py-2.5 text-sm"
+      class="w-full rounded-lg border border-input bg-background pl-9 pr-16 py-2.5 text-sm"
     />
+    {#if searching}
+      <span
+        class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground"
+        aria-live="polite"
+      >
+        Searching…
+      </span>
+    {/if}
   </div>
 
   <div class="space-y-2">

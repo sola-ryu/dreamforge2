@@ -1,7 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { enhance } from '$app/forms';
-  import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import { ENTITY_LABELS } from '$lib/entityFields';
   import { ArrowLeft, Plus, Trash2, Settings, Users, UserPlus } from '@lucide/svelte';
   import type { EntityType } from '$lib/types';

@@ -178,7 +178,7 @@
     };
   });
 
-  function exec(command: string, value: string = '') {
+  function exec(command: string) {
     switch (command) {
       case 'bold':
         editor.chain().focus().toggleBold().run();

@@ -7,7 +7,6 @@ import {
   unlinkEntityFromImage
 } from '$lib/server/images';
 import { listEntities } from '$lib/server/entities';
-import { routeToEntityType } from '$lib/utils/entityTypes';
 import { getProjectAccess } from '$lib/server/members';
 import type { EntityType } from '$lib/types';
 import type { PageServerLoad } from './$types';

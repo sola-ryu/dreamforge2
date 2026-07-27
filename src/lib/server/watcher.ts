@@ -20,7 +20,7 @@ export function watchProject(projectId: string, projectPath: string): void {
   if (watchers.has(projectId)) return;
 
   const watcher = chokidar.watch(projectPath, {
-    ignored: /(^|[\/\\])\../,
+    ignored: /(^|[/\\])\../,
     persistent: true,
     ignoreInitial: false,
     depth: 4

@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import Database from 'better-sqlite3';
 
 const { testDb } = vi.hoisted(() => {
   const Database = require('better-sqlite3');

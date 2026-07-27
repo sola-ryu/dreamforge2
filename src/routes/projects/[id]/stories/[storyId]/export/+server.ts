@@ -2,13 +2,6 @@ import { error } from '@sveltejs/kit';
 import { getStoryMeta, listChapters, listScenes } from '$lib/server/stories';
 import { getProjectAccess } from '$lib/server/members';
 
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .trim();
-}
-
 function renderTitlePage(title: string, subtitle?: string, author?: string) {
   return `
     <div class="title-page">
@@ -53,7 +46,6 @@ function renderScene(
   },
   index: number
 ) {
-  const bodyText = stripHtml(scene.body) || '(empty)';
   const meta = [];
   if (scene.narrator) meta.push(`Narrator: ${escapeHtml(scene.narrator)}`);
   if (scene.time) meta.push(`Time: ${escapeHtml(scene.time)}`);

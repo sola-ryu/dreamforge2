@@ -10,8 +10,7 @@ import {
   deleteScene,
   reorderChapters,
   reorderScenes,
-  updateStory,
-  deleteStory
+  updateStory
 } from '$lib/server/stories';
 import { searchEntities } from '$lib/server/entities';
 import { sceneToNote } from '$lib/server/conversion';

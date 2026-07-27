@@ -55,23 +55,12 @@
     if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
   }
 
-  function getThreadTypeIcon(type: string) {
-    if (type === 'setup') return Circle;
-    if (type === 'payoff') return CheckCircle;
-    return Clock;
-  }
-
   function getScenePlotThreads(sceneId: string) {
     return plotlines.flatMap((pl) =>
       pl.beats
         .filter((b) => b.sceneId === sceneId)
         .map((b) => ({ thread: pl.title, beat: b.title }))
     );
-  }
-
-  function extractSynopsis(body: string): string {
-    const text = body.replace(/<[^>]*>/g, '').trim();
-    return text.length > 200 ? text.slice(0, 200) + '...' : text;
   }
 </script>
 

@@ -1,16 +1,4 @@
 import db from './db';
-import {
-  users,
-  sessions,
-  projects,
-  entities,
-  tags,
-  stories,
-  chapters,
-  scenes,
-  relations,
-  bookmarks
-} from './schema';
 
 export function migrate() {
   db.exec(`

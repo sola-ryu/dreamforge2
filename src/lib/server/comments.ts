@@ -1,5 +1,5 @@
 import db from './db';
-import { comments, users, projects } from './schema';
+import { comments, users } from './schema';
 import { eq, and } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { generateId } from '$lib/utils';

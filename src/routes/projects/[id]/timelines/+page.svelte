@@ -1,22 +1,8 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { enhance } from '$app/forms';
-  import { goto } from '$app/navigation';
-  import {
-    Plus,
-    Clock,
-    Settings,
-    Trash2,
-    Edit,
-    X,
-    Filter,
-    Search,
-    Save,
-    Calendar,
-    ChevronDown,
-    ChevronRight
-  } from '@lucide/svelte';
-  import { cn, formatDate } from '$lib/utils';
+  import { Plus, Clock, Trash2, Edit, X, Filter, Search, Save, Calendar } from '@lucide/svelte';
+  import { cn } from '$lib/utils';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
@@ -215,12 +201,6 @@
       default:
         return '#6b7280';
     }
-  }
-
-  function scrollToYear(year: number) {
-    if (!timelineEl) return;
-    const x = yearToX(year) - timelineEl.clientWidth / 2;
-    timelineEl.scrollTo({ left: Math.max(0, x), behavior: 'smooth' });
   }
 </script>
 

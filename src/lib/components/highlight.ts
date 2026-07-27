@@ -1,7 +1,7 @@
 import Highlight from '@tiptap/extension-highlight';
 
 declare module '@tiptap/core' {
-  interface MarkConfig<Options, Storage> {
+  interface MarkConfig {
     markdownTokenizer?: Record<string, unknown>;
     parseMarkdown?: (token: unknown, helpers: Record<string, unknown>) => unknown;
     renderMarkdown?: (node: Record<string, unknown>, helpers: Record<string, unknown>) => string;

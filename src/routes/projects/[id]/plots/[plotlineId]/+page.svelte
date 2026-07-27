@@ -6,8 +6,6 @@
   import { Button } from '$lib/components/ui/button';
   import { Badge } from '$lib/components/ui/badge';
 
-  let isSaving = $state(false);
-
   let scenes = $derived(
     (page.data?.chapters || []).flatMap((ch: any) =>
       (ch.scenes || []).map((s: any) => ({ ...s, chapterTitle: ch.title }))
@@ -59,7 +57,7 @@
         {#if page.data?.plotline?.template}
           <Badge variant="secondary">{page.data.plotline.template}</Badge>
         {/if}
-        <Button type="submit" onclick={() => (isSaving = true)}>
+        <Button type="submit">
           <Save class="h-4 w-4" />
           Save
         </Button>

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { enhance } from '$app/forms';
-  import { Plus, Trash2, Edit, GripVertical } from '@lucide/svelte';
+  import { Plus, Trash2, GripVertical } from '@lucide/svelte';
   import { formatDate } from '$lib/utils';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';

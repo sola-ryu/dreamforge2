@@ -1,7 +1,5 @@
 import { createEntity, updateEntity, getEntity } from './entities';
 import { createScene, getScene, updateScene, listChapters, createChapter } from './stories';
-import { generateId } from '$lib/utils';
-import type { EntityType } from '$lib/types';
 
 export function noteToScene(
   projectId: string,
@@ -53,7 +51,6 @@ export function sceneToNote(
   const scene = getScene(projectPath, storyId, chapterId, sceneId);
   if (!scene) return null;
 
-  const noteId = generateId();
   const body = `_Converted from scene: ${sceneId} in story ${storyId}_\n\n---\n\n${scene.body}`;
 
   const note = createEntity(projectId, projectPath, 'note', {

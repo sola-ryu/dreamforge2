@@ -399,9 +399,9 @@
             />
           </div>
           <div class="flex items-center gap-2">
-            <Button type="submit" onclick={() => (isSaving = true)}>
+            <Button type="submit" disabled={isSaving} onclick={() => (isSaving = true)}>
               <Save class="h-4 w-4" />
-              Save
+              {isSaving ? 'Saving…' : 'Save'}
             </Button>
             <Button
               variant="outline"

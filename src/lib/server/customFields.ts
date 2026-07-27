@@ -61,7 +61,6 @@ export function setCustomFieldDefs(
 ): CustomFieldDef[] {
   drizzleDb.delete(customFieldDefs).where(eq(customFieldDefs.projectId, projectId)).run();
 
-  const now = new Date().toISOString();
   const records = defs.map((def, i) => ({
     id: generateId(),
     projectId,
