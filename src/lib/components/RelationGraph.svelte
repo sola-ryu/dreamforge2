@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import cytoscape from 'cytoscape';
   import fcose from 'cytoscape-fcose';
   import avsdf from 'cytoscape-avsdf';
@@ -35,7 +36,38 @@
 
   let container: HTMLDivElement;
   let cy: cytoscape.Core | null = null;
+  let layout: cytoscape.Layouts | null = null;
   let layoutName = $state('fcose');
+
+  // Derived (not set from buildGraph) so the empty state is already correct during
+  // SSR, where cytoscape never runs.
+  let graph = $derived.by(() => {
+    const entityMap = new Map(entities.map((e) => [e.id, e]));
+
+    const edges = relations
+      .filter((r) => entityMap.has(r.sourceId) && entityMap.has(r.targetId))
+      .map((r) => ({
+        data: {
+          id: r.id,
+          source: r.sourceId,
+          target: r.targetId,
+          label: r.label || r.relationType.replace(/_/g, ' '),
+          relationType: r.relationType
+        }
+      }));
+
+    const relatedIds = new Set<string>();
+    for (const e of edges) {
+      relatedIds.add(e.data.source);
+      relatedIds.add(e.data.target);
+    }
+
+    const nodes = entities
+      .filter((e) => relatedIds.has(e.id))
+      .map((e) => ({ data: { id: e.id, name: e.name, type: e.type } }));
+
+    return { nodes, edges };
+  });
 
   const entityColors: Record<string, string> = {
     character: '#6366f1',
@@ -79,41 +111,29 @@
     rival: '2 2'
   };
 
+  function stopLayout() {
+    try {
+      layout?.stop();
+    } catch {
+      // layout already finished
+    }
+    layout = null;
+  }
+
   function buildGraph() {
     if (!container) return;
 
+    stopLayout();
     if (cy) {
       cy.destroy();
       cy = null;
     }
 
-    if (entities.length === 0) return;
+    const { nodes, edges } = graph;
 
-    const entityMap = new Map(entities.map((e) => [e.id, e]));
-
-    const relatedIds = new Set<string>();
-    for (const r of relations) {
-      if (entityMap.has(r.sourceId)) relatedIds.add(r.sourceId);
-      if (entityMap.has(r.targetId)) relatedIds.add(r.targetId);
-    }
-
-    const nodes = entities
-      .filter((e) => relatedIds.has(e.id))
-      .map((e) => ({
-        data: { id: e.id, name: e.name, type: e.type }
-      }));
-
-    const edges = relations
-      .filter((r) => entityMap.has(r.sourceId) && entityMap.has(r.targetId))
-      .map((r) => ({
-        data: {
-          id: r.id,
-          source: r.sourceId,
-          target: r.targetId,
-          label: r.label || r.relationType.replace(/_/g, ' '),
-          relationType: r.relationType
-        }
-      }));
+    // fcose throws from its internals when asked to lay out an empty graph, which
+    // happens whenever entities exist but none of them are related to each other.
+    if (nodes.length === 0) return;
 
     cy = cytoscape({
       container,
@@ -163,9 +183,13 @@
           }
         }
       ] as any,
-      elements: [...nodes, ...edges],
-      layout: buildLayoutOptions(layoutName)
+      elements: [...nodes, ...edges]
     });
+
+    // Run the layout explicitly rather than via the constructor so it can be
+    // stopped on teardown instead of settling against a destroyed instance.
+    layout = cy.layout(buildLayoutOptions(layoutName));
+    layout.run();
 
     cy.on('tap', 'node', (evt) => {
       const node = evt.target;
@@ -187,17 +211,29 @@
   }
 
   $effect(() => {
-    entities;
-    relations;
+    // Read dependencies here: buildGraph bails before touching them if the
+    // container is not bound yet, which would leave the effect with none.
+    graph;
     layoutName;
     buildGraph();
+  });
 
-    return () => {
-      if (cy) {
-        cy.destroy();
-        cy = null;
+  // Not an $effect teardown: that also fires between re-runs, and tapping a node
+  // calls goto(), so the unmount would destroy cytoscape from inside its own event
+  // dispatch and throw. onDestroy only fires on unmount, and the destroy is deferred
+  // past the current task so no cytoscape internals are still on the stack.
+  onDestroy(() => {
+    stopLayout();
+    const instance = cy;
+    cy = null;
+    if (!instance) return;
+    setTimeout(() => {
+      try {
+        instance.destroy();
+      } catch {
+        // already torn down
       }
-    };
+    }, 0);
   });
 </script>
 
@@ -215,10 +251,18 @@
       </SelectContent>
     </Select>
   </div>
-  <div
-    class="overflow-hidden rounded-lg border border-border bg-card"
-    class:min-h-[300px]={entities.length === 0}
-  >
+  <div class="relative overflow-hidden rounded-lg border border-border bg-card">
     <div bind:this={container} style="width: 100%; height: 450px;"></div>
+    {#if graph.nodes.length === 0}
+      <div
+        class="pointer-events-none absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-muted-foreground"
+      >
+        {#if entities.length === 0}
+          No entities yet — create some to start mapping relationships.
+        {:else}
+          No relationships yet. Add one below to see the graph.
+        {/if}
+      </div>
+    {/if}
   </div>
 </div>
