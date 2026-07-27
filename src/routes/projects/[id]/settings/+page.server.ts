@@ -12,6 +12,7 @@ import {
   updateMemberRole,
   getUserByEmailOrUsername
 } from '$lib/server/members';
+import { updateProject, deleteProject } from '$lib/server/projects';
 import type { EntityType } from '$lib/types';
 import type { PageServerLoad } from './$types';
 
@@ -35,6 +36,47 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 };
 
 export const actions = {
+  updateProject: async ({ params, locals, request }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
+
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role !== 'owner')
+      return fail(403, { error: 'Only the project owner can edit project details' });
+
+    const form = await request.formData();
+    const name = (form.get('name') as string)?.trim();
+    const description = ((form.get('description') as string) || '').trim();
+
+    if (!name) return fail(400, { error: 'Name is required' });
+
+    updateProject(params.id, access.project.dataPath, {
+      name,
+      description: description || null
+    });
+
+    return { success: true };
+  },
+
+  deleteProject: async ({ params, locals, request }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
+
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role !== 'owner')
+      return fail(403, { error: 'Only the project owner can delete this project' });
+
+    const form = await request.formData();
+    const confirmName = (form.get('confirmName') as string) || '';
+    if (confirmName !== access.project.name) {
+      return fail(400, { error: 'Project name did not match' });
+    }
+
+    deleteProject(params.id, access.project.dataPath);
+
+    throw redirect(302, '/projects');
+  },
+
   addField: async ({ params, locals, request }) => {
     if (!locals.user) return fail(401, { error: 'Unauthorized' });
 

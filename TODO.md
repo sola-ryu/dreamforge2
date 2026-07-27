@@ -9,27 +9,6 @@ but non-functional, or documented as working when they are not.
 
 ---
 
-## 1. Project rename / delete / description editing
-
-**Status:** No way to delete a project, ever. Settings page loads `project` but has no
-action to change its name or description. `projects/+page.server.ts` only has `create`
-and `togglePin`.
-
-**Files:** `src/routes/projects/[id]/settings/+page.server.ts`, `+page.svelte`
-
-**Steps:**
-
-1. Add an `updateProject` action (owner only): update `name`/`description` on the
-   `projects` row and rewrite `project.json` in `project.dataPath`.
-2. Add a `deleteProject` action (owner only). Delete in this order so foreign keys hold:
-   `comments`, `bookmarks`, `image_entity_links`, `project_images`, `custom_field_defs`,
-   `project_members`, `trash_items`, `entities`, then the `projects` row.
-3. Call `unwatchProject(projectId)` (already exported from `watcher.ts`, currently unused)
-   before removing the directory, then `fs.rmSync(project.dataPath, { recursive: true })`.
-4. Add the form + a type-the-name-to-confirm dialog in `settings/+page.svelte`.
-
----
-
 ## 2. Plot beats cannot be created, renamed, or deleted
 
 **Status:** Beats only ever come from a template (`plotTemplates.ts`). A plotline created

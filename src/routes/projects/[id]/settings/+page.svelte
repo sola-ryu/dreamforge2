@@ -2,7 +2,15 @@
   import { page } from '$app/state';
   import { enhance } from '$app/forms';
   import { ENTITY_LABELS } from '$lib/entityFields';
-  import { ArrowLeft, Plus, Trash2, Settings, Users, UserPlus } from '@lucide/svelte';
+  import {
+    ArrowLeft,
+    Plus,
+    Trash2,
+    Settings,
+    Users,
+    UserPlus,
+    TriangleAlert
+  } from '@lucide/svelte';
   import type { EntityType } from '$lib/types';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
@@ -70,6 +78,14 @@
   let addMemberRole = $state<'editor' | 'commenter'>('editor');
   let memberError = $state<string | null>(null);
   let isOwner = $derived(page.data?.role === 'owner');
+
+  let projectName = $state(page.data?.project?.name || '');
+  let projectDescription = $state(page.data?.project?.description || '');
+  let detailsError = $state<string | null>(null);
+  let detailsSaved = $state(false);
+
+  let deleteConfirmName = $state('');
+  let deleteError = $state<string | null>(null);
 </script>
 
 <svelte:head>
@@ -90,6 +106,51 @@
       Customize entity fields for {page.data?.project?.name || 'this project'}
     </p>
   </div>
+
+  {#if isOwner}
+    <div class="mb-8 rounded-lg border border-border bg-card p-4">
+      <h2 class="mb-4 flex items-center gap-2 text-lg font-semibold">
+        <Settings class="h-4 w-4" />
+        Project Details
+      </h2>
+      <form
+        method="POST"
+        action="?/updateProject"
+        use:enhance={() => {
+          return async ({ result, update }) => {
+            if (result.type === 'success') {
+              detailsError = null;
+              detailsSaved = true;
+              setTimeout(() => (detailsSaved = false), 2000);
+            } else if (result.type === 'failure') {
+              detailsError = (result.data?.error as string) || 'An error occurred';
+            }
+            await update();
+          };
+        }}
+        class="space-y-3"
+      >
+        <div class="space-y-1">
+          <Label for="project-name" class="text-xs text-muted-foreground">Name</Label>
+          <Input id="project-name" name="name" type="text" required bind:value={projectName} />
+        </div>
+        <div class="space-y-1">
+          <Label for="project-description" class="text-xs text-muted-foreground">Description</Label>
+          <Input
+            id="project-description"
+            name="description"
+            type="text"
+            bind:value={projectDescription}
+            placeholder="Optional description"
+          />
+        </div>
+        {#if detailsError}
+          <p class="text-sm text-destructive">{detailsError}</p>
+        {/if}
+        <Button type="submit">{detailsSaved ? 'Saved' : 'Save'}</Button>
+      </form>
+    </div>
+  {/if}
 
   <div class="mb-6">
     <Label class="mb-2">Entity Type</Label>
@@ -381,6 +442,56 @@
           Editors can view and edit content. Commenters can view and leave comments.
         </p>
       </div>
+    </div>
+
+    <div class="rounded-lg border border-destructive/50 bg-card p-4">
+      <h2 class="mb-4 flex items-center gap-2 text-lg font-semibold text-destructive">
+        <TriangleAlert class="h-4 w-4" />
+        Danger Zone
+      </h2>
+      <p class="mb-4 text-sm text-muted-foreground">
+        Deleting a project permanently removes all its entities, stories, images, and settings. This
+        cannot be undone.
+      </p>
+      <form
+        method="POST"
+        action="?/deleteProject"
+        use:enhance={() => {
+          return async ({ result }) => {
+            if (result.type === 'failure') {
+              deleteError = (result.data?.error as string) || 'An error occurred';
+            } else if (result.type === 'redirect') {
+              deleteError = null;
+              window.location.href = result.location;
+            }
+          };
+        }}
+        class="space-y-3"
+      >
+        <div class="space-y-1">
+          <Label for="delete-confirm" class="text-xs text-muted-foreground">
+            Type <span class="font-mono font-semibold">{page.data?.project?.name}</span> to confirm
+          </Label>
+          <Input
+            id="delete-confirm"
+            name="confirmName"
+            type="text"
+            bind:value={deleteConfirmName}
+            autocomplete="off"
+          />
+        </div>
+        {#if deleteError}
+          <p class="text-sm text-destructive">{deleteError}</p>
+        {/if}
+        <Button
+          type="submit"
+          variant="destructive"
+          disabled={deleteConfirmName !== page.data?.project?.name}
+        >
+          <Trash2 class="h-4 w-4" />
+          Delete Project
+        </Button>
+      </form>
     </div>
   {/if}
 </div>
