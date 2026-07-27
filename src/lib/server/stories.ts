@@ -77,6 +77,30 @@ function getScenePath(
   return path.join(getScenesDir(projectPath, storyId, chapterId), `${sceneId}.md`);
 }
 
+// Chapter/scene frontmatter is written as one `key: value` pair per line and read
+// back with a per-line regex, so a raw value containing a newline splits into extra
+// lines the parser can't match, silently dropping everything after it. JSON-quoting
+// keeps the value on a single line (embedded newlines become the literal `\n`
+// escape); quoteYamlScalar only does this when needed, so existing hand-edited or
+// previously-written unquoted files still round-trip.
+function quoteYamlScalar(value: string): string {
+  if (value.includes('\n') || value.startsWith('"')) {
+    return JSON.stringify(value);
+  }
+  return value;
+}
+
+function unquoteYamlScalar(raw: string): string {
+  if (raw.startsWith('"') && raw.endsWith('"')) {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return raw;
+    }
+  }
+  return raw;
+}
+
 // --- Stories ---
 
 export function listStories(projectPath: string): StoryMeta[] {
@@ -192,7 +216,7 @@ export function getChapterMeta(
     const meta: Record<string, string> = {};
     for (const line of lines) {
       const m = line.match(/^(\w+):\s*(.*)$/);
-      if (m) meta[m[1]] = m[2];
+      if (m) meta[m[1]] = unquoteYamlScalar(m[2]);
     }
     return {
       id: meta.id || chapterId,
@@ -226,7 +250,7 @@ export function createChapter(projectPath: string, storyId: string, title: strin
   fs.mkdirSync(dir, { recursive: true });
   fs.mkdirSync(path.join(dir, 'scenes'), { recursive: true });
 
-  const frontmatter = `---\nid: ${id}\ntitle: ${title}\nsortOrder: ${maxOrder + 1}\ncreatedAt: ${now}\nmodifiedAt: ${now}\n---\n\n`;
+  const frontmatter = `---\nid: ${id}\ntitle: ${quoteYamlScalar(title)}\nsortOrder: ${maxOrder + 1}\ncreatedAt: ${now}\nmodifiedAt: ${now}\n---\n\n`;
   fs.writeFileSync(path.join(dir, 'chapter.md'), frontmatter);
 
   return meta;
@@ -245,7 +269,7 @@ export function updateChapter(
   const updated = { ...meta, ...data, modifiedAt: now };
   const filePath = path.join(getChapterDir(projectPath, storyId, chapterId), 'chapter.md');
 
-  const frontmatter = `---\nid: ${updated.id}\ntitle: ${updated.title}\nsortOrder: ${updated.sortOrder}\ncreatedAt: ${updated.createdAt}\nmodifiedAt: ${updated.modifiedAt}\n---\n\n`;
+  const frontmatter = `---\nid: ${updated.id}\ntitle: ${quoteYamlScalar(updated.title)}\nsortOrder: ${updated.sortOrder}\ncreatedAt: ${updated.createdAt}\nmodifiedAt: ${updated.modifiedAt}\n---\n\n`;
   fs.writeFileSync(filePath, frontmatter);
 
   return updated;
@@ -281,7 +305,7 @@ export function listScenes(projectPath: string, storyId: string, chapterId: stri
         const meta: Record<string, unknown> = {};
         for (const line of lines) {
           const m = line.match(/^(\w+):\s*(.*)$/);
-          if (m) meta[m[1]] = m[2];
+          if (m) meta[m[1]] = unquoteYamlScalar(m[2]);
         }
 
         let participants: string[] = [];
@@ -384,7 +408,7 @@ export function createScene(
   const fileContent = `---\n${Object.entries({
     id,
     chapterId,
-    title: scene.title || '',
+    title: quoteYamlScalar(scene.title || ''),
     narrator: '',
     time: '',
     place: '',
@@ -419,7 +443,7 @@ export function updateScene(
   const updated = { ...scene, ...data, modifiedAt: now };
 
   const filePath = getScenePath(projectPath, storyId, chapterId, sceneId);
-  const content = `---\nid: ${updated.id}\nchapterId: ${updated.chapterId}\ntitle: ${updated.title || ''}\nnarrator: ${updated.narrator || ''}\ntime: ${updated.time || ''}\nplace: ${updated.place || ''}\nparticipants: ${JSON.stringify(updated.participants)}\nbackgroundImage: ${updated.backgroundImage || ''}\nsummary: ${updated.summary || ''}\nplotThreads: ${JSON.stringify(updated.plotThreads)}\nsortOrder: ${updated.sortOrder}\ncreatedAt: ${updated.createdAt}\nmodifiedAt: ${updated.modifiedAt}\n---\n\n${updated.body}\n`;
+  const content = `---\nid: ${updated.id}\nchapterId: ${updated.chapterId}\ntitle: ${quoteYamlScalar(updated.title || '')}\nnarrator: ${quoteYamlScalar(updated.narrator || '')}\ntime: ${quoteYamlScalar(updated.time || '')}\nplace: ${quoteYamlScalar(updated.place || '')}\nparticipants: ${JSON.stringify(updated.participants)}\nbackgroundImage: ${quoteYamlScalar(updated.backgroundImage || '')}\nsummary: ${quoteYamlScalar(updated.summary || '')}\nplotThreads: ${JSON.stringify(updated.plotThreads)}\nsortOrder: ${updated.sortOrder}\ncreatedAt: ${updated.createdAt}\nmodifiedAt: ${updated.modifiedAt}\n---\n\n${updated.body}\n`;
   fs.writeFileSync(filePath, content);
 
   return updated;

@@ -178,28 +178,6 @@ save — the mention degrades to plain text and the hover card stops resolving.
 
 ---
 
-## 11. Scene frontmatter is not escaped
-
-**Status:** `createScene` / `updateScene` in `stories.ts` build YAML by string
-concatenation (`title: ${updated.title || ''}`), and `listScenes` parses it back with
-`/^(\w+):\s*(.*)$/`. A scene title, summary, narrator, time, or place containing a newline
-corrupts the file; everything after the newline is silently swallowed or misparsed as
-another key. Entities do not have this problem — they go through `markdown.ts`.
-
-**Files:** `src/lib/server/stories.ts`, `src/lib/server/markdown.ts`
-
-**Steps:**
-
-1. Replace the hand-built template strings in `createScene`, `updateScene`,
-   `createChapter`, and `updateChapter` with `serializeMarkdown()` from `markdown.ts`,
-   which already JSON-quotes multiline strings.
-2. Replace the regex parsing in `listScenes` and `getChapterMeta` with `parseMarkdown()`.
-3. Keep reading the old format: `parseMarkdown` already handles plain `key: value` lines,
-   so existing files continue to load unchanged.
-4. Add a test writing a scene with a multi-line summary and reading it back.
-
----
-
 ## 13. Module-level Svelte state is shared across SSR requests
 
 **Status:** `theme.svelte.ts`, `compactMode.svelte.ts`, and `zenMode.svelte.ts` declare

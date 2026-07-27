@@ -42,11 +42,7 @@ describe('serializeCSV', () => {
     ];
     const result = serializeCSV(rows);
     expect(result).toBe(
-      'name\n' +
-        '"\'=cmd|""/c calc""!A1"\n' +
-        "'+1+1\n" +
-        "'-1+1\n" +
-        "'@SUM(A1:A2)\n"
+      'name\n' + '"\'=cmd|""/c calc""!A1"\n' + "'+1+1\n" + "'-1+1\n" + "'@SUM(A1:A2)\n"
     );
   });
 

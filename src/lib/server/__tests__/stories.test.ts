@@ -211,6 +211,16 @@ describe('updateChapter', () => {
     const story = createStory(tmpDir, 'Story');
     expect(updateChapter(tmpDir, story.id, 'nonexistent', { title: 'Nope' })).toBeNull();
   });
+
+  it('round-trips a title containing a newline without corrupting sortOrder', () => {
+    const story = createStory(tmpDir, 'Story');
+    const chapter = createChapter(tmpDir, story.id, 'Original');
+    updateChapter(tmpDir, story.id, chapter.id, { title: 'Line one\nLine two', sortOrder: 3 });
+
+    const reloaded = getChapterMeta(tmpDir, story.id, chapter.id);
+    expect(reloaded!.title).toBe('Line one\nLine two');
+    expect(reloaded!.sortOrder).toBe(3);
+  });
 });
 
 describe('deleteChapter', () => {
@@ -344,6 +354,41 @@ describe('updateScene', () => {
     const story = createStory(tmpDir, 'Story');
     const chapter = createChapter(tmpDir, story.id, 'Ch 1');
     expect(updateScene(tmpDir, story.id, chapter.id, 'nonexistent', { title: 'Nope' })).toBeNull();
+  });
+
+  it('round-trips fields containing newlines without corrupting other fields', () => {
+    const story = createStory(tmpDir, 'Story');
+    const chapter = createChapter(tmpDir, story.id, 'Ch 1');
+    const scene = createScene(tmpDir, story.id, chapter.id, 'Original');
+
+    updateScene(tmpDir, story.id, chapter.id, scene.id, {
+      title: 'Line one\nLine two',
+      summary: 'First: intro\nSecond: middle\nThird: end',
+      narrator: 'Multi\nline\nnarrator',
+      place: 'The Old Mill',
+      body: 'Body text'
+    });
+
+    const reloaded = getScene(tmpDir, story.id, chapter.id, scene.id);
+    expect(reloaded).not.toBeNull();
+    expect(reloaded!.title).toBe('Line one\nLine two');
+    expect(reloaded!.summary).toBe('First: intro\nSecond: middle\nThird: end');
+    expect(reloaded!.narrator).toBe('Multi\nline\nnarrator');
+    expect(reloaded!.place).toBe('The Old Mill');
+    expect(reloaded!.body).toBe('Body text');
+  });
+
+  it('round-trips a value that starts with a literal quote character', () => {
+    const story = createStory(tmpDir, 'Story');
+    const chapter = createChapter(tmpDir, story.id, 'Ch 1');
+    const scene = createScene(tmpDir, story.id, chapter.id, 'Original');
+
+    updateScene(tmpDir, story.id, chapter.id, scene.id, {
+      title: '"Quoted" Title'
+    });
+
+    const reloaded = getScene(tmpDir, story.id, chapter.id, scene.id);
+    expect(reloaded!.title).toBe('"Quoted" Title');
   });
 });
 
