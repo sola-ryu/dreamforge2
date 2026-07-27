@@ -74,26 +74,6 @@ query it with `MATCH`.
 
 ---
 
-## 4. Relations are not cleaned up when an entity is deleted
-
-**Status:** Relations live in `relations.json`. Deleting an entity (soft delete to trash)
-leaves relations pointing at the missing id. `RelationGraph` silently filters them out, so
-the edges are invisible but permanently present in the file, and they reappear wrong if a
-different entity is later restored.
-
-**Files:** `src/lib/server/trash.ts`, `src/routes/projects/[id]/relations/+page.server.ts`
-
-**Steps:**
-
-1. Move `loadRelations`/`saveRelations` out of the relations route into
-   `src/lib/server/relations.ts` so other modules can use them.
-2. In `softDeleteEntity`, drop relations touching the entity id and stash them in the
-   trash row's `metadata` column (it already exists and is unused for entities).
-3. In `restoreEntity`, re-add the stashed relations.
-4. Also clear `image_entity_links` and `bookmarks` rows for the deleted entity id.
-
----
-
 ## 5. Stories / chapters / scenes are deleted permanently
 
 **Status:** Entities go to `.trash` with a 30-day TTL and a restore UI. Stories, chapters,

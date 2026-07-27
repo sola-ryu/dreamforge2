@@ -6,14 +6,22 @@ import {
   entities,
   projectImages,
   imageEntityLinks,
-  projects
+  projects,
+  bookmarks as bookmarksTable
 } from './schema';
 import { eq, and, lt } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { readMarkdownFile } from './markdown';
 import { ENTITY_DIRS, resolveEntityPath, generateUniqueSlug } from './entities';
+import { removeRelationsForEntity, restoreRelations, type RelationEntry } from './relations';
 import { generateId } from '$lib/utils';
 import type { EntityType } from '$lib/types';
+
+interface EntityTrashMetadata {
+  relations: RelationEntry[];
+  bookmarks: { id: string; userId: string; createdAt: string }[];
+  imageLinks: { id: string; imageId: string }[];
+}
 
 const TRASH_DIR = '.trash';
 const TRASH_TTL_DAYS = 30;
@@ -79,6 +87,50 @@ export function softDeleteEntity(
     .where(and(eq(entities.id, id), eq(entities.projectId, projectId)))
     .run();
 
+  // Relations, bookmarks, and image links referencing this entity would otherwise
+  // dangle: RelationGraph silently filters them out, but they'd stay in
+  // relations.json forever and misattach if a different entity later reuses the id.
+  // Stash them in the trash row so restoreEntity can bring them back.
+  const removedRelations = removeRelationsForEntity(projectPath, id);
+
+  const removedBookmarks = drizzleDb
+    .select({
+      id: bookmarksTable.id,
+      userId: bookmarksTable.userId,
+      createdAt: bookmarksTable.createdAt
+    })
+    .from(bookmarksTable)
+    .where(and(eq(bookmarksTable.entityId, id), eq(bookmarksTable.projectId, projectId)))
+    .all();
+  if (removedBookmarks.length > 0) {
+    drizzleDb
+      .delete(bookmarksTable)
+      .where(and(eq(bookmarksTable.entityId, id), eq(bookmarksTable.projectId, projectId)))
+      .run();
+  }
+
+  const removedImageLinks = drizzleDb
+    .select({ id: imageEntityLinks.id, imageId: imageEntityLinks.imageId })
+    .from(imageEntityLinks)
+    .where(and(eq(imageEntityLinks.entityId, id), eq(imageEntityLinks.projectId, projectId)))
+    .all();
+  if (removedImageLinks.length > 0) {
+    drizzleDb
+      .delete(imageEntityLinks)
+      .where(and(eq(imageEntityLinks.entityId, id), eq(imageEntityLinks.projectId, projectId)))
+      .run();
+  }
+
+  const metadata: EntityTrashMetadata = {
+    relations: removedRelations,
+    bookmarks: removedBookmarks,
+    imageLinks: removedImageLinks
+  };
+  const hasMetadata =
+    metadata.relations.length > 0 ||
+    metadata.bookmarks.length > 0 ||
+    metadata.imageLinks.length > 0;
+
   const now = new Date().toISOString();
   const expiresAt = new Date(Date.now() + TRASH_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const trashId = generateId();
@@ -93,7 +145,8 @@ export function softDeleteEntity(
       originalPath: path.relative(projectPath, sourcePath),
       deletedAt: now,
       expiresAt,
-      kind: 'entity'
+      kind: 'entity',
+      metadata: hasMetadata ? JSON.stringify(metadata) : null
     })
     .run();
 
@@ -109,7 +162,7 @@ export function softDeleteEntity(
     body: md.body,
     frontmatter: md.frontmatter as Record<string, unknown>,
     kind: 'entity',
-    metadata: null
+    metadata: hasMetadata ? (metadata as unknown as Record<string, unknown>) : null
   };
 }
 
@@ -277,6 +330,50 @@ export function restoreEntity(projectId: string, projectPath: string, trashId: s
   }
 
   fs.renameSync(trashPath, destPath);
+
+  if (item.metadata) {
+    try {
+      const metadata = JSON.parse(item.metadata) as Partial<EntityTrashMetadata>;
+
+      restoreRelations(projectPath, metadata.relations || []);
+
+      for (const b of metadata.bookmarks || []) {
+        const exists = drizzleDb
+          .select({ id: bookmarksTable.id })
+          .from(bookmarksTable)
+          .where(eq(bookmarksTable.id, b.id))
+          .get();
+        if (!exists) {
+          drizzleDb
+            .insert(bookmarksTable)
+            .values({
+              id: b.id,
+              userId: b.userId,
+              projectId,
+              entityId: item.entityId,
+              createdAt: b.createdAt
+            })
+            .run();
+        }
+      }
+
+      for (const l of metadata.imageLinks || []) {
+        const exists = drizzleDb
+          .select({ id: imageEntityLinks.id })
+          .from(imageEntityLinks)
+          .where(eq(imageEntityLinks.id, l.id))
+          .get();
+        if (!exists) {
+          drizzleDb
+            .insert(imageEntityLinks)
+            .values({ id: l.id, imageId: l.imageId, entityId: item.entityId, projectId })
+            .run();
+        }
+      }
+    } catch {
+      // Corrupt or unrecognized metadata — restore the entity file anyway.
+    }
+  }
 
   drizzleDb.delete(trashTable).where(eq(trashTable.id, trashId)).run();
 
