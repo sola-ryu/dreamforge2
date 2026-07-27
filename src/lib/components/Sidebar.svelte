@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
-  import { toggleTheme } from '$lib/stores/theme.svelte';
+  import { getTheme } from '$lib/stores/theme.svelte';
   import { getZenMode } from '$lib/stores/zenMode.svelte';
   import * as Sidebar from '$lib/components/ui/sidebar/index.js';
   import {
@@ -18,6 +18,7 @@
     Scan
   } from '@lucide/svelte';
 
+  const theme = getTheme();
   const zen = getZenMode();
 </script>
 
@@ -163,7 +164,7 @@
         </Sidebar.MenuItem>
       {/if}
       <Sidebar.MenuItem>
-        <Sidebar.MenuButton onclick={toggleTheme} tooltipContent="Toggle Theme">
+        <Sidebar.MenuButton onclick={() => theme.toggle()} tooltipContent="Toggle Theme">
           <SunMoon class="h-4 w-4" />
           <span>Toggle Theme</span>
         </Sidebar.MenuButton>

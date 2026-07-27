@@ -108,17 +108,3 @@ save — the mention degrades to plain text and the hover card stops resolving.
 2. Add a matching `parseMarkdown` input rule so the link form is read back into a mention
    node on load.
 3. Add a round-trip unit test: mention node → markdown → mention node.
-
----
-
-## 13. Module-level Svelte state is shared across SSR requests
-
-**Status:** `theme.svelte.ts` and `zenMode.svelte.ts` declare `$state` at module scope.
-On the server that module is a singleton shared by every concurrent request, so one
-user's theme/zen toggle can bleed into another user's server-rendered HTML. Only mild
-today because both are toggled client-side, but it is a real cross-request leak.
-
-**Files:** `src/lib/stores/*.svelte.ts`, `src/routes/+layout.svelte`
-
-**Steps:** convert each to the context pattern — `setContext(KEY, createXState())` in
-`+layout.svelte`, `getContext(KEY)` in consumers — so each request gets its own instance.
