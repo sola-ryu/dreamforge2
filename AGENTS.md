@@ -11,7 +11,7 @@ Markdown-first: all content stored as Markdown files on disk; SQLite is a query 
 | --------------- | -------------------------------------------------------- |
 | Framework       | SvelteKit 2 + Svelte 5 (runes mode)                      |
 | Language        | TypeScript (strict)                                      |
-| Styling         | Tailwind CSS v3 + shadcn-svelte theme vars               |
+| Styling         | Tailwind CSS v4 + shadcn-svelte theme vars               |
 | Database        | SQLite via better-sqlite3 + Drizzle ORM                  |
 | Editor          | Tiptap 3 / ProseMirror via svelte-tiptap                 |
 | Auth            | Custom (scrypt hashing, session-based, httpOnly cookies) |
@@ -27,7 +27,7 @@ src/
     components/     — Editor.svelte (Tiptap), Sidebar.svelte (nav/bookmarks)
     server/          — All server-only code (db, auth, entities, markdown, stories, etc.)
       __tests__/     — Server unit tests (vitest)
-    stores/          — Svelte runes stores (theme.ts)
+    stores/          — Svelte runes stores (theme.svelte.ts, zenMode.svelte.ts, compactMode.svelte.ts)
     types/           — TypeScript interfaces (EntityType, Story, Scene, etc.)
     utils/           — Shared helpers (cn, generateId, slugify, formatDate)
       __tests__/     — Util unit tests
@@ -38,9 +38,14 @@ src/
     projects/[id]/         — Dashboard, per-project pages
     projects/[id]/[type]/  — Generic entity routes (characters, locations, etc.)
     projects/[id]/stories/ — Story/chapter/scene hierarchy
-    projects/[id]/relations/ — Force-directed graph (d3)
+    projects/[id]/plots/     — Plotlines and beat tracking
+    projects/[id]/timelines/ — World timeline with custom calendars
+    projects/[id]/relations/ — Relation graph (cytoscape.js)
     projects/[id]/search/    — Global search
-    projects/[id]/export/    — ZIP export (archiver v7)
+    projects/[id]/settings/  — Project settings, custom fields, members
+    projects/[id]/images/    — Project image library
+    projects/[id]/trash/     — Soft-deleted entities (30-day TTL)
+    projects/[id]/export/    — ZIP export (archiver v8)
     api/projects/[id]/images/ — Image upload + serving
   app.css            — Tailwind + shadcn-svelte theme variables
   hooks.server.ts    — Auth session check on every request
@@ -76,7 +81,7 @@ Entity fields are declared declaratively in `src/lib/entityFields.ts` — routes
 - Route loaders use `+page.server.ts` and `+layout.server.ts`
 - Database calls go through Drizzle ORM; raw SQL is rare
 - Auth: session cookie checked in `hooks.server.ts`, user available as `event.locals.user`
-- Images are base64-encoded to avoid serving from disk
+- Images are stored on disk under `<project>/images/` and streamed by `api/projects/[id]/images/[file]`
 
 ### Components
 
@@ -109,7 +114,7 @@ Entity fields are declared declaratively in `src/lib/entityFields.ts` — routes
 - Do NOT create documentation files (`.md` READMEs) unless explicitly requested — AGENTS.md is an exception
 - Do NOT change package manager (npm only)
 - Do NOT add new dependencies without checking if existing ones can do the job
-- Do NOT remove or change archiver v7 — v8 removed the default function export
+- archiver is on v8, which removed the default function export — import the named `ZipArchive` export instead
 - Do NOT suppress `a11y_` warnings in component code — they're handled globally in `svelte.config.js`
 
 ## Docker
@@ -129,7 +134,7 @@ docker compose -f docker-compose.dev.yml up --build
 ## Environment
 
 Copy `.env.example` to `.env` — see that file for all variables.
-Key: `PUBLIC_ALLOW_REGISTRATION` (default false), `DATABASE_PATH`, `DATA_DIR`.
+Key: `PUBLIC_ALLOW_REGISTRATION` (default true — set to `false` to disable signups), `DATABASE_PATH`, `DATA_DIR`.
 
 ## Auth System
 

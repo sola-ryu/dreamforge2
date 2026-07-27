@@ -180,23 +180,3 @@ a real cross-request leak.
 
 **Steps:** either delete the store, or add a sidebar toggle plus a `compact` class on the
 layout wrapper with the corresponding density rules in `app.css`.
-
----
-
-## 15. Docs drift
-
-**Files:** `README.md`, `AGENTS.md`
-
-- README lists "Light / dark / monochrome themes" — `Theme` is `'light' | 'dark'`, there is
-  no monochrome theme. Either add one or drop it from the list.
-- README lists "Relation graph (force-directed with d3.js)" and AGENTS.md says
-  `projects/[id]/relations/ — Force-directed graph (d3)`. It uses **cytoscape** with
-  fcose/avsdf layouts; d3 is not a dependency.
-- AGENTS.md says "Tailwind CSS v3" — `package.json` has `tailwindcss@^4.3.1`.
-- AGENTS.md says "Do NOT remove or change archiver v7 — v8 removed the default function
-  export". The project is already on archiver v8 and uses the `ZipArchive` named export.
-  Update the note so nobody downgrades it back.
-- AGENTS.md says "Images are base64-encoded to avoid serving from disk". They are stored
-  on disk under `<project>/images/` and streamed by `api/projects/[id]/images/[file]`.
-- AGENTS.md's structure listing omits `plots/`, `timelines/`, `trash/`, `images/`, and
-  `settings/`.

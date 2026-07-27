@@ -77,11 +77,11 @@ docker compose -f docker-compose.dev.yml up
 - Summaries view with synopsis editing and plot thread indicators
 - Note templates (Character Profile, Location Description, Scene Outline, Chapter Plan, Worldbuilding Note)
 - Note-to-scene and scene-to-note conversion
-- Relation graph (force-directed with d3.js)
+- Relation graph (cytoscape.js, fcose/circle layouts)
 - Global search across all content
 - Bookmarks
 - ZIP export
 - Zen mode
 - PDF export (browser print-to-PDF)
 - Multi-user with session-based auth
-- Light / dark / monochrome themes
+- Light / dark themes
