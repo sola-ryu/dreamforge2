@@ -200,20 +200,6 @@ another key. Entities do not have this problem — they go through `markdown.ts`
 
 ---
 
-## 12. CSV export is vulnerable to formula injection
-
-**Status:** `serializeCSV` quotes fields containing `,` `"` or newlines, but a value
-beginning with `=`, `+`, `-`, or `@` is executed as a formula when the export is opened in
-Excel, LibreOffice, or Sheets. Entity names and body text are attacker-controllable in a
-shared project.
-
-**Files:** `src/lib/server/csv.ts`
-
-**Steps:** in `escapeCsvField`, prefix any value matching `/^[=+\-@\t\r]/` with a single
-quote (`'`) before the existing quoting logic. Add a test.
-
----
-
 ## 13. Module-level Svelte state is shared across SSR requests
 
 **Status:** `theme.svelte.ts`, `compactMode.svelte.ts`, and `zenMode.svelte.ts` declare

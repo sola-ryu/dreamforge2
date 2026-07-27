@@ -13,7 +13,16 @@ export function serializeCSV(rows: Record<string, unknown>[]): string {
   return lines.join('\n') + '\n';
 }
 
+// A leading =, +, -, or @ is executed as a formula by Excel/LibreOffice/Sheets on
+// open. Entity names and body text are attacker-controllable in a shared project,
+// so prefix those with a single quote to force text interpretation (a spreadsheet
+// convention, not part of CSV itself — it renders literally, which is the point).
+const FORMULA_PREFIX = /^[=+\-@\t\r]/;
+
 function escapeCsvField(value: string): string {
+  if (FORMULA_PREFIX.test(value)) {
+    value = `'${value}`;
+  }
   if (value.includes(',') || value.includes('"') || value.includes('\n') || value.includes('\r')) {
     return `"${value.replace(/"/g, '""')}"`;
   }

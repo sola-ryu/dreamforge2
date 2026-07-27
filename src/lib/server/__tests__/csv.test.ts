@@ -32,6 +32,29 @@ describe('serializeCSV', () => {
     const result = serializeCSV(rows);
     expect(result).toBe('desc\n"line1\nline2"\n');
   });
+
+  it('neutralizes formula injection in fields starting with =, +, -, or @', () => {
+    const rows = [
+      { name: '=cmd|"/c calc"!A1' },
+      { name: '+1+1' },
+      { name: '-1+1' },
+      { name: '@SUM(A1:A2)' }
+    ];
+    const result = serializeCSV(rows);
+    expect(result).toBe(
+      'name\n' +
+        '"\'=cmd|""/c calc""!A1"\n' +
+        "'+1+1\n" +
+        "'-1+1\n" +
+        "'@SUM(A1:A2)\n"
+    );
+  });
+
+  it('leaves ordinary fields starting with similar-looking text untouched', () => {
+    const rows = [{ name: 'A-1 Steakhouse' }];
+    const result = serializeCSV(rows);
+    expect(result).toBe('name\nA-1 Steakhouse\n');
+  });
 });
 
 describe('parseCSV', () => {
