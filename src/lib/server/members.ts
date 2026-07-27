@@ -3,6 +3,7 @@ import { projects, projectMembers, users } from './schema';
 import { eq, and, or } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { generateId } from '$lib/utils';
+import { resolveProjectPath } from './paths';
 
 const drizzleDb = drizzle(db);
 
@@ -14,9 +15,15 @@ export interface ProjectAccess {
 }
 
 export function getProjectAccess(projectId: string, userId: string): ProjectAccess | null {
-  const project = drizzleDb.select().from(projects).where(eq(projects.id, projectId)).get();
+  const row = drizzleDb.select().from(projects).where(eq(projects.id, projectId)).get();
 
-  if (!project) return null;
+  if (!row) return null;
+
+  // dataPath is stored absolute, so a project created under Docker (/data/projects/...)
+  // is unreachable when the same DB is opened outside it, and vice versa. Resolve
+  // against DATA_DIR at read time rather than rewriting the row, which would only
+  // move the breakage to the other environment.
+  const project = { ...row, dataPath: resolveProjectPath(row.id, row.dataPath) };
 
   if (project.userId === userId) {
     return { project, role: 'owner' };
