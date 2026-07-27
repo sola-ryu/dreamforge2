@@ -30,29 +30,6 @@ permanently empty. Only `linkScene` and `reorderBeats` exist.
 
 ---
 
-## 3. Search only matches entity names
-
-**Status:** README says "Global search across all content". `searchEntities` runs
-`like(entities.name, '%q%')` against the SQLite index only — it never looks at body text,
-frontmatter fields, tags, scenes, or notes' content.
-
-**Files:** `src/lib/server/entities.ts` (`searchEntities`),
-`src/routes/projects/[id]/search/+page.server.ts`
-
-**Steps (minimal):**
-
-1. In the search loader, after `scanProject`, also call `listEntities` per type and filter
-   on `body` + `frontmatter` values in memory. Fine up to a few thousand entities.
-2. Return a match snippet (±60 chars around the hit) so results are useful.
-3. Either extend the scope to scenes via `listStories`/`listChapters`/`listScenes`, or
-   narrow the README claim to "search across entities".
-
-**Steps (proper, if entity counts grow):** add an FTS5 virtual table in `migrate.ts`
-(`entities_fts(name, body, tags)`), populate it from `syncEntityToDb`/`scanProject`, and
-query it with `MATCH`.
-
----
-
 ## 5. Stories / chapters / scenes are deleted permanently
 
 **Status:** Entities go to `.trash` with a 30-day TTL and a restore UI. Stories, chapters,

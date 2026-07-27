@@ -67,7 +67,7 @@
       </p>
     {/if}
 
-    {#each page.data?.results || [] as entity}
+    {#each page.data?.results || [] as entity (entity.id)}
       <a
         href="/projects/{page.params.id}/{entityTypeToRoute(entity.type)}/{entity.id}"
         class="flex items-center gap-4 rounded-lg border border-border bg-card p-4 hover:bg-secondary/50"
@@ -77,10 +77,18 @@
           <div class="flex items-center gap-2">
             <span class="font-medium">{entity.name}</span>
             <Badge variant="secondary">{entity.type}</Badge>
-            {#each entity.tags || [] as tag}
+            {#if entity.matchedIn === 'body'}
+              <Badge variant="outline">content match</Badge>
+            {:else if entity.matchedIn === 'field'}
+              <Badge variant="outline">field match</Badge>
+            {/if}
+            {#each entity.tags || [] as tag (tag)}
               <Badge variant="secondary">{tag}</Badge>
             {/each}
           </div>
+          {#if entity.snippet}
+            <p class="mt-1 truncate text-sm text-muted-foreground">{entity.snippet}</p>
+          {/if}
           <p class="text-xs text-muted-foreground">Modified {formatDate(entity.modifiedAt)}</p>
         </div>
       </a>
