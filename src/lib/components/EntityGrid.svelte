@@ -218,7 +218,7 @@
             <th
               class={cn(
                 'border-b border-border px-2 py-1.5 text-left font-medium whitespace-nowrap bg-muted/40',
-                col <= 1 && 'sticky z-10',
+                col <= 1 && 'sticky z-10 backdrop-blur-md',
                 col === 1 && 'min-w-48',
                 activeCell?.col === col && 'bg-primary/10 text-foreground'
               )}
@@ -257,7 +257,7 @@
                   col === 0 ? 'w-10' : 'max-w-56',
                   col === 1 && 'min-w-48',
                   hasEditor || spillCount > 0 ? 'overflow-visible' : 'overflow-hidden',
-                  col <= 1 ? 'sticky z-10' : 'relative',
+                  col <= 1 ? 'sticky z-10 backdrop-blur-md' : 'relative',
                   col <= 1 &&
                     (isRowHeader ? 'bg-primary/10' : 'bg-background group-hover/row:bg-muted/20'),
                   isActive && !hasEditor && 'ring-2 ring-inset ring-primary'
