@@ -1,10 +1,20 @@
 <script lang="ts">
   import { page } from '$app/state';
+  import { tick } from 'svelte';
   import { enhance } from '$app/forms';
   import { goto } from '$app/navigation';
   import { ENTITY_LABELS, ENTITY_PLURAL } from '$lib/entityFields';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import Editor from '$lib/components/Editor.svelte';
+  import EntityGridCell from '$lib/components/EntityGridCell.svelte';
+  import EntityGridPanel from '$lib/components/EntityGridPanel.svelte';
+  import {
+    buildGridColumns,
+    getCellValue,
+    toEditString,
+    applyCellValue,
+    type GridColumn
+  } from '$lib/utils/entityGrid';
   import { cn, formatDate } from '$lib/utils';
   import type { EntityType } from '$lib/types';
   import {
@@ -43,8 +53,13 @@
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
   let toastVisible = $state(false);
   let layout = $state<'cards' | 'table'>('cards');
-  let editingCell = $state<{ entityId: string; field: string } | null>(null);
-  let editingValue = $state('');
+
+  // Grid state: `activeCell` is the spreadsheet cursor, `editing` means an inline editor is open.
+  let activeCell = $state<{ row: number; col: number } | null>(null);
+  let editing = $state(false);
+  let editSeed = $state('');
+  let panelTarget = $state<{ entityId: string; colIndex: number } | null>(null);
+  let gridEl = $state<HTMLElement | null>(null);
 
   let role = $derived(page.data?.role || 'owner');
   let canEdit = $derived(role !== 'commenter');
@@ -100,21 +115,24 @@
       : allEntities
   );
 
-  function startCellEdit(entityId: string, field: string, currentValue: string) {
-    if (!canEdit) return;
-    editingCell = { entityId, field };
-    editingValue = currentValue ?? '';
-  }
+  let gridColumns = $derived(buildGridColumns(page.data?.customFields || []));
 
-  async function commitCellEdit(entityId: string, field: string) {
-    if (!editingCell || editingCell.entityId !== entityId || editingCell.field !== field) return;
-    editingCell = null;
+  let panelEntity = $derived(
+    panelTarget ? allEntities.find((e) => e.id === panelTarget!.entityId) : null
+  );
+
+  /** Persist one cell to the server, then patch the local row optimistically. */
+  async function saveCell(entityId: string, column: GridColumn, raw: string) {
+    const current = toEditString(
+      getCellValue(allEntities.find((e) => e.id === entityId) || {}, column.key)
+    );
+    if (current === raw) return;
 
     const route = entityTypeToRoute(page.data?.entityType || 'character');
     const body = new FormData();
     body.set('entityId', entityId);
-    body.set('field', field);
-    body.set('value', editingValue);
+    body.set('field', column.key);
+    body.set('value', raw);
 
     const res = await fetch(`/projects/${page.params.id}/${route}?/quickUpdate`, {
       method: 'POST',
@@ -123,41 +141,138 @@
 
     if (res.ok) {
       allEntities = allEntities.map((e) =>
-        e.id === entityId
-          ? {
-              ...e,
-              [field]: editingValue,
-              frontmatter: { ...e.frontmatter, [field]: editingValue }
-            }
-          : e
+        e.id === entityId ? applyCellValue(e, column, raw) : e
       );
+    } else {
+      gridError = `Could not save ${column.label}.`;
+      setTimeout(() => (gridError = ''), 4000);
     }
   }
 
-  async function commitStatusChange(entityId: string, newStatus: string) {
-    const route = entityTypeToRoute(page.data?.entityType || 'character');
-    const body = new FormData();
-    body.set('entityId', entityId);
-    body.set('field', 'status');
-    body.set('value', newStatus);
+  let gridError = $state('');
 
-    const res = await fetch(`/projects/${page.params.id}/${route}?/quickUpdate`, {
-      method: 'POST',
-      body
+  function moveActive(dRow: number, dCol: number) {
+    if (!activeCell) return;
+    const row = Math.min(Math.max(activeCell.row + dRow, 0), entities.length - 1);
+    const col = Math.min(Math.max(activeCell.col + dCol, 0), gridColumns.length - 1);
+    activeCell = { row, col };
+  }
+
+  function beginEdit(seed: string) {
+    if (!canEdit || !activeCell) return;
+    const column = gridColumns[activeCell.col];
+    if (column.panelOnly) {
+      openPanel(activeCell.row, activeCell.col);
+      return;
+    }
+    if (column.type === 'boolean') return;
+    editSeed = seed;
+    editing = true;
+  }
+
+  function openPanel(row: number, col: number) {
+    if (!canEdit) return;
+    const entity = entities[row];
+    if (!entity) return;
+    editing = false;
+    panelTarget = { entityId: entity.id, colIndex: col };
+  }
+
+  function closePanel() {
+    panelTarget = null;
+    focusActiveCell();
+  }
+
+  function onCellCommit(raw: string, move: 'down' | 'right' | 'left' | 'none') {
+    if (!activeCell) return;
+    const { row, col } = activeCell;
+    const entity = entities[row];
+    const column = gridColumns[col];
+    editing = false;
+    if (entity && column) saveCell(entity.id, column, raw);
+
+    if (move === 'down') moveActive(1, 0);
+    else if (move === 'right') moveActive(0, 1);
+    else if (move === 'left') moveActive(0, -1);
+    focusActiveCell();
+  }
+
+  function focusActiveCell() {
+    tick().then(() => {
+      if (editing || !activeCell || !gridEl) return;
+      const el = gridEl.querySelector<HTMLElement>(
+        `[data-cell="${activeCell.row}-${activeCell.col}"]`
+      );
+      el?.focus();
+      el?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     });
-
-    if (res.ok) {
-      allEntities = allEntities.map((e) => (e.id === entityId ? { ...e, status: newStatus } : e));
-    }
   }
 
-  let simpleCustomFields = $derived(
-    (page.data?.customFields || []).filter(
-      (f: any) =>
-        ['text', 'number', 'date', 'boolean'].includes(f.type) &&
-        !['name', 'status', 'tags'].includes(f.key)
-    )
-  );
+  function onGridKeydown(e: KeyboardEvent) {
+    if (!activeCell || editing || panelTarget) return;
+    const column = gridColumns[activeCell.col];
+    const entity = entities[activeCell.row];
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        moveActive(1, 0);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        moveActive(-1, 0);
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        moveActive(0, 1);
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        moveActive(0, -1);
+        break;
+      case 'Tab':
+        e.preventDefault();
+        moveActive(0, e.shiftKey ? -1 : 1);
+        break;
+      case 'Enter':
+      case 'F2':
+        e.preventDefault();
+        beginEdit(toEditString(getCellValue(entity, column.key)));
+        break;
+      case 'Escape':
+        activeCell = null;
+        return;
+      case ' ':
+        if (canEdit && column.type === 'boolean') {
+          e.preventDefault();
+          const on = getCellValue(entity, column.key) === true;
+          saveCell(entity.id, column, on ? 'false' : 'true');
+        }
+        return;
+      case 'Delete':
+      case 'Backspace':
+        if (canEdit && !column.panelOnly && column.key !== 'name') {
+          e.preventDefault();
+          saveCell(entity.id, column, column.type === 'boolean' ? 'false' : '');
+        }
+        return;
+      default:
+        // A bare printable character starts editing, seeded with what was typed.
+        if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          e.preventDefault();
+          beginEdit(e.key);
+        }
+        return;
+    }
+    focusActiveCell();
+  }
+
+  // Keep the cursor in bounds when the filtered row set shrinks.
+  $effect(() => {
+    if (activeCell && activeCell.row >= entities.length) {
+      activeCell = entities.length ? { ...activeCell, row: entities.length - 1 } : null;
+    }
+  });
 </script>
 
 <svelte:head>
@@ -434,8 +549,12 @@
       {/each}
     </div>
   {:else}
-    <!-- Table layout -->
-    <div class="rounded-lg border border-border overflow-x-auto">
+    <!-- Spreadsheet-style grid -->
+    <p class="mb-2 text-xs text-muted-foreground">
+      Click a cell, then use arrow keys to move. Type or press Enter to edit, Enter/Tab to commit,
+      Escape to cancel, Space to toggle checkboxes, Delete to clear.
+    </p>
+    <div class="rounded-lg border border-border overflow-x-auto" bind:this={gridEl}>
       {#if entities.length === 0}
         <p class="py-12 text-center text-muted-foreground">
           No {page.data?.entityType
@@ -443,213 +562,67 @@
             : 'entities'} yet.
         </p>
       {:else}
-        <table class="w-full text-sm min-w-max">
-          <thead class="sticky top-0 z-10 bg-background">
-            <tr class="border-b border-border bg-muted/40">
-              <th class="px-3 py-2 text-left font-medium">Name</th>
-              <th class="px-3 py-2 text-left font-medium">Status</th>
-              <th class="px-3 py-2 text-left font-medium">Tags</th>
-              {#each simpleCustomFields as field}
-                <th class="px-3 py-2 text-left font-medium">{field.label}</th>
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+        <table
+          class="w-full text-sm min-w-max border-separate border-spacing-0"
+          onkeydown={onGridKeydown}
+        >
+          <thead class="sticky top-0 z-20 bg-background">
+            <tr class="bg-muted/40">
+              {#each gridColumns as column, col}
+                <th
+                  class={cn(
+                    'border-b border-border px-2 py-1.5 text-left font-medium whitespace-nowrap bg-muted/40',
+                    col === 0 && 'sticky left-0 z-10'
+                  )}
+                >
+                  {column.label}
+                </th>
               {/each}
-              <th class="px-3 py-2 text-left font-medium text-muted-foreground">Modified</th>
+              <th
+                class="border-b border-border px-2 py-1.5 text-left font-medium text-muted-foreground bg-muted/40"
+              >
+                Modified
+              </th>
             </tr>
           </thead>
           <tbody>
-            {#each entities as entity}
-              <tr class="border-b border-border hover:bg-muted/20 last:border-0">
-                <!-- Name cell -->
-                <td class="px-3 py-2 font-medium max-w-48">
-                  {#if canEdit && editingCell?.entityId === entity.id && editingCell?.field === 'name'}
-                    <input
-                      type="text"
-                      bind:value={editingValue}
-                      class="w-full rounded border border-primary bg-background px-1.5 py-0.5 text-sm focus:outline-none"
-                      autofocus
-                      onblur={() => commitCellEdit(entity.id, 'name')}
-                      onkeydown={(e) => {
-                        if (e.key === 'Enter') commitCellEdit(entity.id, 'name');
-                        if (e.key === 'Escape') editingCell = null;
-                      }}
-                    />
-                  {:else}
-                    <div class="flex items-center gap-1 group/cell">
-                      <a
-                        href="/projects/{page.params.id}/{entityTypeToRoute(
-                          entity.type
-                        )}/{entity.id}"
-                        class="truncate hover:underline"
-                      >
-                        {entity.name}
-                      </a>
-                      {#if canEdit}
-                        <button
-                          class="opacity-0 group-hover/cell:opacity-100 ml-1 shrink-0"
-                          onclick={() => startCellEdit(entity.id, 'name', entity.name)}
-                          aria-label="Edit name"
-                        >
-                          <svg
-                            class="h-3 w-3 text-muted-foreground"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            ><path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                            /></svg
-                          >
-                        </button>
-                      {/if}
-                    </div>
-                  {/if}
-                </td>
-                <!-- Status cell -->
-                <td class="px-3 py-2">
-                  {#if canEdit}
-                    <Select
-                      type="single"
-                      value={entity.status}
-                      onValueChange={(v) => commitStatusChange(entity.id, v)}
-                    >
-                      <SelectTrigger
-                        class={cn(
-                          'text-xs px-1.5 py-0.5',
-                          entity.status === 'complete' &&
-                            'text-green-600 dark:text-green-400 border-green-500/40',
-                          entity.status === 'wip' &&
-                            'text-yellow-600 dark:text-yellow-400 border-yellow-500/40',
-                          entity.status === 'draft' && 'text-muted-foreground border-border'
-                        )}
-                      >
-                        <SelectValue placeholder="Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="wip">In Progress</SelectItem>
-                        <SelectItem value="complete">Complete</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  {:else}
-                    <span
-                      class={cn(
-                        'text-xs',
-                        entity.status === 'complete' && 'text-green-600 dark:text-green-400',
-                        entity.status === 'wip' && 'text-yellow-600 dark:text-yellow-400',
-                        entity.status === 'draft' && 'text-muted-foreground'
-                      )}
-                    >
-                      {entity.status === 'complete'
-                        ? 'Complete'
-                        : entity.status === 'wip'
-                          ? 'In Progress'
-                          : 'Draft'}
-                    </span>
-                  {/if}
-                </td>
-                <!-- Tags cell -->
-                <td class="px-3 py-2 max-w-32">
-                  <a
-                    href="/projects/{page.params.id}/{entityTypeToRoute(entity.type)}/{entity.id}"
-                    class="text-xs text-muted-foreground hover:text-foreground truncate block"
+            {#each entities as entity, row (entity.id)}
+              <tr class="group/row hover:bg-muted/20">
+                {#each gridColumns as column, col (column.key)}
+                  {@const isActive = activeCell?.row === row && activeCell?.col === col}
+                  <td
+                    role="gridcell"
+                    tabindex={-1}
+                    data-cell="{row}-{col}"
+                    class={cn(
+                      'group/cell max-w-56 border-b border-border px-2 py-1 align-middle focus:outline-none',
+                      col === 0 && 'sticky left-0 z-10 bg-background group-hover/row:bg-muted/20',
+                      isActive && 'ring-2 ring-inset ring-primary'
+                    )}
+                    onclick={() => (activeCell = { row, col })}
+                    ondblclick={() => beginEdit(toEditString(getCellValue(entity, column.key)))}
                   >
-                    {(entity.tags || []).join(', ') || '—'}
-                  </a>
-                </td>
-                <!-- Custom field cells -->
-                {#each simpleCustomFields as field}
-                  <td class="px-3 py-2 max-w-36">
-                    {#if canEdit && field.type !== 'boolean' && editingCell?.entityId === entity.id && editingCell?.field === field.key}
-                      <input
-                        type={field.type === 'number'
-                          ? 'number'
-                          : field.type === 'date'
-                            ? 'date'
-                            : 'text'}
-                        bind:value={editingValue}
-                        class="w-full rounded border border-primary bg-background px-1.5 py-0.5 text-sm focus:outline-none"
-                        autofocus
-                        onblur={() => commitCellEdit(entity.id, field.key)}
-                        onkeydown={(e) => {
-                          if (e.key === 'Enter') commitCellEdit(entity.id, field.key);
-                          if (e.key === 'Escape') editingCell = null;
-                        }}
-                      />
-                    {:else if field.type === 'boolean'}
-                      {#if canEdit}
-                        <input
-                          type="checkbox"
-                          checked={entity.frontmatter?.[field.key] === true ||
-                            entity.frontmatter?.[field.key] === 'true'}
-                          onchange={async (e) => {
-                            const val = (e.target as HTMLInputElement).checked ? 'true' : 'false';
-                            const route = entityTypeToRoute(page.data?.entityType || 'character');
-                            const body = new FormData();
-                            body.set('entityId', entity.id);
-                            body.set('field', field.key);
-                            body.set('value', val);
-                            const res = await fetch(
-                              `/projects/${page.params.id}/${route}?/quickUpdate`,
-                              { method: 'POST', body }
-                            );
-                            if (res.ok) {
-                              allEntities = allEntities.map((en) =>
-                                en.id === entity.id
-                                  ? {
-                                      ...en,
-                                      frontmatter: {
-                                        ...en.frontmatter,
-                                        [field.key]: val === 'true'
-                                      }
-                                    }
-                                  : en
-                              );
-                            }
-                          }}
-                          class="rounded border-input"
-                        />
-                      {:else}
-                        <span class="text-xs text-muted-foreground">
-                          {entity.frontmatter?.[field.key] ? 'Yes' : 'No'}
-                        </span>
-                      {/if}
-                    {:else}
-                      <div class="flex items-center gap-1 group/cell">
-                        <span class="truncate text-sm text-muted-foreground">
-                          {entity.frontmatter?.[field.key] ?? '—'}
-                        </span>
-                        {#if canEdit}
-                          <button
-                            class="opacity-0 group-hover/cell:opacity-100 ml-1 shrink-0"
-                            onclick={() =>
-                              startCellEdit(
-                                entity.id,
-                                field.key,
-                                String(entity.frontmatter?.[field.key] ?? '')
-                              )}
-                            aria-label="Edit {field.label}"
-                          >
-                            <svg
-                              class="h-3 w-3 text-muted-foreground"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                              ><path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                              /></svg
-                            >
-                          </button>
-                        {/if}
-                      </div>
-                    {/if}
+                    <EntityGridCell
+                      {entity}
+                      {column}
+                      {canEdit}
+                      editing={isActive && editing}
+                      {editSeed}
+                      refOptions={(page.data?.refEntities || {})[column.entityType || ''] || []}
+                      href="/projects/{page.params.id}/{entityTypeToRoute(entity.type)}/{entity.id}"
+                      onCommit={onCellCommit}
+                      onCancel={() => {
+                        editing = false;
+                        focusActiveCell();
+                      }}
+                      onOpenPanel={() => openPanel(row, col)}
+                    />
                   </td>
                 {/each}
-                <!-- Modified cell -->
-                <td class="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
+                <td
+                  class="border-b border-border px-2 py-1 text-xs text-muted-foreground whitespace-nowrap"
+                >
                   {formatDate(entity.modifiedAt)}
                 </td>
               </tr>
@@ -660,6 +633,29 @@
     </div>
   {/if}
 </div>
+
+{#if panelTarget && panelEntity}
+  {#key panelTarget.entityId + ':' + panelTarget.colIndex}
+    <EntityGridPanel
+      entity={panelEntity}
+      column={gridColumns[panelTarget.colIndex]}
+      entities={allEntities}
+      onSave={(raw) => {
+        saveCell(panelTarget!.entityId, gridColumns[panelTarget!.colIndex], raw);
+        closePanel();
+      }}
+      onClose={closePanel}
+    />
+  {/key}
+{/if}
+
+{#if gridError}
+  <div
+    class="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-destructive/40 bg-card px-4 py-2 text-sm text-destructive shadow-lg"
+  >
+    {gridError}
+  </div>
+{/if}
 
 {#if toastVisible}
   <div

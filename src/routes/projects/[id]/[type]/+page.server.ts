@@ -47,8 +47,21 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 
   const mergedFields = mergeFields(ENTITY_FIELDS[entityType], customFieldDefs);
 
+  // Options for inline entityRef combobox editing in the grid, keyed by referenced entity type.
+  const refEntities: Record<string, { id: string; name: string }[]> = {};
+  for (const f of mergedFields) {
+    if (f.type !== 'entityRef' || !f.entityType || refEntities[f.entityType]) continue;
+    refEntities[f.entityType] = listEntities(params.id, project.dataPath, f.entityType).map(
+      (e) => ({
+        id: e.id,
+        name: e.name
+      })
+    );
+  }
+
   return {
     entities: entityList,
+    refEntities,
     entityType,
     projectName: project.name,
     query,
@@ -100,14 +113,43 @@ export const actions = {
 
     if (!entityId || !field) return fail(400, { error: 'entityId and field are required' });
 
-    const customFieldDefs = getCustomFieldDefs(params.id, entityType);
-    const customFieldKeys = new Set(customFieldDefs.map((f) => f.key));
-    const allowedFields = new Set(['name', 'status', ...customFieldKeys]);
+    const customFieldDefs = getCustomFieldDefs(params.id, entityType).map((f) => ({
+      key: f.key,
+      label: f.label,
+      type: f.fieldType,
+      entityType: f.refEntityType || undefined
+    }));
+    const mergedFields = mergeFields(ENTITY_FIELDS[entityType], customFieldDefs);
 
-    if (!allowedFields.has(field))
+    // Core fields plus every merged field def. Images have their own link/unlink actions.
+    const fieldDef = mergedFields.find((f) => f.key === field);
+    const isCoreField = field === 'name' || field === 'status' || field === 'tags';
+    if (!isCoreField && (!fieldDef || fieldDef.type === 'image')) {
       return fail(400, { error: 'Field not allowed for quick update' });
+    }
 
-    updateEntity(params.id, project.dataPath, entityType, entityId, { [field]: value });
+    if (field === 'status' && !['draft', 'wip', 'complete'].includes(value)) {
+      return fail(400, { error: 'Invalid status' });
+    }
+    if (field === 'name' && !value.trim()) return fail(400, { error: 'Name cannot be empty' });
+
+    const fieldType = field === 'tags' ? 'tags' : fieldDef?.type;
+    let parsed: unknown = value;
+    if (fieldType === 'tags') {
+      parsed = value
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+    } else if (fieldType === 'boolean') {
+      parsed = value === 'true';
+    } else if (fieldType === 'number') {
+      parsed = value === '' ? '' : Number(value);
+      if (typeof parsed === 'number' && Number.isNaN(parsed)) {
+        return fail(400, { error: 'Invalid number' });
+      }
+    }
+
+    updateEntity(params.id, project.dataPath, entityType, entityId, { [field]: parsed });
 
     return { success: true };
   },
