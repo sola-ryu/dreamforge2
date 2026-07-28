@@ -12,8 +12,13 @@
     SelectValue
   } from '$lib/components/ui/select';
 
-  cytoscape.use(fcose);
-  cytoscape.use(avsdf);
+  // cytoscape-fcose/avsdf are UMD/CJS modules; Vite's dev (esbuild) and prod
+  // (Rollup) CJS interop can disagree on whether the default export is the
+  // factory function itself or a { default: fn } wrapper. Production build
+  // resolving the wrapper meant cytoscape.use() registered a broken
+  // extension, which only surfaced once the layout ran (dev worked fine).
+  cytoscape.use((fcose as unknown as { default?: typeof fcose }).default ?? fcose);
+  cytoscape.use((avsdf as unknown as { default?: typeof avsdf }).default ?? avsdf);
 
   let {
     entities = [],
