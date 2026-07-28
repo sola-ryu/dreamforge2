@@ -6,8 +6,7 @@
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import type { Backlink, BacklinkReason, EntityType } from '$lib/types';
   import Editor from '$lib/components/Editor.svelte';
-  import { marked } from 'marked';
-  import DOMPurify from 'isomorphic-dompurify';
+  import { renderBodyHtml } from '$lib/utils/markdown';
   import Comments from '$lib/components/Comments.svelte';
   import {
     ArrowLeft,
@@ -368,9 +367,9 @@
             onUpdate={(md) => (body = md)}
           />
         {:else}
-          <div class="mt-4 prose prose-sm max-w-none">
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized with DOMPurify -->
-            {@html DOMPurify.sanitize(marked.parse(body || '', { async: false }))}
+          <div class="prose prose-sm mt-4 max-w-none">
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized in renderBodyHtml -->
+            {@html renderBodyHtml(body, page.params.id || '')}
           </div>
         {/if}
       {:else}
@@ -382,9 +381,9 @@
           bind:value={body}
         />
         {#if !editing}
-          <div class="mt-4 prose prose-sm max-w-none">
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized with DOMPurify -->
-            {@html DOMPurify.sanitize(page.data?.entity?.body || '')}
+          <div class="prose prose-sm mt-4 max-w-none">
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized in renderBodyHtml -->
+            {@html renderBodyHtml(page.data?.entity?.body, page.params.id || '')}
           </div>
         {/if}
       {/if}
