@@ -38,6 +38,7 @@
   let cy: cytoscape.Core | null = null;
   let layout: cytoscape.Layouts | null = null;
   let layoutName = $state('fcose');
+  let renderError = $state(false);
 
   interface GraphData {
     nodes: cytoscape.ElementDefinition[];
@@ -125,12 +126,28 @@
     layout = null;
   }
 
-  function buildGraph({ nodes, edges }: GraphData, currentLayout: string) {
+  // fcose/avsdf keep ticking asynchronously after stop()/destroy() and reach back
+  // into the cytoscape core; destroying synchronously races that and throws
+  // "can't access property ... T is null" from inside their own promise chain.
+  // Deferring the destroy past the current task lets any in-flight tick finish
+  // against a still-live core first.
+  function destroyCy() {
     stopLayout();
-    if (cy) {
-      cy.destroy();
-      cy = null;
-    }
+    const instance = cy;
+    cy = null;
+    if (!instance) return;
+    setTimeout(() => {
+      try {
+        instance.destroy();
+      } catch {
+        // already torn down
+      }
+    }, 0);
+  }
+
+  function buildGraph({ nodes, edges }: GraphData, currentLayout: string) {
+    destroyCy();
+    renderError = false;
 
     if (!container) return;
 
@@ -138,6 +155,20 @@
     // happens whenever entities exist but none of them are related to each other.
     if (nodes.length === 0) return;
 
+    try {
+      buildCytoscape(nodes, edges, currentLayout);
+    } catch (err) {
+      console.error('RelationGraph: failed to render graph', err);
+      destroyCy();
+      renderError = true;
+    }
+  }
+
+  function buildCytoscape(
+    nodes: cytoscape.ElementDefinition[],
+    edges: cytoscape.ElementDefinition[],
+    currentLayout: string
+  ) {
     cy = cytoscape({
       container,
       style: [
@@ -192,6 +223,9 @@
     // Run the layout explicitly rather than via the constructor so it can be
     // stopped on teardown instead of settling against a destroyed instance.
     layout = cy.layout(buildLayoutOptions(currentLayout));
+    layout.promiseOn('layoutstop').catch((err: unknown) => {
+      console.error('RelationGraph: layout failed', err);
+    });
     layout.run();
 
     cy.on('tap', 'node', (evt) => {
@@ -223,19 +257,7 @@
   // calls goto(), so the unmount would destroy cytoscape from inside its own event
   // dispatch and throw. onDestroy only fires on unmount, and the destroy is deferred
   // past the current task so no cytoscape internals are still on the stack.
-  onDestroy(() => {
-    stopLayout();
-    const instance = cy;
-    cy = null;
-    if (!instance) return;
-    setTimeout(() => {
-      try {
-        instance.destroy();
-      } catch {
-        // already torn down
-      }
-    }, 0);
-  });
+  onDestroy(destroyCy);
 </script>
 
 <div class="space-y-2 {className}" {...restProps}>
@@ -254,7 +276,13 @@
   </div>
   <div class="relative overflow-hidden rounded-lg border border-border bg-card">
     <div bind:this={container} style="width: 100%; height: 450px;"></div>
-    {#if graph.nodes.length === 0}
+    {#if renderError}
+      <div
+        class="pointer-events-none absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-muted-foreground"
+      >
+        Couldn't render the relationship graph.
+      </div>
+    {:else if graph.nodes.length === 0}
       <div
         class="pointer-events-none absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-muted-foreground"
       >
