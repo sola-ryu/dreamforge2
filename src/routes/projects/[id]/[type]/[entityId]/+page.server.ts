@@ -6,6 +6,8 @@ import { noteToScene } from '$lib/server/conversion';
 import { listStories, listChapters } from '$lib/server/stories';
 import { getCustomFieldDefs } from '$lib/server/customFields';
 import { getBacklinks } from '$lib/server/backlinks';
+import { loadRelations, addRelation, deleteRelation } from '$lib/server/relations';
+import { isRelationType } from '$lib/relationTypes';
 import { softDeleteEntity, restoreEntity } from '$lib/server/trash';
 import {
   getImagesForEntity,
@@ -62,6 +64,25 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     status: e.status
   }));
 
+  // Relations are stored once, from source to target. The entity page shows both
+  // directions, flagging the ones where this entity is the target.
+  const entityNames = new Map(allEntities.map((e) => [e.id, e]));
+  const relations = loadRelations(project.dataPath)
+    .filter((r) => r.sourceId === params.entityId || r.targetId === params.entityId)
+    .map((r) => {
+      const outgoing = r.sourceId === params.entityId;
+      const other = entityNames.get(outgoing ? r.targetId : r.sourceId);
+      return {
+        id: r.id,
+        outgoing,
+        relationType: r.relationType,
+        label: r.label,
+        otherId: other?.id || (outgoing ? r.targetId : r.sourceId),
+        otherName: other?.name || 'Unknown entity',
+        otherType: other?.type || null
+      };
+    });
+
   return {
     entity,
     projectName: project.name,
@@ -70,6 +91,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     stories: storiesWithChapters,
     customFields: mergedFields,
     backlinks,
+    relations,
     entityImages,
     projectImages,
     entities: allEntities,
@@ -122,6 +144,47 @@ export const actions = {
       if (!(key in data)) data[key] = false;
     }
     updateEntity(params.id, project.dataPath, entityType, params.entityId, data);
+    return { success: true };
+  },
+
+  addRelation: async ({ params, locals, request }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
+
+    const form = await request.formData();
+    const targetId = form.get('targetId') as string;
+    const relationType = form.get('relationType') as string;
+
+    if (!targetId) return fail(400, { error: 'Pick an entity to relate to' });
+    if (targetId === params.entityId)
+      return fail(400, { error: 'An entity cannot relate to itself' });
+    if (!isRelationType(relationType)) return fail(400, { error: 'Unknown relation type' });
+
+    addRelation(project.dataPath, {
+      sourceId: params.entityId,
+      targetId,
+      relationType,
+      label: ((form.get('label') as string) || '').trim() || null
+    });
+
+    return { success: true };
+  },
+
+  deleteRelation: async ({ params, locals, request }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
+
+    const form = await request.formData();
+    const relationId = form.get('relationId') as string;
+    if (!relationId) return fail(400, { error: 'Relation ID required' });
+
+    deleteRelation(project.dataPath, relationId);
     return { success: true };
   },
 

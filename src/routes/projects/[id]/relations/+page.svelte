@@ -14,34 +14,13 @@
     SelectValue
   } from '$lib/components/ui/select';
   import RelationGraph from '$lib/components/RelationGraph.svelte';
+  import { RELATION_TYPES, relationLabel } from '$lib/relationTypes';
 
   let showCreate = $state(false);
   let sourceId = $state('');
   let targetId = $state('');
   let relationType = $state('related_to');
   let label = $state('');
-
-  const relationTypes = [
-    'related_to',
-    'member_of',
-    'leader_of',
-    'owns',
-    'home',
-    'enemy',
-    'ally',
-    'parent',
-    'child',
-    'sibling',
-    'mentor',
-    'student',
-    'friend',
-    'lover',
-    'rival',
-    'located_in',
-    'part_of',
-    'created_by',
-    'used_by'
-  ];
 
   let entityOptions = $derived(
     (page.data?.entities || []).map((e: any) => ({
@@ -111,7 +90,7 @@
                 <SelectValue placeholder="Select relation..." />
               </SelectTrigger>
               <SelectContent>
-                {#each relationTypes as rt}
+                {#each RELATION_TYPES as rt (rt)}
                   <SelectItem value={rt}>{rt.replace(/_/g, ' ')}</SelectItem>
                 {/each}
               </SelectContent>
@@ -159,7 +138,7 @@
             <span class="font-medium">{rel.sourceId}</span>
           {/if}
           <span class="text-muted-foreground italic"
-            >{rel.label || rel.relationType.replace(/_/g, ' ')}</span
+            >{rel.label || relationLabel(rel.relationType)}</span
           >
           {#if target}
             <a

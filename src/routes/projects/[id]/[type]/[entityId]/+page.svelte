@@ -6,6 +6,8 @@
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import type { Backlink, BacklinkReason, EntityType } from '$lib/types';
   import Editor from '$lib/components/Editor.svelte';
+  import EntityPicker from '$lib/components/EntityPicker.svelte';
+  import { RELATION_TYPES, relationLabel } from '$lib/relationTypes';
   import { renderBodyHtml } from '$lib/utils/markdown';
   import Comments from '$lib/components/Comments.svelte';
   import {
@@ -19,7 +21,9 @@
     Unlink,
     ImagePlus,
     FileText,
-    Copy
+    Copy,
+    Share2,
+    Plus
   } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
@@ -45,6 +49,22 @@
   let role = $derived(page.data?.role || 'owner');
   let canEdit = $derived(role !== 'commenter');
   let backlinks = $derived((page.data?.backlinks || []) as Backlink[]);
+
+  interface EntityRelation {
+    id: string;
+    outgoing: boolean;
+    relationType: string;
+    label: string | null;
+    otherId: string;
+    otherName: string;
+    otherType: EntityType | null;
+  }
+
+  let relations = $derived((page.data?.relations || []) as EntityRelation[]);
+  let addingRelation = $state(false);
+  let relationTypeValue = $state<string>(RELATION_TYPES[0]);
+  let relationTarget = $state<string[]>([]);
+  let relationLabelText = $state('');
 
   /** Suggestions for an entityRef field, limited to the referenced type when one is set. */
   function refOptions(refType?: string): Array<{ id: string; name: string }> {
@@ -389,6 +409,126 @@
       {/if}
     </div>
   </form>
+
+  <div class="mt-6 rounded-lg border border-border bg-card p-4">
+    <div class="mb-3 flex items-center justify-between">
+      <h2 class="flex items-center gap-2 text-sm font-medium">
+        <Share2 class="h-4 w-4" />
+        Relationships
+        {#if relations.length > 0}
+          <span class="text-xs text-muted-foreground">({relations.length})</span>
+        {/if}
+      </h2>
+      {#if canEdit}
+        <Button variant="outline" size="xs" onclick={() => (addingRelation = !addingRelation)}>
+          <Plus class="h-3 w-3" />
+          Add
+        </Button>
+      {/if}
+    </div>
+
+    {#if addingRelation}
+      <form
+        method="POST"
+        action="?/addRelation"
+        class="mb-3 flex flex-wrap items-end gap-2 rounded-md border border-border p-3"
+        use:enhance={() => {
+          return async ({ result, update }) => {
+            if (result.type === 'success') {
+              addingRelation = false;
+              relationTarget = [];
+              relationLabelText = '';
+            }
+            await update({ reset: false });
+          };
+        }}
+      >
+        <div class="space-y-1">
+          <Label class="text-xs text-muted-foreground">Relation</Label>
+          <select
+            name="relationType"
+            bind:value={relationTypeValue}
+            class="h-8 rounded border border-input bg-background px-2 text-sm"
+          >
+            {#each RELATION_TYPES as type (type)}
+              <option value={type}>{relationLabel(type)}</option>
+            {/each}
+          </select>
+        </div>
+
+        <div class="space-y-1">
+          <span class="block text-xs text-muted-foreground">Entity</span>
+          <EntityPicker
+            entities={page.data?.entities || []}
+            bind:value={relationTarget}
+            multiple={false}
+            placeholder="Choose an entity"
+            searchPlaceholder="Search entities…"
+          />
+          <input type="hidden" name="targetId" value={relationTarget[0] || ''} />
+        </div>
+
+        <div class="space-y-1">
+          <Label for="relation-label" class="text-xs text-muted-foreground">Note (optional)</Label>
+          <Input
+            id="relation-label"
+            name="label"
+            bind:value={relationLabelText}
+            class="h-8 w-48"
+            placeholder="e.g. estranged"
+          />
+        </div>
+
+        <Button type="submit" size="sm" disabled={relationTarget.length === 0}>Save</Button>
+        <Button type="button" size="sm" variant="ghost" onclick={() => (addingRelation = false)}>
+          Cancel
+        </Button>
+      </form>
+    {/if}
+
+    {#if relations.length === 0}
+      <p class="text-sm text-muted-foreground">
+        No relationships yet. Connect this entity to others to build out the web around it.
+      </p>
+    {:else}
+      <div class="space-y-1">
+        {#each relations as relation (relation.id)}
+          <div class="group flex items-center gap-2 rounded-md px-2 py-1.5 text-sm">
+            <span class="text-muted-foreground">
+              {relation.outgoing
+                ? relationLabel(relation.relationType)
+                : `is ${relationLabel(relation.relationType)} of`}
+            </span>
+            <a
+              class="font-medium hover:underline"
+              href="/projects/{page.params.id}/{entityTypeToRoute(
+                relation.otherType || 'character'
+              )}/{relation.otherId}"
+            >
+              {relation.otherName}
+            </a>
+            {#if relation.label}
+              <span class="text-xs text-muted-foreground">— {relation.label}</span>
+            {/if}
+            {#if canEdit}
+              <form method="POST" action="?/deleteRelation" class="ml-auto" use:enhance>
+                <input type="hidden" name="relationId" value={relation.id} />
+                <Button
+                  type="submit"
+                  variant="ghost"
+                  size="icon-xs"
+                  class="opacity-0 group-hover:opacity-100"
+                  aria-label="Remove relationship"
+                >
+                  <Trash2 class="h-3 w-3 text-destructive" />
+                </Button>
+              </form>
+            {/if}
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </div>
 
   {#if backlinks.length > 0}
     <div class="mt-6 rounded-lg border border-border bg-card p-4">
