@@ -16,6 +16,7 @@ vi.mock('../db', () => {
 import { migrate } from '../migrate';
 import { createEntity, ENTITY_DIRS } from '../entities';
 import { searchProjectContent } from '../search';
+import { createStory, createChapter, createScene, updateScene } from '../stories';
 import { generateId } from '$lib/utils';
 
 let tmpDir: string;
@@ -26,6 +27,7 @@ function createProjectDirs(basePath: string) {
     fs.mkdirSync(path.join(basePath, dir), { recursive: true });
   }
   fs.mkdirSync(path.join(basePath, 'notes', '_project'), { recursive: true });
+  fs.mkdirSync(path.join(basePath, 'stories'), { recursive: true });
 }
 
 function insertProjectRow(dataPath: string): string {
@@ -122,7 +124,7 @@ describe('searchProjectContent', () => {
     createEntity(projectId, tmpDir, 'character', { name: 'Shared Name' });
     createEntity(projectId, tmpDir, 'location', { name: 'Shared Name' });
 
-    const results = searchProjectContent(projectId, tmpDir, 'Shared', 'location');
+    const results = searchProjectContent(projectId, tmpDir, 'Shared', { typeFilter: 'location' });
     expect(results).toHaveLength(1);
     expect(results[0].type).toBe('location');
   });
@@ -149,5 +151,73 @@ describe('searchProjectContent', () => {
 
     const results = searchProjectContent(projectId, tmpDir, 'Match');
     expect(results.map((r) => r.name)).toEqual(['Newer Match', 'Older Match']);
+  });
+});
+
+describe('searchProjectContent — scenes', () => {
+  function makeScene(title: string, body: string, summary?: string) {
+    const story = createStory(tmpDir, 'The Long Road');
+    const chapter = createChapter(tmpDir, story.id, 'Departure');
+    const scene = createScene(tmpDir, story.id, chapter.id, title);
+    updateScene(tmpDir, story.id, chapter.id, scene.id, { body, summary: summary || null });
+    return { story, chapter, scene };
+  }
+
+  it('matches scene body text and links back to the scene', () => {
+    const { story, scene } = makeScene('Leaving', 'The lantern guttered in the wind.');
+
+    const results = searchProjectContent(projectId, tmpDir, 'lantern');
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({ kind: 'scene', id: scene.id, matchedIn: 'body' });
+    expect(results[0].context).toBe('The Long Road › Departure');
+    expect(results[0].href).toBe(`/projects/${projectId}/stories/${story.id}?scene=${scene.id}`);
+    expect(results[0].snippet).toContain('lantern');
+  });
+
+  it('matches a scene title and a scene summary', () => {
+    makeScene('The Crossing', 'nothing relevant', 'They ford the river at dusk.');
+
+    expect(searchProjectContent(projectId, tmpDir, 'Crossing')[0].matchedIn).toBe('name');
+    expect(searchProjectContent(projectId, tmpDir, 'ford the river')[0].matchedIn).toBe('summary');
+  });
+
+  it('names an untitled scene by position', () => {
+    const story = createStory(tmpDir, 'Untitled');
+    const chapter = createChapter(tmpDir, story.id, 'One');
+    const scene = createScene(tmpDir, story.id, chapter.id);
+    updateScene(tmpDir, story.id, chapter.id, scene.id, { body: 'a distinctive phrase' });
+
+    expect(searchProjectContent(projectId, tmpDir, 'distinctive')[0].name).toBe('Scene 1');
+  });
+
+  it('returns entities and scenes together, newest first', async () => {
+    makeScene('Leaving', 'a shared keyword here');
+    await new Promise((r) => setTimeout(r, 5));
+    createEntity(projectId, tmpDir, 'character', {
+      name: 'Keyword Holder',
+      body: 'shared keyword'
+    });
+
+    const results = searchProjectContent(projectId, tmpDir, 'shared keyword');
+    expect(results.map((r) => r.kind)).toEqual(['entity', 'scene']);
+  });
+
+  it('can be limited to one kind', () => {
+    makeScene('Leaving', 'a shared keyword here');
+    createEntity(projectId, tmpDir, 'character', {
+      name: 'Keyword Holder',
+      body: 'shared keyword'
+    });
+
+    expect(
+      searchProjectContent(projectId, tmpDir, 'shared keyword', { kind: 'scene' }).map(
+        (r) => r.kind
+      )
+    ).toEqual(['scene']);
+    expect(
+      searchProjectContent(projectId, tmpDir, 'shared keyword', { kind: 'entity' }).map(
+        (r) => r.kind
+      )
+    ).toEqual(['entity']);
   });
 });

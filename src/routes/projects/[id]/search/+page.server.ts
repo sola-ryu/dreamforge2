@@ -2,6 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import { searchProjectContent } from '$lib/server/search';
 import { getProjectAccess } from '$lib/server/members';
 import { scanProject, watchProject } from '$lib/server/watcher';
+import { routeToEntityType } from '$lib/utils/entityTypes';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals, url }) => {
@@ -15,7 +16,22 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
   watchProject(params.id, project.dataPath);
 
   const query = url.searchParams.get('q') || '';
-  const results = query ? searchProjectContent(params.id, project.dataPath, query) : [];
+  const kindParam = url.searchParams.get('kind') || '';
+  const typeParam = url.searchParams.get('type') || '';
 
-  return { query, results, projectName: project.name, role };
+  const kind = kindParam === 'entity' || kindParam === 'scene' ? kindParam : undefined;
+  const typeFilter = routeToEntityType(typeParam) || undefined;
+
+  const results = query
+    ? searchProjectContent(params.id, project.dataPath, query, { kind, typeFilter })
+    : [];
+
+  return {
+    query,
+    kind: kind || '',
+    type: typeFilter ? typeParam : '',
+    results,
+    projectName: project.name,
+    role
+  };
 };
