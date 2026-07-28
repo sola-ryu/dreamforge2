@@ -22,9 +22,11 @@
   } from '@lucide/svelte';
   import { getZenMode } from '$lib/stores/zenMode.svelte';
   import Editor from '$lib/components/Editor.svelte';
+  import EntityPicker from '$lib/components/EntityPicker.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { countWords, formatWordCount } from '$lib/utils/wordCount';
+  import type { EntityType } from '$lib/types';
 
   const zen = getZenMode();
 
@@ -57,7 +59,7 @@
   let sceneNarrator = $state('');
   let sceneTime = $state('');
   let scenePlace = $state('');
-  let sceneParticipants = $state('');
+  let sceneParticipants = $state<string[]>([]);
   let sceneBackgroundImage = $state('');
   let activeChapterId = $state('');
 
@@ -78,6 +80,9 @@
   let chapters = $derived((page.data?.chapters || []) as ChapterRow[]);
   let role = $derived(page.data?.role || 'owner');
   let canEdit = $derived(role !== 'commenter');
+  let pickerEntities = $derived(
+    (page.data?.entities || []) as Array<{ id: string; name: string; type: EntityType }>
+  );
 
   let storyWords = $derived(
     chapters.reduce(
@@ -125,7 +130,7 @@
       narrator: sceneNarrator,
       time: sceneTime,
       place: scenePlace,
-      participants: sceneParticipants,
+      participants: sceneParticipants.join(', '),
       backgroundImage: sceneBackgroundImage,
       body: sceneBody
     };
@@ -141,7 +146,7 @@
     sceneNarrator = scene.narrator || '';
     sceneTime = scene.time || '';
     scenePlace = scene.place || '';
-    sceneParticipants = (scene.participants || []).join(', ');
+    sceneParticipants = [...(scene.participants || [])];
     sceneBackgroundImage = scene.backgroundImage || '';
     savedSnapshot = JSON.stringify(currentValues());
     saveError = '';
@@ -166,7 +171,7 @@
     sceneNarrator = '';
     sceneTime = '';
     scenePlace = '';
-    sceneParticipants = '';
+    sceneParticipants = [];
     sceneBackgroundImage = '';
     savedSnapshot = '';
   }
@@ -611,6 +616,7 @@
             <Input
               id="scene-narrator"
               type="text"
+              list="scene-characters"
               bind:value={sceneNarrator}
               class="h-7 w-auto"
               placeholder="Who narrates?"
@@ -631,19 +637,21 @@
             <Input
               id="scene-place"
               type="text"
+              list="scene-locations"
               bind:value={scenePlace}
               class="h-7 w-auto"
               placeholder="Where?"
             />
           </div>
           <div class="flex items-center gap-2">
-            <label for="scene-participants" class="text-muted-foreground">Participants:</label>
-            <Input
-              id="scene-participants"
-              type="text"
+            <span class="text-muted-foreground">Participants:</span>
+            <EntityPicker
+              entities={pickerEntities}
               bind:value={sceneParticipants}
-              class="h-7 w-auto"
-              placeholder="Who is in the scene?"
+              types={['character', 'organization', 'species']}
+              placeholder="Add character"
+              searchPlaceholder="Search characters…"
+              disabled={!canEdit}
             />
           </div>
           <div class="flex items-center gap-2">
@@ -656,6 +664,17 @@
             />
           </div>
         </div>
+
+        <datalist id="scene-characters">
+          {#each pickerEntities.filter((e) => e.type === 'character') as entity (entity.id)}
+            <option value={entity.name}></option>
+          {/each}
+        </datalist>
+        <datalist id="scene-locations">
+          {#each pickerEntities.filter((e) => e.type === 'location') as entity (entity.id)}
+            <option value={entity.name}></option>
+          {/each}
+        </datalist>
 
         {#key activeSceneId}
           <Editor

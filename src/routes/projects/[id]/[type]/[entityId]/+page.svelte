@@ -2,7 +2,7 @@
   import { page } from '$app/state';
   import { enhance } from '$app/forms';
   import { goto, invalidateAll } from '$app/navigation';
-  import { ENTITY_LABELS } from '$lib/entityFields';
+  import { ENTITY_LABELS, ENTITY_PLURAL } from '$lib/entityFields';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import type { EntityType } from '$lib/types';
   import Editor from '$lib/components/Editor.svelte';
@@ -35,6 +35,12 @@
 
   let role = $derived(page.data?.role || 'owner');
   let canEdit = $derived(role !== 'commenter');
+
+  /** Suggestions for an entityRef field, limited to the referenced type when one is set. */
+  function refOptions(refType?: string): Array<{ id: string; name: string }> {
+    const all = (page.data?.entities || []) as Array<{ id: string; name: string; type: string }>;
+    return refType ? all.filter((e) => e.type === refType) : all;
+  }
 
   let editing = $state(false);
   let showConvert = $state(false);
@@ -222,6 +228,23 @@
                   disabled={!editing}
                   value={(fields[field.key] as string) || ''}
                 />
+              {:else if field.type === 'entityRef'}
+                <!-- Entity references are stored as plain names, matching the grid editor. -->
+                <Input
+                  id={field.key}
+                  name={field.key}
+                  type="text"
+                  list="ref-{field.key}"
+                  disabled={!editing}
+                  value={(fields[field.key] as string) || ''}
+                  placeholder={field.placeholder ||
+                    `Search ${ENTITY_PLURAL[field.entityType as EntityType]?.toLowerCase() || 'entities'}…`}
+                />
+                <datalist id="ref-{field.key}">
+                  {#each refOptions(field.entityType) as option (option.id)}
+                    <option value={option.name}></option>
+                  {/each}
+                </datalist>
               {:else}
                 <Input
                   id={field.key}
