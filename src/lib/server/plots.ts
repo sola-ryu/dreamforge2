@@ -4,6 +4,7 @@ import { generateId, isSafePathSegment } from '$lib/utils';
 import { getTemplateBeats } from './plotTemplates';
 
 export interface PlotBeat {
+  id: string;
   title: string;
   sceneId: string | null;
   sortOrder: number;
@@ -39,7 +40,7 @@ export function listPlotlines(projectPath: string): Plotline[] {
     .map((f) => {
       try {
         const data = fs.readFileSync(path.join(dir, f), 'utf-8');
-        return JSON.parse(data) as Plotline;
+        return backfillBeatIds(projectPath, JSON.parse(data) as Plotline);
       } catch {
         return null;
       }
@@ -48,12 +49,32 @@ export function listPlotlines(projectPath: string): Plotline[] {
     .sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
+// Beats predate having their own id — they were matched on `title`, which breaks
+// as soon as two beats share a title. Assigns one to any beat read from disk that
+// doesn't have one yet, and persists the fix so every subsequent read is stable.
+function backfillBeatIds(projectPath: string, plotline: Plotline): Plotline {
+  let changed = false;
+  const beats = plotline.beats.map((beat) => {
+    if (beat.id) return beat;
+    changed = true;
+    return { ...beat, id: generateId() };
+  });
+
+  if (!changed) return plotline;
+
+  const filePath = getPlotlinePath(projectPath, plotline.id);
+  const updated = { ...plotline, beats };
+  fs.writeFileSync(filePath, JSON.stringify(updated, null, 2));
+  return updated;
+}
+
 export function getPlotline(projectPath: string, plotlineId: string): Plotline | null {
   if (!isSafePathSegment(plotlineId)) return null;
   const filePath = getPlotlinePath(projectPath, plotlineId);
   try {
     const data = fs.readFileSync(filePath, 'utf-8');
-    return JSON.parse(data) as Plotline;
+    const plotline = JSON.parse(data) as Plotline;
+    return backfillBeatIds(projectPath, plotline);
   } catch {
     return null;
   }
@@ -70,7 +91,7 @@ export function createPlotline(
 
   const templateBeats = getTemplateBeats(data.template || null);
   const beats: PlotBeat[] = templateBeats
-    ? templateBeats.map((title, i) => ({ title, sceneId: null, sortOrder: i }))
+    ? templateBeats.map((title, i) => ({ id: generateId(), title, sceneId: null, sortOrder: i }))
     : [];
 
   const plotline: Plotline = {
@@ -126,13 +147,61 @@ export function reorderBeats(
   const plotline = getPlotline(projectPath, plotlineId);
   if (!plotline) return null;
 
-  const beatMap = new Map(plotline.beats.map((b) => [b.title, b]));
+  const beatMap = new Map(plotline.beats.map((b) => [b.id, b]));
   const reordered: PlotBeat[] = beatIds
-    .map((title, i) => {
-      const beat = beatMap.get(title);
+    .map((id, i) => {
+      const beat = beatMap.get(id);
       return beat ? { ...beat, sortOrder: i } : null;
     })
     .filter((b): b is PlotBeat => b !== null);
 
   return updatePlotline(projectPath, plotlineId, { beats: reordered });
+}
+
+export function addBeat(projectPath: string, plotlineId: string, title: string): Plotline | null {
+  const plotline = getPlotline(projectPath, plotlineId);
+  if (!plotline) return null;
+
+  const maxOrder = plotline.beats.reduce((max, b) => Math.max(max, b.sortOrder), -1);
+  const beat: PlotBeat = { id: generateId(), title, sceneId: null, sortOrder: maxOrder + 1 };
+
+  return updatePlotline(projectPath, plotlineId, { beats: [...plotline.beats, beat] });
+}
+
+export function renameBeat(
+  projectPath: string,
+  plotlineId: string,
+  beatId: string,
+  title: string
+): Plotline | null {
+  const plotline = getPlotline(projectPath, plotlineId);
+  if (!plotline) return null;
+
+  const beats = plotline.beats.map((b) => (b.id === beatId ? { ...b, title } : b));
+  return updatePlotline(projectPath, plotlineId, { beats });
+}
+
+export function deleteBeat(
+  projectPath: string,
+  plotlineId: string,
+  beatId: string
+): Plotline | null {
+  const plotline = getPlotline(projectPath, plotlineId);
+  if (!plotline) return null;
+
+  const beats = plotline.beats.filter((b) => b.id !== beatId);
+  return updatePlotline(projectPath, plotlineId, { beats });
+}
+
+export function linkSceneToBeat(
+  projectPath: string,
+  plotlineId: string,
+  beatId: string,
+  sceneId: string | null
+): Plotline | null {
+  const plotline = getPlotline(projectPath, plotlineId);
+  if (!plotline) return null;
+
+  const beats = plotline.beats.map((b) => (b.id === beatId ? { ...b, sceneId } : b));
+  return updatePlotline(projectPath, plotlineId, { beats });
 }

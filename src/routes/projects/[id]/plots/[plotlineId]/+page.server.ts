@@ -1,5 +1,13 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { getPlotline, updatePlotline, reorderBeats } from '$lib/server/plots';
+import {
+  getPlotline,
+  updatePlotline,
+  reorderBeats,
+  addBeat,
+  renameBeat,
+  deleteBeat,
+  linkSceneToBeat
+} from '$lib/server/plots';
 import { listChapters, listScenes } from '$lib/server/stories';
 import { getProjectAccess } from '$lib/server/members';
 import type { PageServerLoad } from './$types';
@@ -49,15 +57,13 @@ export const actions = {
     const { project } = access;
 
     const form = await request.formData();
-    const beatTitle = form.get('beatTitle') as string;
+    const beatId = form.get('beatId') as string;
     const sceneId = (form.get('sceneId') as string) || null;
+    if (!beatId) return fail(400, { error: 'Beat ID required' });
 
-    const plotline = getPlotline(project.dataPath, params.plotlineId);
+    const plotline = linkSceneToBeat(project.dataPath, params.plotlineId, beatId, sceneId);
     if (!plotline) return fail(404, { error: 'Plotline not found' });
 
-    const beats = plotline.beats.map((b) => (b.title === beatTitle ? { ...b, sceneId } : b));
-
-    updatePlotline(project.dataPath, params.plotlineId, { beats });
     return { success: true };
   },
 
@@ -70,8 +76,64 @@ export const actions = {
     const { project } = access;
 
     const form = await request.formData();
-    const beatTitles = JSON.parse(form.get('beatTitles') as string) as string[];
-    reorderBeats(project.dataPath, params.plotlineId, beatTitles);
+    const beatIds = JSON.parse(form.get('beatIds') as string) as string[];
+    reorderBeats(project.dataPath, params.plotlineId, beatIds);
+    return { success: true };
+  },
+
+  addBeat: async ({ params, locals, request }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
+
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
+
+    const form = await request.formData();
+    const title = (form.get('title') as string)?.trim();
+    if (!title) return fail(400, { error: 'Title is required' });
+
+    const plotline = addBeat(project.dataPath, params.plotlineId, title);
+    if (!plotline) return fail(404, { error: 'Plotline not found' });
+
+    return { success: true };
+  },
+
+  renameBeat: async ({ params, locals, request }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
+
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
+
+    const form = await request.formData();
+    const beatId = form.get('beatId') as string;
+    const title = (form.get('title') as string)?.trim();
+    if (!beatId) return fail(400, { error: 'Beat ID required' });
+    if (!title) return fail(400, { error: 'Title is required' });
+
+    const plotline = renameBeat(project.dataPath, params.plotlineId, beatId, title);
+    if (!plotline) return fail(404, { error: 'Plotline not found' });
+
+    return { success: true };
+  },
+
+  deleteBeat: async ({ params, locals, request }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
+
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
+
+    const form = await request.formData();
+    const beatId = form.get('beatId') as string;
+    if (!beatId) return fail(400, { error: 'Beat ID required' });
+
+    const plotline = deleteBeat(project.dataPath, params.plotlineId, beatId);
+    if (!plotline) return fail(404, { error: 'Plotline not found' });
+
     return { success: true };
   }
 };

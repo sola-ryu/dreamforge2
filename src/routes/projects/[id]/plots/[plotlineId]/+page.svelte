@@ -12,18 +12,40 @@
     )
   );
 
-  async function handleReorder(beatTitles: string[]) {
+  async function handleReorder(beatIds: string[]) {
     const form = new FormData();
-    form.set('beatTitles', JSON.stringify(beatTitles));
+    form.set('beatIds', JSON.stringify(beatIds));
     await fetch('?/reorderBeats', { method: 'POST', body: form });
     window.location.reload();
   }
 
-  async function handleLinkScene(beatTitle: string, sceneId: string | null) {
+  async function handleLinkScene(beatId: string, sceneId: string | null) {
     const form = new FormData();
-    form.set('beatTitle', beatTitle);
+    form.set('beatId', beatId);
     form.set('sceneId', sceneId || '');
     await fetch('?/linkScene', { method: 'POST', body: form });
+    window.location.reload();
+  }
+
+  async function handleAddBeat(title: string) {
+    const form = new FormData();
+    form.set('title', title);
+    await fetch('?/addBeat', { method: 'POST', body: form });
+    window.location.reload();
+  }
+
+  async function handleRenameBeat(beatId: string, title: string) {
+    const form = new FormData();
+    form.set('beatId', beatId);
+    form.set('title', title);
+    await fetch('?/renameBeat', { method: 'POST', body: form });
+    window.location.reload();
+  }
+
+  async function handleDeleteBeat(beatId: string) {
+    const form = new FormData();
+    form.set('beatId', beatId);
+    await fetch('?/deleteBeat', { method: 'POST', body: form });
     window.location.reload();
   }
 </script>
@@ -72,6 +94,9 @@
       {scenes}
       onReorder={handleReorder}
       onLinkScene={handleLinkScene}
+      onAddBeat={handleAddBeat}
+      onRenameBeat={handleRenameBeat}
+      onDeleteBeat={handleDeleteBeat}
     />
   </div>
 </div>
