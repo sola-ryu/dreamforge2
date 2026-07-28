@@ -913,6 +913,8 @@
           <Editor
             content={sceneBody}
             entities={page.data?.entities || []}
+            images={page.data?.images || []}
+            projectId={page.params.id || ''}
             onUpdate={(md) => (sceneBody = md)}
           />
         {/key}

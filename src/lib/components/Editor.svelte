@@ -19,13 +19,28 @@
     content = '',
     placeholder = 'Start writing...',
     entities = [],
+    images = [],
+    projectId = '',
     onUpdate
   }: {
     content?: string;
     placeholder?: string;
     entities?: { id: string; type: string; name: string; status?: string }[];
+    images?: { id: string; filename: string; originalName: string; altText?: string | null }[];
+    projectId?: string;
     onUpdate?: (md: string) => void;
   } = $props();
+
+  let showImagePicker = $state(false);
+
+  function imageSrc(filename: string): string {
+    return `/api/projects/${projectId}/images/${filename}`;
+  }
+
+  function insertImage(src: string, alt = '') {
+    editor.chain().focus().setImage({ src, alt }).run();
+    showImagePicker = false;
+  }
 
   let editorEl: HTMLDivElement;
   let editor: Editor;
@@ -224,8 +239,14 @@
         editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
         break;
       case 'image': {
+        // With a project image library, picking from it beats typing a URL; the
+        // prompt stays as the fallback for external images.
+        if (projectId && images.length > 0) {
+          showImagePicker = !showImagePicker;
+          break;
+        }
         const url = prompt('Enter image URL:');
-        if (url) editor.chain().focus().setImage({ src: url }).run();
+        if (url) insertImage(url);
         break;
       }
       case 'highlight':
@@ -391,6 +412,47 @@
       </select>
     </div>
   {/if}
+  {#if showImagePicker}
+    <div class="border-b border-border bg-card p-3">
+      <div class="mb-2 flex items-center justify-between">
+        <span class="text-xs font-medium text-muted-foreground">Insert an image</span>
+        <div class="flex items-center gap-2">
+          <button
+            class="rounded px-2 py-1 text-xs hover:bg-secondary"
+            onclick={() => {
+              const url = prompt('Enter image URL:');
+              if (url) insertImage(url);
+            }}
+          >
+            From URL…
+          </button>
+          <button
+            class="rounded px-2 py-1 text-xs hover:bg-secondary"
+            onclick={() => (showImagePicker = false)}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+      <div class="flex max-h-40 flex-wrap gap-2 overflow-y-auto">
+        {#each images as image (image.id)}
+          <button
+            class="overflow-hidden rounded border border-border hover:border-primary"
+            title={image.originalName}
+            onclick={() =>
+              insertImage(imageSrc(image.filename), image.altText || image.originalName)}
+          >
+            <img
+              src={imageSrc(image.filename)}
+              alt={image.altText || image.originalName}
+              class="h-16 w-16 object-cover"
+            />
+          </button>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
   <div
     bind:this={editorEl}
     spellcheck={spellcheckEnabled}

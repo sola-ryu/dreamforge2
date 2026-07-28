@@ -16,6 +16,7 @@ import { recordWords } from '$lib/server/writingLog';
 import { countWords } from '$lib/utils/wordCount';
 import { softDeleteChapter, softDeleteScene } from '$lib/server/trash';
 import { searchEntities } from '$lib/server/entities';
+import { listProjectImages } from '$lib/server/images';
 import { sceneToNote } from '$lib/server/conversion';
 import { getProjectAccess } from '$lib/server/members';
 import { isSafePathSegment } from '$lib/utils';
@@ -45,11 +46,19 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     status: e.status
   }));
 
+  const images = listProjectImages(params.id, project.dataPath).map((img) => ({
+    id: img.id,
+    filename: img.filename,
+    originalName: img.originalName,
+    altText: img.altText
+  }));
+
   return {
     story,
     chapters: chaptersWithScenes,
     projectName: project.name,
     entities: allEntities,
+    images,
     role
   };
 };

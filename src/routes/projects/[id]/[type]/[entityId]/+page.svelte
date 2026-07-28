@@ -384,6 +384,8 @@
           <Editor
             content={body}
             entities={page.data?.entities || []}
+            images={page.data?.projectImages || []}
+            projectId={page.params.id || ''}
             onUpdate={(md) => (body = md)}
           />
         {:else}
