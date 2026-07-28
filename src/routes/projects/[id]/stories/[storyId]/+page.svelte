@@ -52,6 +52,8 @@
   }
 
   let showCreateChapter = $state(false);
+  let editingStoryTitle = $state(false);
+  let renamingChapterId = $state<string | null>(null);
   let chapterTitle = $state('');
   let expandedChapters = $state<Set<string>>(new Set());
   let activeSceneId = $state<string | null>(null);
@@ -354,7 +356,41 @@
         Back
       </a>
       <div class="mt-2 flex items-center justify-between">
-        <h2 class="text-lg font-semibold">{page.data?.story?.title || 'Story'}</h2>
+        {#if editingStoryTitle}
+          <form
+            method="POST"
+            action="?/updateStory"
+            class="flex flex-1 items-center gap-1"
+            use:enhance={() => {
+              return async ({ result, update }) => {
+                if (result.type === 'success') editingStoryTitle = false;
+                await update({ reset: false });
+              };
+            }}
+          >
+            <Input name="title" value={page.data?.story?.title || ''} class="h-7" required />
+            <input type="hidden" name="description" value={page.data?.story?.description || ''} />
+            <Button type="submit" size="xs">Save</Button>
+            <Button
+              type="button"
+              size="xs"
+              variant="ghost"
+              onclick={() => (editingStoryTitle = false)}
+            >
+              Cancel
+            </Button>
+          </form>
+        {:else}
+          <button
+            type="button"
+            class="truncate text-left text-lg font-semibold hover:underline"
+            title="Rename story"
+            onclick={() => (editingStoryTitle = true)}
+            disabled={!canEdit}
+          >
+            {page.data?.story?.title || 'Story'}
+          </button>
+        {/if}
         <div class="flex flex-wrap items-center gap-1">
           <Button
             href="/projects/{page.params.id}/stories/{page.params.storyId}/export"
@@ -449,7 +485,36 @@
           >
             <GripVertical class="h-3 w-3 cursor-grab text-muted-foreground opacity-40" />
             <span class="text-xs text-muted-foreground">{i + 1}</span>
-            <span class="flex-1 truncate text-sm font-medium">{chapter.title}</span>
+            {#if renamingChapterId === chapter.id}
+              <form
+                method="POST"
+                action="?/renameChapter"
+                class="flex flex-1 items-center gap-1"
+                onclick={(e) => e.stopPropagation()}
+                use:enhance={() => {
+                  return async ({ result, update }) => {
+                    if (result.type === 'success') renamingChapterId = null;
+                    await update({ reset: false });
+                  };
+                }}
+              >
+                <input type="hidden" name="chapterId" value={chapter.id} />
+                <Input name="title" value={chapter.title} class="h-6 text-sm" required autofocus />
+                <Button type="submit" size="xs">Save</Button>
+              </form>
+            {:else}
+              <span
+                class="flex-1 truncate text-sm font-medium"
+                title="Double-click to rename"
+                ondblclick={(e) => {
+                  e.stopPropagation();
+                  if (canEdit) renamingChapterId = chapter.id;
+                }}
+                role="presentation"
+              >
+                {chapter.title}
+              </span>
+            {/if}
             <span class="text-xs text-muted-foreground">
               {formatWordCount(chapterWords(chapter))}w
             </span>

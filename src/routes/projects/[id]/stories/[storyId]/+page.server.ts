@@ -4,6 +4,7 @@ import {
   getScene,
   listChapters,
   createChapter,
+  updateChapter,
   listScenes,
   createScene,
   updateScene,
@@ -61,10 +62,28 @@ export const actions = {
     if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
     const { project } = access;
     const form = await request.formData();
+    const title = ((form.get('title') as string) || '').trim();
+    if (!title) return fail(400, { error: 'Title is required' });
     updateStory(project.dataPath, params.storyId, {
-      title: form.get('title') as string,
-      description: form.get('description') as string
+      title,
+      description: ((form.get('description') as string) || '').trim() || null
     });
+    return { success: true };
+  },
+
+  renameChapter: async ({ params, locals, request }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
+    const form = await request.formData();
+    const chapterId = form.get('chapterId') as string;
+    if (!isSafePathSegment(chapterId)) return fail(400, { error: 'Invalid chapter ID' });
+    const title = ((form.get('title') as string) || '').trim();
+    if (!title) return fail(400, { error: 'Title is required' });
+    const updated = updateChapter(project.dataPath, params.storyId, chapterId, { title });
+    if (!updated) return fail(404, { error: 'Chapter not found' });
     return { success: true };
   },
 
