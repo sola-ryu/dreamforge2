@@ -26,10 +26,19 @@ interface PlotThreadData {
   type: 'setup' | 'payoff' | 'ongoing';
 }
 
+export type SceneStatus = 'draft' | 'revised' | 'final';
+
+export const SCENE_STATUSES: SceneStatus[] = ['draft', 'revised', 'final'];
+
+function normalizeStatus(value: unknown): SceneStatus {
+  return SCENE_STATUSES.includes(value as SceneStatus) ? (value as SceneStatus) : 'draft';
+}
+
 export interface SceneData {
   id: string;
   chapterId: string;
   title: string | null;
+  status: SceneStatus;
   narrator: string | null;
   time: string | null;
   place: string | null;
@@ -329,6 +338,7 @@ export function readSceneFile(filePath: string, chapterId: string): SceneData | 
       id: (meta.id as string) || path.basename(filePath, '.md'),
       chapterId,
       title: (meta.title as string) || null,
+      status: normalizeStatus(meta.status),
       narrator: (meta.narrator as string) || null,
       time: (meta.time as string) || null,
       place: (meta.place as string) || null,
@@ -398,6 +408,7 @@ export function createScene(
     id,
     chapterId,
     title: title || null,
+    status: 'draft',
     narrator: null,
     time: null,
     place: null,
@@ -415,6 +426,7 @@ export function createScene(
     id,
     chapterId,
     title: quoteYamlScalar(scene.title || ''),
+    status: 'draft',
     narrator: '',
     time: '',
     place: '',
@@ -449,10 +461,11 @@ export function updateScene(
   const updated = { ...scene, ...data, modifiedAt: now };
 
   const filePath = getScenePath(projectPath, storyId, chapterId, sceneId);
-  const content = `---\nid: ${updated.id}\nchapterId: ${updated.chapterId}\ntitle: ${quoteYamlScalar(updated.title || '')}\nnarrator: ${quoteYamlScalar(updated.narrator || '')}\ntime: ${quoteYamlScalar(updated.time || '')}\nplace: ${quoteYamlScalar(updated.place || '')}\nparticipants: ${JSON.stringify(updated.participants)}\nbackgroundImage: ${quoteYamlScalar(updated.backgroundImage || '')}\nsummary: ${quoteYamlScalar(updated.summary || '')}\nplotThreads: ${JSON.stringify(updated.plotThreads)}\nsortOrder: ${updated.sortOrder}\ncreatedAt: ${updated.createdAt}\nmodifiedAt: ${updated.modifiedAt}\n---\n\n${updated.body}\n`;
+  const updatedStatus = normalizeStatus(updated.status);
+  const content = `---\nid: ${updated.id}\nchapterId: ${updated.chapterId}\ntitle: ${quoteYamlScalar(updated.title || '')}\nstatus: ${updatedStatus}\nnarrator: ${quoteYamlScalar(updated.narrator || '')}\ntime: ${quoteYamlScalar(updated.time || '')}\nplace: ${quoteYamlScalar(updated.place || '')}\nparticipants: ${JSON.stringify(updated.participants)}\nbackgroundImage: ${quoteYamlScalar(updated.backgroundImage || '')}\nsummary: ${quoteYamlScalar(updated.summary || '')}\nplotThreads: ${JSON.stringify(updated.plotThreads)}\nsortOrder: ${updated.sortOrder}\ncreatedAt: ${updated.createdAt}\nmodifiedAt: ${updated.modifiedAt}\n---\n\n${updated.body}\n`;
   fs.writeFileSync(filePath, content);
 
-  return updated;
+  return { ...updated, status: updatedStatus };
 }
 
 export function reorderChapters(projectPath: string, storyId: string, chapterIds: string[]): void {

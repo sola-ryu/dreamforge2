@@ -407,3 +407,50 @@ describe('path traversal guards', () => {
     expect(getChapterMeta(tmpDir, '..', '..')).toBeNull();
   });
 });
+
+describe('scene status', () => {
+  function makeScene(title?: string) {
+    const story = createStory(tmpDir, 'S');
+    const chapter = createChapter(tmpDir, story.id, 'C');
+    return { story, chapter, scene: createScene(tmpDir, story.id, chapter.id, title) };
+  }
+
+  it('defaults to draft on create', () => {
+    const { story, chapter, scene } = makeScene('One');
+    expect(scene.status).toBe('draft');
+    expect(getScene(tmpDir, story.id, chapter.id, scene.id)?.status).toBe('draft');
+  });
+
+  it('round-trips through the scene file', () => {
+    const { story, chapter, scene } = makeScene('One');
+    updateScene(tmpDir, story.id, chapter.id, scene.id, { status: 'final' });
+    expect(getScene(tmpDir, story.id, chapter.id, scene.id)?.status).toBe('final');
+  });
+
+  it('falls back to draft for an unknown or missing status', () => {
+    const { story, chapter, scene } = makeScene('One');
+    updateScene(tmpDir, story.id, chapter.id, scene.id, {
+      status: 'nonsense' as unknown as 'draft'
+    });
+    expect(getScene(tmpDir, story.id, chapter.id, scene.id)?.status).toBe('draft');
+
+    const filePath = path.join(
+      tmpDir,
+      'stories',
+      story.id,
+      'chapters',
+      chapter.id,
+      'scenes',
+      `${scene.id}.md`
+    );
+    fs.writeFileSync(filePath, fs.readFileSync(filePath, 'utf-8').replace(/^status: .*$/m, ''));
+    expect(getScene(tmpDir, story.id, chapter.id, scene.id)?.status).toBe('draft');
+  });
+
+  it('is preserved when other fields are updated', () => {
+    const { story, chapter, scene } = makeScene('One');
+    updateScene(tmpDir, story.id, chapter.id, scene.id, { status: 'revised' });
+    updateScene(tmpDir, story.id, chapter.id, scene.id, { body: 'new words' });
+    expect(getScene(tmpDir, story.id, chapter.id, scene.id)?.status).toBe('revised');
+  });
+});

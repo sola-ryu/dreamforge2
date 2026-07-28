@@ -1,9 +1,16 @@
 <script lang="ts">
   import { GripVertical, FileText, Circle, CircleCheckBig, Clock } from '@lucide/svelte';
 
+  const STATUS_DOTS: Record<string, string> = {
+    draft: 'bg-muted-foreground/40',
+    revised: 'bg-amber-500',
+    final: 'bg-emerald-500'
+  };
+
   interface SceneSummary {
     id: string;
     title: string | null;
+    status?: string;
     summary: string | null;
     plotThreads: { thread: string; type: string }[];
     sortOrder: number;
@@ -85,6 +92,10 @@
               <div class="flex items-center gap-2">
                 <FileText class="h-4 w-4 text-muted-foreground" />
                 <span class="text-sm font-medium">{scene.title || 'Untitled Scene'}</span>
+                <span
+                  class="h-1.5 w-1.5 rounded-full {STATUS_DOTS[scene.status || 'draft']}"
+                  title={scene.status || 'draft'}
+                ></span>
               </div>
               {#if scene.summary}
                 <p class="mt-1 text-xs text-muted-foreground">{scene.summary}</p>

@@ -7,7 +7,6 @@
     Plus,
     Trash2,
     GripVertical,
-    FileText,
     ChevronDown,
     ChevronRight,
     BookOpen,
@@ -27,15 +26,28 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { countWords, formatWordCount } from '$lib/utils/wordCount';
-  import type { EntityType } from '$lib/types';
+  import type { EntityType, SceneStatus } from '$lib/types';
 
   const zen = getZenMode();
 
   const AUTOSAVE_DELAY = 1500;
 
+  const STATUS_ORDER: SceneStatus[] = ['draft', 'revised', 'final'];
+  const STATUS_LABELS: Record<SceneStatus, string> = {
+    draft: 'Draft',
+    revised: 'Revised',
+    final: 'Final'
+  };
+  const STATUS_DOTS: Record<SceneStatus, string> = {
+    draft: 'bg-muted-foreground/40',
+    revised: 'bg-amber-500',
+    final: 'bg-emerald-500'
+  };
+
   interface SceneRow {
     id: string;
     title: string | null;
+    status: SceneStatus;
     narrator: string | null;
     time: string | null;
     place: string | null;
@@ -59,6 +71,7 @@
   let activeSceneId = $state<string | null>(null);
   let sceneBody = $state('');
   let sceneTitle = $state('');
+  let sceneStatus = $state<SceneStatus>('draft');
   let sceneNarrator = $state('');
   let sceneTime = $state('');
   let scenePlace = $state('');
@@ -99,6 +112,14 @@
   });
 
   let sessionWords = $derived(sessionStartWords === null ? 0 : storyWords - sessionStartWords);
+
+  let statusCounts = $derived.by(() => {
+    const counts: Record<SceneStatus, number> = { draft: 0, revised: 0, final: 0 };
+    for (const chapter of chapters) {
+      for (const scene of chapter.scenes) counts[scene.status || 'draft']++;
+    }
+    return counts;
+  });
   let sceneWords = $derived(countWords(sceneBody));
 
   function chapterWords(chapter: ChapterRow): number {
@@ -130,6 +151,7 @@
   function currentValues() {
     return {
       title: sceneTitle,
+      status: sceneStatus,
       narrator: sceneNarrator,
       time: sceneTime,
       place: scenePlace,
@@ -145,6 +167,7 @@
     activeSceneId = scene.id;
     activeChapterId = chapterId;
     sceneTitle = scene.title || '';
+    sceneStatus = scene.status || 'draft';
     sceneBody = scene.body || '';
     sceneNarrator = scene.narrator || '';
     sceneTime = scene.time || '';
@@ -170,6 +193,7 @@
     activeSceneId = null;
     activeChapterId = '';
     sceneTitle = '';
+    sceneStatus = 'draft';
     sceneBody = '';
     sceneNarrator = '';
     sceneTime = '';
@@ -214,6 +238,7 @@
                   : {
                       ...s,
                       title: values.title || null,
+                      status: values.status,
                       narrator: values.narrator || null,
                       time: values.time || null,
                       place: values.place || null,
@@ -417,6 +442,17 @@
           <span class="text-primary">· +{formatWordCount(sessionWords)} this session</span>
         {/if}
       </p>
+      <p class="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        {#each STATUS_ORDER as option (option)}
+          {#if statusCounts[option] > 0}
+            <span class="flex items-center gap-1">
+              <span class="h-1.5 w-1.5 rounded-full {STATUS_DOTS[option]}"></span>
+              {statusCounts[option]}
+              {STATUS_LABELS[option].toLowerCase()}
+            </span>
+          {/if}
+        {/each}
+      </p>
     </div>
 
     <Button
@@ -561,7 +597,10 @@
                   <GripVertical
                     class="h-3 w-3 cursor-grab text-muted-foreground opacity-0 group-hover:opacity-100"
                   />
-                  <FileText class="h-3 w-3 text-muted-foreground" />
+                  <span
+                    class="h-1.5 w-1.5 shrink-0 rounded-full {STATUS_DOTS[scene.status || 'draft']}"
+                    title={STATUS_LABELS[scene.status || 'draft']}
+                  ></span>
                   <span class="flex-1 truncate">{scene.title || `Scene ${j + 1}`}</span>
                   <span class="text-xs text-muted-foreground group-hover:hidden">
                     {formatWordCount(countWords(scene.body))}
@@ -633,6 +672,21 @@
             placeholder="Scene title..."
           />
           <div class="flex items-center gap-2" class:hidden={zen.active}>
+            <div class="flex items-center gap-1 rounded-full border border-border p-0.5">
+              {#each STATUS_ORDER as option (option)}
+                <button
+                  type="button"
+                  class="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+                  class:bg-secondary={sceneStatus === option}
+                  class:text-muted-foreground={sceneStatus !== option}
+                  disabled={!canEdit}
+                  onclick={() => (sceneStatus = option)}
+                >
+                  <span class="h-1.5 w-1.5 rounded-full {STATUS_DOTS[option]}"></span>
+                  {STATUS_LABELS[option]}
+                </button>
+              {/each}
+            </div>
             <span class="whitespace-nowrap text-xs text-muted-foreground">
               {formatWordCount(sceneWords)} words
             </span>

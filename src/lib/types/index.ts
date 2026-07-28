@@ -50,10 +50,13 @@ export interface Chapter {
   modifiedAt: string;
 }
 
+export type SceneStatus = 'draft' | 'revised' | 'final';
+
 export interface Scene {
   id: string;
   chapterId: string;
   title: string | null;
+  status: SceneStatus;
   narrator: string | null;
   time: string | null;
   place: string | null;
