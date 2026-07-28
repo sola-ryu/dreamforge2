@@ -96,3 +96,34 @@ export interface Tag {
 }
 
 export type Theme = 'light' | 'dark';
+
+export interface StoryStats {
+  id: string;
+  title: string;
+  description: string | null;
+  chapterCount: number;
+  sceneCount: number;
+  wordCount: number;
+  modifiedAt: string;
+}
+
+export interface RecentItem {
+  kind: 'entity' | 'scene';
+  id: string;
+  name: string;
+  context: string;
+  href: string;
+  modifiedAt: string;
+}
+
+export interface ProjectStats {
+  entityCounts: Record<EntityType, number>;
+  totalEntities: number;
+  storyCount: number;
+  chapterCount: number;
+  sceneCount: number;
+  wordCount: number;
+  stories: StoryStats[];
+  recent: RecentItem[];
+  lastScene: { storyId: string; sceneId: string; title: string; storyTitle: string } | null;
+}
