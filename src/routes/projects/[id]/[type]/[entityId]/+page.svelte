@@ -4,7 +4,7 @@
   import { goto, invalidateAll } from '$app/navigation';
   import { ENTITY_LABELS, ENTITY_PLURAL } from '$lib/entityFields';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
-  import type { EntityType } from '$lib/types';
+  import type { Backlink, BacklinkReason, EntityType } from '$lib/types';
   import Editor from '$lib/components/Editor.svelte';
   import { marked } from 'marked';
   import DOMPurify from 'isomorphic-dompurify';
@@ -18,7 +18,8 @@
     SwitchCamera,
     Link2,
     Unlink,
-    ImagePlus
+    ImagePlus,
+    FileText
   } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
@@ -33,8 +34,17 @@
     SelectValue
   } from '$lib/components/ui/select';
 
+  const BACKLINK_LABELS: Record<BacklinkReason, string> = {
+    mention: 'mention',
+    field: 'field',
+    participant: 'in scene',
+    narrator: 'narrates',
+    place: 'setting'
+  };
+
   let role = $derived(page.data?.role || 'owner');
   let canEdit = $derived(role !== 'commenter');
+  let backlinks = $derived((page.data?.backlinks || []) as Backlink[]);
 
   /** Suggestions for an entityRef field, limited to the referenced type when one is set. */
   function refOptions(refType?: string): Array<{ id: string; name: string }> {
@@ -373,6 +383,35 @@
       {/if}
     </div>
   </form>
+
+  {#if backlinks.length > 0}
+    <div class="mt-6 rounded-lg border border-border bg-card p-4">
+      <h2 class="mb-3 flex items-center gap-2 text-sm font-medium">
+        <Link2 class="h-4 w-4" />
+        Referenced By
+        <span class="text-xs text-muted-foreground">({backlinks.length})</span>
+      </h2>
+      <div class="space-y-1">
+        {#each backlinks as link (link.kind + link.id + link.reason)}
+          <a
+            class="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-secondary"
+            href={link.href}
+          >
+            {#if link.kind === 'scene'}
+              <FileText class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            {:else}
+              <Link2 class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            {/if}
+            <span class="truncate">{link.name}</span>
+            <span class="truncate text-xs text-muted-foreground">{link.context}</span>
+            <span class="ml-auto shrink-0 text-xs text-muted-foreground">
+              {BACKLINK_LABELS[link.reason]}
+            </span>
+          </a>
+        {/each}
+      </div>
+    </div>
+  {/if}
 
   <Comments
     projectId={page.params.id || ''}

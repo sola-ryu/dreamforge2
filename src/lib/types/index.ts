@@ -97,6 +97,17 @@ export interface Tag {
 
 export type Theme = 'light' | 'dark';
 
+export type BacklinkReason = 'mention' | 'participant' | 'narrator' | 'place' | 'field';
+
+export interface Backlink {
+  kind: 'entity' | 'scene';
+  id: string;
+  name: string;
+  context: string;
+  href: string;
+  reason: BacklinkReason;
+}
+
 export interface WritingProgress {
   dailyGoal: number;
   storyTargets: Record<string, number>;

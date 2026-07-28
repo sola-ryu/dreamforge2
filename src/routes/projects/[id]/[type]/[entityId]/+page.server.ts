@@ -5,6 +5,7 @@ import { addBookmark, removeBookmark, isBookmarked } from '$lib/server/bookmarks
 import { noteToScene } from '$lib/server/conversion';
 import { listStories, listChapters } from '$lib/server/stories';
 import { getCustomFieldDefs } from '$lib/server/customFields';
+import { getBacklinks } from '$lib/server/backlinks';
 import { softDeleteEntity, restoreEntity } from '$lib/server/trash';
 import {
   getImagesForEntity,
@@ -52,6 +53,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   const entityImages = getImagesForEntity(params.id, params.entityId);
   const projectImages = listProjectImages(params.id, project.dataPath);
 
+  const backlinks = getBacklinks(params.id, project.dataPath, entity);
+
   const allEntities = searchEntities(params.id, '').map((e) => ({
     id: e.id,
     type: e.type,
@@ -66,6 +69,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     bookmarked,
     stories: storiesWithChapters,
     customFields: mergedFields,
+    backlinks,
     entityImages,
     projectImages,
     entities: allEntities,
