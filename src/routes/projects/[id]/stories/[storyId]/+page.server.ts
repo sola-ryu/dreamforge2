@@ -101,8 +101,8 @@ export const actions = {
     const form = await request.formData();
     const chapterId = form.get('chapterId') as string;
     if (!isSafePathSegment(chapterId)) return fail(400, { error: 'Invalid chapter ID' });
-    createScene(project.dataPath, params.storyId, chapterId);
-    return { success: true };
+    const scene = createScene(project.dataPath, params.storyId, chapterId);
+    return { success: true, sceneId: scene.id };
   },
 
   updateScene: async ({ params, locals, request }) => {

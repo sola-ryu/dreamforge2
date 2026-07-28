@@ -15,14 +15,38 @@
     Image,
     LayoutList,
     SwitchCamera,
-    Download
+    Download,
+    Check,
+    CloudOff,
+    Loader2
   } from '@lucide/svelte';
   import { getZenMode } from '$lib/stores/zenMode.svelte';
   import Editor from '$lib/components/Editor.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
+  import { countWords, formatWordCount } from '$lib/utils/wordCount';
 
   const zen = getZenMode();
+
+  const AUTOSAVE_DELAY = 1500;
+
+  interface SceneRow {
+    id: string;
+    title: string | null;
+    narrator: string | null;
+    time: string | null;
+    place: string | null;
+    participants: string[];
+    backgroundImage: string | null;
+    body: string;
+    [key: string]: unknown;
+  }
+
+  interface ChapterRow {
+    id: string;
+    title: string;
+    scenes: SceneRow[];
+  }
 
   let showCreateChapter = $state(false);
   let chapterTitle = $state('');
@@ -36,13 +60,42 @@
   let sceneParticipants = $state('');
   let sceneBackgroundImage = $state('');
   let activeChapterId = $state('');
-  let isSaving = $state(false);
+
+  let savedSnapshot = $state('');
+  let saving = $state(false);
+  let saveError = $state('');
+  let lastSavedAt = $state<Date | null>(null);
+  let sessionStartWords = $state<number | null>(null);
 
   let dragChapterId = $state<string | null>(null);
   let dragSceneId = $state<string | null>(null);
 
   let initialSceneId = $state<string | null>(null);
   let initialSceneHandled = $state(false);
+
+  // Writable derived: reloads follow the server, and saveScene() can patch a scene
+  // locally so word counts update without a round trip.
+  let chapters = $derived((page.data?.chapters || []) as ChapterRow[]);
+  let role = $derived(page.data?.role || 'owner');
+  let canEdit = $derived(role !== 'commenter');
+
+  let storyWords = $derived(
+    chapters.reduce(
+      (total, ch) => total + ch.scenes.reduce((sum, s) => sum + countWords(s.body), 0),
+      0
+    )
+  );
+
+  $effect(() => {
+    if (sessionStartWords === null && chapters.length > 0) sessionStartWords = storyWords;
+  });
+
+  let sessionWords = $derived(sessionStartWords === null ? 0 : storyWords - sessionStartWords);
+  let sceneWords = $derived(countWords(sceneBody));
+
+  function chapterWords(chapter: ChapterRow): number {
+    return chapter.scenes.reduce((sum, s) => sum + countWords(s.body), 0);
+  }
 
   $effect(() => {
     const sceneParam = page.url.searchParams.get('scene');
@@ -53,21 +106,34 @@
 
   $effect(() => {
     const sceneId = initialSceneId;
-    const chapters = page.data?.chapters;
-    if (!sceneId || !chapters || chapters.length === 0 || initialSceneHandled) return;
+    if (!sceneId || chapters.length === 0 || initialSceneHandled) return;
 
     for (const ch of chapters) {
-      const scene = (ch.scenes || []).find((s: any) => s.id === sceneId);
+      const scene = (ch.scenes || []).find((s) => s.id === sceneId);
       if (scene) {
         expandedChapters = new Set([...expandedChapters, ch.id]);
-        openScene(scene, ch.id);
+        loadScene(scene, ch.id);
         initialSceneHandled = true;
         break;
       }
     }
   });
 
-  function openScene(scene: any, chapterId: string) {
+  function currentValues() {
+    return {
+      title: sceneTitle,
+      narrator: sceneNarrator,
+      time: sceneTime,
+      place: scenePlace,
+      participants: sceneParticipants,
+      backgroundImage: sceneBackgroundImage,
+      body: sceneBody
+    };
+  }
+
+  let dirty = $derived(activeSceneId !== null && JSON.stringify(currentValues()) !== savedSnapshot);
+
+  function loadScene(scene: SceneRow, chapterId: string) {
     activeSceneId = scene.id;
     activeChapterId = chapterId;
     sceneTitle = scene.title || '';
@@ -77,10 +143,20 @@
     scenePlace = scene.place || '';
     sceneParticipants = (scene.participants || []).join(', ');
     sceneBackgroundImage = scene.backgroundImage || '';
+    savedSnapshot = JSON.stringify(currentValues());
+    saveError = '';
     zen.backgroundImage = scene.backgroundImage || null;
   }
 
-  function closeScene() {
+  /** Never switch away from unsaved edits — flush them first. */
+  async function openScene(scene: SceneRow, chapterId: string) {
+    if (scene.id === activeSceneId) return;
+    if (dirty) await saveScene();
+    loadScene(scene, chapterId);
+  }
+
+  async function closeScene() {
+    if (dirty) await saveScene();
     zen.backgroundImage = null;
     if (zen.active) zen.active = false;
     activeSceneId = null;
@@ -92,6 +168,83 @@
     scenePlace = '';
     sceneParticipants = '';
     sceneBackgroundImage = '';
+    savedSnapshot = '';
+  }
+
+  async function saveScene(): Promise<boolean> {
+    if (!activeSceneId || !canEdit || saving) return false;
+
+    const sceneId = activeSceneId;
+    const chapterId = activeChapterId;
+    const values = currentValues();
+    const snapshot = JSON.stringify(values);
+
+    saving = true;
+    saveError = '';
+
+    try {
+      const form = new FormData();
+      form.set('chapterId', chapterId);
+      form.set('sceneId', sceneId);
+      for (const [key, value] of Object.entries(values)) form.set(key, value);
+
+      const res = await fetch('?/updateScene', { method: 'POST', body: form });
+      if (!res.ok) throw new Error(`Save failed (${res.status})`);
+
+      savedSnapshot = snapshot;
+      lastSavedAt = new Date();
+
+      // Patch the local tree so word counts track the edit without a full reload.
+      chapters = chapters.map((ch) =>
+        ch.id !== chapterId
+          ? ch
+          : {
+              ...ch,
+              scenes: ch.scenes.map((s) =>
+                s.id !== sceneId
+                  ? s
+                  : {
+                      ...s,
+                      title: values.title || null,
+                      narrator: values.narrator || null,
+                      time: values.time || null,
+                      place: values.place || null,
+                      participants: values.participants
+                        .split(',')
+                        .map((p) => p.trim())
+                        .filter(Boolean),
+                      backgroundImage: values.backgroundImage || null,
+                      body: values.body
+                    }
+              )
+            }
+      );
+      return true;
+    } catch (e) {
+      saveError = e instanceof Error ? e.message : 'Save failed';
+      return false;
+    } finally {
+      saving = false;
+    }
+  }
+
+  // Debounced autosave: the cleanup cancels the pending timer on every keystroke,
+  // so the write only happens once typing pauses.
+  $effect(() => {
+    if (!dirty || !canEdit || saving) return;
+    const timer = setTimeout(() => void saveScene(), AUTOSAVE_DELAY);
+    return () => clearTimeout(timer);
+  });
+
+  function handleKeydown(e: KeyboardEvent) {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      if (activeSceneId) void saveScene();
+    }
+  }
+
+  function handleBeforeUnload(e: BeforeUnloadEvent) {
+    if (dirty) e.preventDefault();
   }
 
   function toggleChapter(id: string) {
@@ -109,8 +262,7 @@
   function handleChapterDrop(e: DragEvent, targetId: string) {
     e.preventDefault();
     if (!dragChapterId || dragChapterId === targetId) return;
-    const chapters = page.data?.chapters || [];
-    const ids = chapters.map((c: any) => c.id);
+    const ids = chapters.map((c) => c.id);
     const fromIdx = ids.indexOf(dragChapterId);
     const toIdx = ids.indexOf(targetId);
     if (fromIdx === -1 || toIdx === -1) return;
@@ -128,9 +280,9 @@
   function handleSceneDrop(e: DragEvent, chapterId: string, targetId: string) {
     e.preventDefault();
     if (!dragSceneId || dragSceneId === targetId) return;
-    const chapter = (page.data?.chapters || []).find((c: any) => c.id === chapterId);
+    const chapter = chapters.find((c) => c.id === chapterId);
     if (!chapter) return;
-    const ids = chapter.scenes.map((s: any) => s.id);
+    const ids = chapter.scenes.map((s) => s.id);
     const fromIdx = ids.indexOf(dragSceneId);
     const toIdx = ids.indexOf(targetId);
     if (fromIdx === -1 || toIdx === -1) return;
@@ -159,7 +311,21 @@
     await fetch('?/reorderScenes', { method: 'POST', body: form });
     await invalidateAll();
   }
+
+  /** Open a scene created by the server action as soon as it appears in the tree. */
+  function openSceneById(sceneId: string) {
+    for (const ch of chapters) {
+      const scene = ch.scenes.find((s) => s.id === sceneId);
+      if (scene) {
+        expandedChapters = new Set([...expandedChapters, ch.id]);
+        loadScene(scene, ch.id);
+        return;
+      }
+    }
+  }
 </script>
+
+<svelte:window onkeydown={handleKeydown} onbeforeunload={handleBeforeUnload} />
 
 <svelte:head>
   <title
@@ -200,6 +366,12 @@
           </Button>
         </div>
       </div>
+      <p class="mt-1 text-xs text-muted-foreground">
+        {formatWordCount(storyWords)} words
+        {#if sessionWords > 0}
+          <span class="text-primary">· +{formatWordCount(sessionWords)} this session</span>
+        {/if}
+      </p>
     </div>
 
     <Button
@@ -248,7 +420,7 @@
     {/if}
 
     <div class="space-y-2">
-      {#each page.data?.chapters || [] as chapter, i}
+      {#each chapters as chapter, i (chapter.id)}
         <div
           class="rounded-lg border border-border"
           draggable="true"
@@ -258,7 +430,7 @@
           ondrop={(e) => handleChapterDrop(e, chapter.id)}
         >
           <div
-            class="flex cursor-pointer items-center gap-1 px-3 py-2 hover:bg-secondary/50"
+            class="group flex cursor-pointer items-center gap-1 px-3 py-2 hover:bg-secondary/50"
             onclick={() => toggleChapter(chapter.id)}
             role="button"
             tabindex="0"
@@ -269,7 +441,25 @@
             <GripVertical class="h-3 w-3 cursor-grab text-muted-foreground opacity-40" />
             <span class="text-xs text-muted-foreground">{i + 1}</span>
             <span class="flex-1 truncate text-sm font-medium">{chapter.title}</span>
-            <span class="text-xs text-muted-foreground">{chapter.scenes?.length || 0}</span>
+            <span class="text-xs text-muted-foreground">
+              {formatWordCount(chapterWords(chapter))}w
+            </span>
+            <div
+              class="opacity-0 group-hover:opacity-100"
+              onclick={(e) => e.stopPropagation()}
+              onkeypress={(e) => {
+                if (e.key === 'Enter') e.stopPropagation();
+              }}
+              role="button"
+              tabindex="-1"
+            >
+              <form method="POST" action="?/deleteChapter">
+                <input type="hidden" name="chapterId" value={chapter.id} />
+                <Button type="submit" variant="ghost" size="icon-xs" aria-label="Delete chapter">
+                  <Trash2 class="h-3 w-3 text-destructive" />
+                </Button>
+              </form>
+            </div>
             {#if expandedChapters.has(chapter.id)}
               <ChevronDown class="h-3 w-3 text-muted-foreground" />
             {:else}
@@ -279,7 +469,7 @@
 
           {#if expandedChapters.has(chapter.id)}
             <div class="border-t border-border pb-2">
-              {#each chapter.scenes as scene, j}
+              {#each chapter.scenes as scene, j (scene.id)}
                 <div
                   class="group flex cursor-pointer items-center gap-1 px-3 py-1.5 pl-6 text-sm"
                   class:bg-secondary={activeSceneId === scene.id}
@@ -299,8 +489,11 @@
                   />
                   <FileText class="h-3 w-3 text-muted-foreground" />
                   <span class="flex-1 truncate">{scene.title || `Scene ${j + 1}`}</span>
+                  <span class="text-xs text-muted-foreground group-hover:hidden">
+                    {formatWordCount(countWords(scene.body))}
+                  </span>
                   <div
-                    class="max-sm:opacity-100 opacity-0 group-hover:opacity-100"
+                    class="hidden group-hover:block"
                     onclick={(e) => e.stopPropagation()}
                     onkeypress={(e) => {
                       if (e.key === 'Enter') e.stopPropagation();
@@ -330,7 +523,9 @@
                 use:enhance={() => {
                   return async ({ result, update }) => {
                     if (result.type === 'success') {
+                      const created = (result.data as { sceneId?: string })?.sceneId;
                       await update();
+                      if (created) openSceneById(created);
                     }
                   };
                 }}
@@ -355,53 +550,39 @@
   <!-- Right panel: scene editor -->
   <div class="flex-1 overflow-y-auto">
     {#if activeSceneId}
-      <form
-        method="POST"
-        action="?/updateScene"
-        use:enhance={() => {
-          return async ({ result, update }) => {
-            if (result.type === 'success') {
-              isSaving = false;
-              await update();
-              if (activeSceneId) {
-                const chapters = page.data?.chapters || [];
-                for (const ch of chapters) {
-                  const scene = (ch.scenes || []).find((s: any) => s.id === activeSceneId);
-                  if (scene) {
-                    sceneTitle = scene.title || '';
-                    sceneBody = scene.body || '';
-                    sceneNarrator = scene.narrator || '';
-                    sceneTime = scene.time || '';
-                    scenePlace = scene.place || '';
-                    sceneParticipants = (scene.participants || []).join(', ');
-                    sceneBackgroundImage = scene.backgroundImage || '';
-                    break;
-                  }
-                }
-              }
-            }
-          };
-        }}
-        class="p-6"
-      >
-        <input type="hidden" name="chapterId" value={activeChapterId} />
-        <input type="hidden" name="sceneId" value={activeSceneId} />
-        <input type="hidden" name="body" bind:value={sceneBody} />
-
-        <div class="mb-4 flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <input
-              type="text"
-              name="title"
-              bind:value={sceneTitle}
-              class="border-0 bg-transparent text-lg font-semibold outline-none"
-              placeholder="Scene title..."
-            />
-          </div>
+      <div class="p-6">
+        <div class="mb-4 flex items-center justify-between gap-3">
+          <input
+            type="text"
+            bind:value={sceneTitle}
+            class="min-w-0 flex-1 border-0 bg-transparent text-lg font-semibold outline-none"
+            placeholder="Scene title..."
+          />
           <div class="flex items-center gap-2">
-            <Button type="submit" disabled={isSaving} onclick={() => (isSaving = true)}>
+            <span class="whitespace-nowrap text-xs text-muted-foreground">
+              {formatWordCount(sceneWords)} words
+            </span>
+            <span
+              class="flex items-center gap-1 whitespace-nowrap text-xs"
+              class:text-destructive={saveError}
+              class:text-muted-foreground={!saveError}
+            >
+              {#if saveError}
+                <CloudOff class="h-3 w-3" />
+                {saveError}
+              {:else if saving}
+                <Loader2 class="h-3 w-3 animate-spin" />
+                Saving…
+              {:else if dirty}
+                Unsaved changes
+              {:else if lastSavedAt}
+                <Check class="h-3 w-3" />
+                Saved
+              {/if}
+            </span>
+            <Button onclick={() => saveScene()} disabled={saving || !dirty || !canEdit}>
               <Save class="h-4 w-4" />
-              {isSaving ? 'Saving…' : 'Save'}
+              Save
             </Button>
             <Button
               variant="outline"
@@ -413,8 +594,9 @@
                 f.set('chapterId', activeChapterId);
                 f.set('sceneId', activeSceneId || '');
                 await fetch('?/convertToNote', { method: 'POST', body: f });
+                savedSnapshot = JSON.stringify(currentValues());
                 await invalidateAll();
-                closeScene();
+                await closeScene();
               }}
             >
               <SwitchCamera class="h-4 w-4" />
@@ -429,7 +611,6 @@
             <Input
               id="scene-narrator"
               type="text"
-              name="narrator"
               bind:value={sceneNarrator}
               class="h-7 w-auto"
               placeholder="Who narrates?"
@@ -440,7 +621,6 @@
             <Input
               id="scene-time"
               type="text"
-              name="time"
               bind:value={sceneTime}
               class="h-7 w-auto"
               placeholder="When?"
@@ -451,7 +631,6 @@
             <Input
               id="scene-place"
               type="text"
-              name="place"
               bind:value={scenePlace}
               class="h-7 w-auto"
               placeholder="Where?"
@@ -462,17 +641,15 @@
             <Input
               id="scene-participants"
               type="text"
-              name="participants"
               bind:value={sceneParticipants}
               class="h-7 w-auto"
-              placeholder="char_id1, char_id2"
+              placeholder="Who is in the scene?"
             />
           </div>
           <div class="flex items-center gap-2">
             <Image class="h-3.5 w-3.5 text-muted-foreground" />
             <Input
               type="text"
-              name="backgroundImage"
               bind:value={sceneBackgroundImage}
               class="h-7 w-auto"
               placeholder="Background image URL for Zen Mode"
@@ -487,7 +664,7 @@
             onUpdate={(md) => (sceneBody = md)}
           />
         {/key}
-      </form>
+      </div>
     {:else}
       <div class="flex h-full items-center justify-center text-muted-foreground">
         <div class="text-center">
