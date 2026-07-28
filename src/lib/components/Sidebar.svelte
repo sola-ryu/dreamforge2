@@ -3,7 +3,7 @@
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import { getTheme } from '$lib/stores/theme.svelte';
   import { getZenMode } from '$lib/stores/zenMode.svelte';
-  import { getPalette } from '$lib/stores/palette.svelte';
+  import { getOverlays } from '$lib/stores/overlays.svelte';
   import * as Sidebar from '$lib/components/ui/sidebar/index.js';
   import {
     House,
@@ -18,12 +18,13 @@
     GitBranch,
     Scan,
     Sparkles,
-    Command
+    Command,
+    Keyboard
   } from '@lucide/svelte';
 
   const theme = getTheme();
   const zen = getZenMode();
-  const palette = getPalette();
+  const overlays = getOverlays();
 </script>
 
 <Sidebar.Root collapsible="icon">
@@ -40,7 +41,10 @@
       <Sidebar.GroupContent>
         <Sidebar.Menu>
           <Sidebar.MenuItem>
-            <Sidebar.MenuButton onclick={() => palette.toggle()} tooltipContent="Command Palette">
+            <Sidebar.MenuButton
+              onclick={() => overlays.palette.toggle()}
+              tooltipContent="Command Palette"
+            >
               <Command class="h-4 w-4" />
               <span>Quick Open</span>
               <kbd
@@ -202,6 +206,18 @@
         >
           <Scan class="h-4 w-4" />
           <span>{zen.active ? 'Exit Zen Mode' : 'Zen Mode'}</span>
+        </Sidebar.MenuButton>
+      </Sidebar.MenuItem>
+      <Sidebar.MenuItem>
+        <Sidebar.MenuButton
+          onclick={() => overlays.shortcuts.toggle()}
+          tooltipContent="Keyboard Shortcuts"
+        >
+          <Keyboard class="h-4 w-4" />
+          <span>Shortcuts</span>
+          <kbd class="ml-auto rounded border border-border px-1 text-[10px] text-muted-foreground">
+            ?
+          </kbd>
         </Sidebar.MenuButton>
       </Sidebar.MenuItem>
       <Sidebar.MenuItem>

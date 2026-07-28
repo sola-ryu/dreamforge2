@@ -7,7 +7,7 @@
   import { ENTITY_LABELS, ENTITY_PLURAL } from '$lib/entityFields';
   import { getTheme } from '$lib/stores/theme.svelte';
   import { getZenMode } from '$lib/stores/zenMode.svelte';
-  import { getPalette } from '$lib/stores/palette.svelte';
+  import { getOverlays } from '$lib/stores/overlays.svelte';
   import type { EntityType } from '$lib/types';
   import {
     LayoutDashboard,
@@ -55,7 +55,7 @@
 
   const theme = getTheme();
   const zen = getZenMode();
-  const palette = getPalette();
+  const palette = getOverlays().palette;
 
   const ENTITY_ICONS: Record<EntityType, typeof Users> = {
     character: Users,
