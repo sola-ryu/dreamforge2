@@ -25,6 +25,8 @@
   import EntityPicker from '$lib/components/EntityPicker.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
+  import { Label } from '$lib/components/ui/label';
+  import * as Dialog from '$lib/components/ui/dialog/index.js';
   import { countWords, formatWordCount } from '$lib/utils/wordCount';
   import type { EntityType, SceneStatus } from '$lib/types';
 
@@ -65,6 +67,30 @@
 
   let showCreateChapter = $state(false);
   let editingStoryTitle = $state(false);
+  let showExport = $state(false);
+  let exportAuthor = $state('');
+  let exportDelimiter = $state('* * *');
+  let exportTitlePage = $state(true);
+  let exportToc = $state(true);
+  let exportSceneTitles = $state(true);
+  let exportSceneMeta = $state(true);
+  let exportNumberedChapters = $state(false);
+
+  let exportUrl = $derived.by(() => {
+    const params: string[] = [];
+    const add = (key: string, value: string) => params.push(`${key}=${encodeURIComponent(value)}`);
+
+    if (exportAuthor) add('author', exportAuthor);
+    if (exportDelimiter !== '* * *') add('delimiter', exportDelimiter);
+    if (!exportTitlePage) add('titlePage', 'false');
+    if (!exportToc) add('toc', 'false');
+    if (!exportSceneTitles) add('sceneTitles', 'false');
+    if (!exportSceneMeta) add('sceneMeta', 'false');
+    if (exportNumberedChapters) add('titleFormat', 'number');
+
+    const query = params.join('&');
+    return `/projects/${page.params.id}/stories/${page.params.storyId}/export${query ? `?${query}` : ''}`;
+  });
   let renamingChapterId = $state<string | null>(null);
   let chapterTitle = $state('');
   let expandedChapters = $state<Set<string>>(new Set());
@@ -360,6 +386,63 @@
 
 <svelte:window onkeydown={handleKeydown} onbeforeunload={handleBeforeUnload} />
 
+<Dialog.Root bind:open={showExport}>
+  <Dialog.Content class="max-w-md">
+    <Dialog.Header>
+      <Dialog.Title>Export Manuscript</Dialog.Title>
+      <Dialog.Description>
+        Opens a print-ready page — use your browser's Print dialog to save it as PDF.
+      </Dialog.Description>
+    </Dialog.Header>
+
+    <div class="space-y-3 text-sm">
+      <div class="space-y-1">
+        <Label for="export-author">Author name</Label>
+        <Input id="export-author" bind:value={exportAuthor} placeholder="Shown on the title page" />
+      </div>
+
+      <div class="space-y-1">
+        <Label for="export-delimiter">Scene delimiter</Label>
+        <Input id="export-delimiter" bind:value={exportDelimiter} placeholder="* * *" />
+      </div>
+
+      <label class="flex items-center gap-2">
+        <input type="checkbox" bind:checked={exportTitlePage} class="rounded border-input" />
+        Title page
+      </label>
+      <label class="flex items-center gap-2">
+        <input type="checkbox" bind:checked={exportToc} class="rounded border-input" />
+        Table of contents
+      </label>
+      <label class="flex items-center gap-2">
+        <input type="checkbox" bind:checked={exportSceneTitles} class="rounded border-input" />
+        Scene titles
+      </label>
+      <label class="flex items-center gap-2">
+        <input type="checkbox" bind:checked={exportSceneMeta} class="rounded border-input" />
+        Scene narrator / time / place
+      </label>
+      <label class="flex items-center gap-2">
+        <input type="checkbox" bind:checked={exportNumberedChapters} class="rounded border-input" />
+        Number chapters instead of titling them
+      </label>
+    </div>
+
+    <Dialog.Footer>
+      <Button variant="outline" onclick={() => (showExport = false)}>Cancel</Button>
+      <Button
+        onclick={() => {
+          showExport = false;
+          window.open(exportUrl, '_blank');
+        }}
+      >
+        <Download class="h-4 w-4" />
+        Open
+      </Button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
+
 <svelte:head>
   <title
     >{page.data?.story?.title || 'Story'} — {page.data?.projectName || 'Project'} — DreamForge</title
@@ -417,12 +500,7 @@
           </button>
         {/if}
         <div class="flex flex-wrap items-center gap-1">
-          <Button
-            href="/projects/{page.params.id}/stories/{page.params.storyId}/export"
-            target="_blank"
-            variant="outline"
-            size="xs"
-          >
+          <Button variant="outline" size="xs" onclick={() => (showExport = true)}>
             <Download class="h-3 w-3" />
             Export
           </Button>

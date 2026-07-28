@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
 import { getStoryMeta, listChapters, listScenes } from '$lib/server/stories';
 import { getProjectAccess } from '$lib/server/members';
+import { renderMarkdown } from '$lib/server/renderMarkdown';
 
 function renderTitlePage(title: string, subtitle?: string, author?: string) {
   return `
@@ -36,6 +37,13 @@ function escapeHtml(text: string): string {
     .replace(/"/g, '&quot;');
 }
 
+interface SceneRenderOptions {
+  showTitles: boolean;
+  showMeta: boolean;
+  delimiter: string;
+  isLast: boolean;
+}
+
 function renderScene(
   scene: {
     title: string | null;
@@ -44,21 +52,34 @@ function renderScene(
     time?: string | null;
     place?: string | null;
   },
-  index: number
+  index: number,
+  options: SceneRenderOptions
 ) {
   const meta = [];
   if (scene.narrator) meta.push(`Narrator: ${escapeHtml(scene.narrator)}`);
   if (scene.time) meta.push(`Time: ${escapeHtml(scene.time)}`);
   if (scene.place) meta.push(`Place: ${escapeHtml(scene.place)}`);
 
+  const title = options.showTitles
+    ? `<h3 class="scene-title">${escapeHtml(scene.title || `Scene ${index + 1}`)}</h3>`
+    : '';
+  const metaLine =
+    options.showMeta && meta.length > 0
+      ? `<p class="scene-meta">${meta.join(' &middot; ')}</p>`
+      : '';
+  const delimiter =
+    options.isLast || !options.delimiter
+      ? ''
+      : `<p class="scene-delimiter">${escapeHtml(options.delimiter)}</p>`;
+
   return `
     <div class="scene">
-      <h3 class="scene-title">${escapeHtml(scene.title || `Scene ${index + 1}`)}</h3>
-      ${meta.length > 0 ? `<p class="scene-meta">${meta.join(' &middot; ')}</p>` : ''}
+      ${title}
+      ${metaLine}
       <div class="scene-body">
-        ${scene.body || '<p>(empty)</p>'}
+        ${renderMarkdown(scene.body) || '<p>(empty)</p>'}
       </div>
-      <p class="scene-delimiter">* * *</p>
+      ${delimiter}
     </div>
   `;
 }
@@ -83,6 +104,9 @@ export const GET = async ({ params, locals, url }) => {
   const showToc = url.searchParams.get('toc') !== 'false';
   const titleFormat = url.searchParams.get('titleFormat') || 'chapter';
   const authorName = url.searchParams.get('author') || '';
+  const showSceneTitles = url.searchParams.get('sceneTitles') !== 'false';
+  const showSceneMeta = url.searchParams.get('sceneMeta') !== 'false';
+  const sceneDelimiter = url.searchParams.get('delimiter') ?? '* * *';
 
   const html = `<!doctype html>
 <html lang="en">
@@ -191,7 +215,16 @@ ${chaptersWithScenes
   .map(
     (ch, i) => `
   <h2 class="chapter-title">${titleFormat === 'number' ? `Chapter ${i + 1}` : escapeHtml(ch.title)}</h2>
-  ${ch.scenes.map((s, j) => renderScene(s, j)).join('')}
+  ${ch.scenes
+    .map((s, j) =>
+      renderScene(s, j, {
+        showTitles: showSceneTitles,
+        showMeta: showSceneMeta,
+        delimiter: sceneDelimiter,
+        isLast: j === ch.scenes.length - 1
+      })
+    )
+    .join('')}
 `
   )
   .join('')}
