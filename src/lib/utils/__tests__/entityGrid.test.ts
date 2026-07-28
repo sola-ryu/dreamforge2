@@ -1,4 +1,10 @@
-import { buildGridColumns, isCellEmpty, layoutRow, type GridColumn } from '../entityGrid';
+import {
+  buildGridColumns,
+  isCellEmpty,
+  layoutRow,
+  statusOption,
+  type GridColumn
+} from '../entityGrid';
 
 const columns = buildGridColumns([
   { key: 'age', label: 'Age', type: 'number' },
@@ -14,6 +20,15 @@ function column(key: string): GridColumn {
 describe('buildGridColumns', () => {
   it('puts status first, then name and tags', () => {
     expect(columns.slice(0, 3).map((c) => c.key)).toEqual(['status', 'name', 'tags']);
+  });
+});
+
+describe('statusOption', () => {
+  it('maps stored values, falling back to draft', () => {
+    expect(statusOption('complete').label).toBe('Complete');
+    expect(statusOption('wip').label).toBe('In Progress');
+    expect(statusOption(undefined).value).toBe('draft');
+    expect(statusOption('nonsense').value).toBe('draft');
   });
 });
 

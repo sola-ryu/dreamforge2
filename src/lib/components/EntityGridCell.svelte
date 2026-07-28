@@ -1,9 +1,18 @@
 <script lang="ts">
   import { Badge } from '$lib/components/ui/badge';
+  import * as Popover from '$lib/components/ui/popover';
   import { cn } from '$lib/utils';
-  import { getCellValue, toEditString, type GridColumn } from '$lib/utils/entityGrid';
+  import {
+    getCellValue,
+    toEditString,
+    statusOption,
+    STATUS_OPTIONS,
+    type GridColumn
+  } from '$lib/utils/entityGrid';
   import { autoWidth } from '$lib/utils/gridDom';
   import { Maximize2, Circle, CircleCheck, CircleDashed } from '@lucide/svelte';
+
+  const STATUS_ICONS = { draft: Circle, wip: CircleDashed, complete: CircleCheck };
 
   type Move = 'down' | 'right' | 'left' | 'none';
 
@@ -41,6 +50,9 @@
 
   let draft = $state('');
   let editorEl = $state<HTMLElement | null>(null);
+  let status = $derived(statusOption(value));
+  /** The status dropdown opens on click, or when the grid puts this cell into edit mode. */
+  let statusOpen = $state(false);
   /** Set once the edit is resolved by key, so the unmount blur doesn't commit a second time. */
   let resolved = $state(false);
 
@@ -51,6 +63,20 @@
       resolved = false;
     }
   });
+
+  $effect(() => {
+    if (editing && column.key === 'status') statusOpen = true;
+  });
+
+  function onStatusOpenChange(open: boolean) {
+    statusOpen = open;
+    if (!open && editing) onCancel();
+  }
+
+  function pickStatus(next: string) {
+    statusOpen = false;
+    onCommit(next, 'none');
+  }
 
   function commitOnBlur() {
     if (resolved) return;
@@ -90,19 +116,40 @@
   let listId = $derived(`grid-ref-${column.key}`);
 </script>
 
-{#if editing && column.key === 'status'}
-  <select
-    bind:this={editorEl}
-    bind:value={draft}
-    class={inputClass}
-    use:autoWidth
-    onkeydown={onEditorKeydown}
-    onblur={commitOnBlur}
-  >
-    <option value="draft">Draft</option>
-    <option value="wip">In Progress</option>
-    <option value="complete">Complete</option>
-  </select>
+{#if column.key === 'status'}
+  {@const StatusIcon = STATUS_ICONS[status.value]}
+  {#if canEdit}
+    <Popover.Root bind:open={statusOpen} onOpenChange={onStatusOpenChange}>
+      <Popover.Trigger
+        title={status.label}
+        aria-label="Status: {status.label}"
+        tabindex={-1}
+        class="flex items-center rounded-sm focus:outline-none"
+      >
+        <StatusIcon class={cn('h-4 w-4', status.class)} />
+      </Popover.Trigger>
+      <Popover.Content align="start" class="w-40 gap-0 rounded-lg p-1">
+        {#each STATUS_OPTIONS as option (option.value)}
+          {@const OptionIcon = STATUS_ICONS[option.value]}
+          <button
+            type="button"
+            class={cn(
+              'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-secondary',
+              option.value === status.value && 'bg-secondary/60'
+            )}
+            onclick={() => pickStatus(option.value)}
+          >
+            <OptionIcon class={cn('h-4 w-4', option.class)} />
+            {option.label}
+          </button>
+        {/each}
+      </Popover.Content>
+    </Popover.Root>
+  {:else}
+    <span role="img" aria-label={status.label} title={status.label}>
+      <StatusIcon class={cn('h-4 w-4', status.class)} />
+    </span>
+  {/if}
 {:else if editing && column.type === 'entityRef'}
   <!-- Free-text with suggestions: entity references are stored as plain names. -->
   <input
@@ -111,7 +158,7 @@
     list={listId}
     bind:value={draft}
     class={inputClass}
-    use:autoWidth
+    use:autoWidth={draft}
     onkeydown={onEditorKeydown}
     onblur={commitOnBlur}
   />
@@ -127,7 +174,7 @@
     bind:value={draft}
     placeholder={column.type === 'tags' ? 'tag1, tag2' : column.placeholder || ''}
     class={inputClass}
-    use:autoWidth
+    use:autoWidth={draft}
     onkeydown={onEditorKeydown}
     onblur={commitOnBlur}
   />
@@ -140,20 +187,6 @@
     onchange={(e) =>
       onCommit((e.currentTarget as HTMLInputElement).checked ? 'true' : 'false', 'none')}
   />
-{:else if column.key === 'status'}
-  {#if value === 'complete'}
-    <span role="img" aria-label="Complete" title="Complete">
-      <CircleCheck class="h-4 w-4 text-green-600 dark:text-green-400" />
-    </span>
-  {:else if value === 'wip'}
-    <span role="img" aria-label="In Progress" title="In Progress">
-      <CircleDashed class="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-    </span>
-  {:else}
-    <span role="img" aria-label="Draft" title="Draft">
-      <Circle class="h-4 w-4 text-muted-foreground" />
-    </span>
-  {/if}
 {:else if column.key === 'name'}
   <a class="truncate font-medium hover:underline" {href} tabindex={-1}>{display}</a>
 {:else if column.type === 'tags'}

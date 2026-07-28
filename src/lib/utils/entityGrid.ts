@@ -6,6 +6,19 @@ export interface GridColumn extends FieldDef {
   panelOnly: boolean;
 }
 
+export const STATUS_OPTIONS = [
+  { value: 'draft', label: 'Draft', class: 'text-muted-foreground' },
+  { value: 'wip', label: 'In Progress', class: 'text-yellow-600 dark:text-yellow-400' },
+  { value: 'complete', label: 'Complete', class: 'text-green-600 dark:text-green-400' }
+] as const;
+
+export type StatusValue = (typeof STATUS_OPTIONS)[number]['value'];
+
+/** The option a stored status maps to; anything unrecognised reads as draft. */
+export function statusOption(value: unknown) {
+  return STATUS_OPTIONS.find((o) => o.value === value) ?? STATUS_OPTIONS[0];
+}
+
 const CORE_COLUMNS: FieldDef[] = [
   { key: 'status', label: 'Status', type: 'text' },
   { key: 'name', label: 'Name', type: 'text' },

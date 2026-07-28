@@ -3,7 +3,7 @@
   import EntityGridCell from '$lib/components/EntityGridCell.svelte';
   import EntityGridPanel from '$lib/components/EntityGridPanel.svelte';
   import { getCellValue, toEditString, layoutRow, type GridColumn } from '$lib/utils/entityGrid';
-  import { spill, stickyColumns } from '$lib/utils/gridDom';
+  import { spill, scrollTracker, stickyColumns } from '$lib/utils/gridDom';
   import { cn, formatDate } from '$lib/utils';
 
   let {
@@ -101,12 +101,17 @@
     focusActiveCell();
   }
 
-  function onCellCommit(raw: string, move: 'down' | 'right' | 'left' | 'none') {
-    if (!activeCell) return;
-    const { row, col } = activeCell;
+  /** Commit by coordinates: a cell can be edited straight from a click, without being active first. */
+  function commitCell(
+    row: number,
+    col: number,
+    raw: string,
+    move: 'down' | 'right' | 'left' | 'none'
+  ) {
     const entity = rows[row];
     const column = columns[col];
     editing = false;
+    activeCell = { row, col };
     if (entity && column) saveCell(entity.id, column, raw);
 
     if (move === 'down') moveActive(1, 0);
@@ -197,7 +202,7 @@
   Click a cell, then use arrow keys to move. Type or press Enter to edit, Enter/Tab to commit,
   Escape to cancel, Space to toggle checkboxes, Delete to clear.
 </p>
-<div class="rounded-lg border border-border overflow-x-auto" bind:this={gridEl}>
+<div class="rounded-lg border border-border overflow-x-auto" use:scrollTracker bind:this={gridEl}>
   {#if rows.length === 0}
     <p class="py-12 text-center text-muted-foreground">{emptyMessage}</p>
   {:else}
@@ -214,11 +219,16 @@
               class={cn(
                 'border-b border-border px-2 py-1.5 text-left font-medium whitespace-nowrap bg-muted/40',
                 col <= 1 && 'sticky z-10',
-                col === 1 && 'min-w-48'
+                col === 1 && 'min-w-48',
+                activeCell?.col === col && 'bg-primary/10 text-foreground'
               )}
               style={col === 0 ? 'left: 0' : col === 1 ? 'left: var(--grid-col0, 4rem)' : undefined}
             >
-              {column.label}
+              {#if col === 0}
+                <span class="sr-only">{column.label}</span>
+              {:else}
+                {column.label}
+              {/if}
             </th>
           {/each}
           <th
@@ -234,8 +244,10 @@
           <tr class="group/row hover:bg-muted/20">
             {#each columns as column, col (column.key)}
               {@const isActive = activeCell?.row === row && activeCell?.col === col}
+              {@const isRowHeader = col === 1 && activeCell?.row === row}
               {@const isEditing = isActive && editing}
-              {@const spillCount = isEditing ? 0 : cells[col].spill}
+              {@const hasEditor = isEditing && column.key !== 'status'}
+              {@const spillCount = hasEditor ? 0 : cells[col].spill}
               <td
                 role="gridcell"
                 tabindex={-1}
@@ -244,9 +256,11 @@
                   'group/cell h-9 border-b border-border p-0 align-middle focus:outline-none',
                   col === 0 ? 'w-10' : 'max-w-56',
                   col === 1 && 'min-w-48',
-                  isEditing || spillCount > 0 ? 'overflow-visible' : 'overflow-hidden',
-                  col <= 1 ? 'sticky z-10 bg-background group-hover/row:bg-muted/20' : 'relative',
-                  isActive && !isEditing && 'ring-2 ring-inset ring-primary'
+                  hasEditor || spillCount > 0 ? 'overflow-visible' : 'overflow-hidden',
+                  col <= 1 ? 'sticky z-10' : 'relative',
+                  col <= 1 &&
+                    (isRowHeader ? 'bg-primary/10' : 'bg-background group-hover/row:bg-muted/20'),
+                  isActive && !hasEditor && 'ring-2 ring-inset ring-primary'
                 )}
                 style={col === 0
                   ? 'left: 0'
@@ -259,10 +273,10 @@
                 <div
                   class={cn(
                     'flex h-full items-center gap-1 overflow-hidden whitespace-nowrap px-2',
-                    (isEditing || spillCount > 0) && 'absolute inset-y-0 left-0 w-max',
-                    isEditing && 'z-30 overflow-visible px-0'
+                    (hasEditor || spillCount > 0) && 'absolute inset-y-0 left-0 w-max',
+                    hasEditor && 'z-30 overflow-visible px-0'
                   )}
-                  use:spill={spillCount}
+                  use:spill={{ count: spillCount, sticky: col <= 1 }}
                 >
                   <EntityGridCell
                     {entity}
@@ -273,7 +287,7 @@
                     covered={cells[col].covered}
                     refOptions={refEntities[column.entityType || ''] || []}
                     href={entityHref(entity)}
-                    onCommit={onCellCommit}
+                    onCommit={(raw, move) => commitCell(row, col, raw, move)}
                     onCancel={() => {
                       editing = false;
                       focusActiveCell();
