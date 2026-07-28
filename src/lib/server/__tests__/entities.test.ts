@@ -667,7 +667,9 @@ describe('duplicateEntity', () => {
     const files = fs.readdirSync(path.join(tmpDir, 'locations')).sort();
     expect(files).toEqual(['hollow-keep-copy.md', 'hollow-keep.md']);
     expect(getEntity(TEST_PROJECT_ID, tmpDir, 'location', original.id)?.name).toBe('Hollow Keep');
-    expect(getEntity(TEST_PROJECT_ID, tmpDir, 'location', copy.id)?.name).toBe('Hollow Keep (Copy)');
+    expect(getEntity(TEST_PROJECT_ID, tmpDir, 'location', copy.id)?.name).toBe(
+      'Hollow Keep (Copy)'
+    );
   });
 
   it('does not collide when duplicated twice', () => {
