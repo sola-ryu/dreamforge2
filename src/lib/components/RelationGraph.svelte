@@ -12,13 +12,8 @@
     SelectValue
   } from '$lib/components/ui/select';
 
-  // cytoscape-fcose/avsdf are UMD/CJS modules; Vite's dev (esbuild) and prod
-  // (Rollup) CJS interop can disagree on whether the default export is the
-  // factory function itself or a { default: fn } wrapper. Production build
-  // resolving the wrapper meant cytoscape.use() registered a broken
-  // extension, which only surfaced once the layout ran (dev worked fine).
-  cytoscape.use((fcose as unknown as { default?: typeof fcose }).default ?? fcose);
-  cytoscape.use((avsdf as unknown as { default?: typeof avsdf }).default ?? avsdf);
+  cytoscape.use(fcose);
+  cytoscape.use(avsdf);
 
   let {
     entities = [],
@@ -217,7 +212,10 @@
               relationDash[ele.data('relationType')] ? 'dashed' : 'solid',
             'line-dash-pattern': (ele: any) => {
               const d = relationDash[ele.data('relationType')];
-              return d || '';
+              // line-dash-pattern is typed as t.numbers, which rejects an empty
+              // string ('' splits to [''], an unparseable "number"); [1, 0] is a
+              // solid line with no visible gap.
+              return d ? d.split(' ').map(Number) : [1, 0];
             }
           }
         }
