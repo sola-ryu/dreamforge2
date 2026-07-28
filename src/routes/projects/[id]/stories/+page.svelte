@@ -11,6 +11,11 @@
   let showCreate = $state(false);
   let title = $state('');
   let description = $state('');
+
+  // The command palette links here with ?new=1 to jump straight into creation.
+  $effect(() => {
+    if (page.url.searchParams.get('new')) showCreate = true;
+  });
 </script>
 
 <svelte:head>

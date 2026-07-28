@@ -39,6 +39,11 @@
 
   const LAYOUT_KEY = $derived(`entity-layout-${page.data?.entityType || 'entity'}`);
 
+  // The command palette links here with ?new=1 to jump straight into creation.
+  $effect(() => {
+    if (page.url.searchParams.get('new')) showCreate = true;
+  });
+
   $effect(() => {
     const stored = localStorage.getItem(LAYOUT_KEY);
     if (stored === 'table' || stored === 'cards') layout = stored;

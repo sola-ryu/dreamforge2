@@ -3,6 +3,7 @@
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import { getTheme } from '$lib/stores/theme.svelte';
   import { getZenMode } from '$lib/stores/zenMode.svelte';
+  import { getPalette } from '$lib/stores/palette.svelte';
   import * as Sidebar from '$lib/components/ui/sidebar/index.js';
   import {
     House,
@@ -15,11 +16,14 @@
     LayoutDashboard,
     BookOpenText,
     GitBranch,
-    Scan
+    Scan,
+    Sparkles,
+    Command
   } from '@lucide/svelte';
 
   const theme = getTheme();
   const zen = getZenMode();
+  const palette = getPalette();
 </script>
 
 <Sidebar.Root collapsible="icon">
@@ -35,6 +39,17 @@
       <Sidebar.GroupLabel>General</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <Sidebar.Menu>
+          <Sidebar.MenuItem>
+            <Sidebar.MenuButton onclick={() => palette.toggle()} tooltipContent="Command Palette">
+              <Command class="h-4 w-4" />
+              <span>Quick Open</span>
+              <kbd
+                class="ml-auto rounded border border-border px-1 text-[10px] text-muted-foreground"
+                >⌘K</kbd
+              >
+            </Sidebar.MenuButton>
+          </Sidebar.MenuItem>
+
           <Sidebar.MenuItem>
             <Sidebar.MenuButton
               isActive={page.url.pathname === '/projects'}
@@ -77,6 +92,17 @@
                   <a href={`/projects/${page.params.id}/stories`} {...props}>
                     <BookOpenText class="h-4 w-4" />
                     <span>Stories</span>
+                  </a>
+                {/snippet}
+              </Sidebar.MenuButton>
+            </Sidebar.MenuItem>
+
+            <Sidebar.MenuItem>
+              <Sidebar.MenuButton tooltipContent="Plots">
+                {#snippet child({ props })}
+                  <a href={`/projects/${page.params.id}/plots`} {...props}>
+                    <Sparkles class="h-4 w-4" />
+                    <span>Plots</span>
                   </a>
                 {/snippet}
               </Sidebar.MenuButton>

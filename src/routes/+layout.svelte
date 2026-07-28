@@ -3,12 +3,15 @@
   import { page } from '$app/state';
   import { provideTheme } from '$lib/stores/theme.svelte';
   import { provideZenMode } from '$lib/stores/zenMode.svelte';
+  import { providePalette } from '$lib/stores/palette.svelte';
   import ZenMode from '$lib/components/ZenMode.svelte';
   import Sidebar from '$lib/components/Sidebar.svelte';
+  import CommandPalette from '$lib/components/CommandPalette.svelte';
   import * as SidebarUI from '$lib/components/ui/sidebar/index.js';
 
   const theme = provideTheme();
   const zen = provideZenMode();
+  providePalette();
 
   let { children } = $props();
 
@@ -20,6 +23,9 @@
 </script>
 
 <ZenMode />
+{#if page.data?.user}
+  <CommandPalette />
+{/if}
 <div class="flex h-screen overflow-hidden" class:zen-mode={zen.active}>
   {#if hasSidebar}
     <SidebarUI.Provider>
