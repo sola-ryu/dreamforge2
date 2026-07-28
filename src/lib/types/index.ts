@@ -17,13 +17,7 @@ export interface Project {
 }
 
 export type EntityType =
-  | 'character'
-  | 'organization'
-  | 'location'
-  | 'culture'
-  | 'species'
-  | 'item'
-  | 'note';
+  'character' | 'organization' | 'location' | 'culture' | 'species' | 'item' | 'note';
 
 export interface EntityIndex {
   id: string;

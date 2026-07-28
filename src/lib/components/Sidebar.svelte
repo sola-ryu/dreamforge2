@@ -5,7 +5,7 @@
   import { getZenMode } from '$lib/stores/zenMode.svelte';
   import * as Sidebar from '$lib/components/ui/sidebar/index.js';
   import {
-    Home,
+    House,
     BookMarked,
     SunMoon,
     LogOut,
@@ -42,7 +42,7 @@
             >
               {#snippet child({ props })}
                 <a href="/projects" {...props}>
-                  <Home class="h-4 w-4" />
+                  <House class="h-4 w-4" />
                   <span>Projects</span>
                 </a>
               {/snippet}

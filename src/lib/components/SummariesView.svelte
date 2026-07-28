@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { GripVertical, FileText, Circle, CheckCircle, Clock } from '@lucide/svelte';
+  import { GripVertical, FileText, Circle, CircleCheckBig, Clock } from '@lucide/svelte';
 
   interface SceneSummary {
     id: string;
@@ -111,7 +111,7 @@
                       {#if pt.type === 'setup'}
                         <Circle class="h-2.5 w-2.5" />
                       {:else if pt.type === 'payoff'}
-                        <CheckCircle class="h-2.5 w-2.5" />
+                        <CircleCheckBig class="h-2.5 w-2.5" />
                       {:else}
                         <Clock class="h-2.5 w-2.5" />
                       {/if}

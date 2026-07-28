@@ -14,14 +14,7 @@ export interface CustomFieldDef {
   key: string;
   label: string;
   fieldType:
-    | 'text'
-    | 'textarea'
-    | 'number'
-    | 'tags'
-    | 'markdown'
-    | 'entityRef'
-    | 'boolean'
-    | 'date';
+    'text' | 'textarea' | 'number' | 'tags' | 'markdown' | 'entityRef' | 'boolean' | 'date';
   refEntityType: EntityType | null;
   placeholder: string | null;
   required: boolean;
