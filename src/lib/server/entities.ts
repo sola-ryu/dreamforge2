@@ -291,6 +291,34 @@ export function updateEntity(
   } as EntityData;
 }
 
+/**
+ * Copies an entity's body, tags, and every custom field into a new one named
+ * "<name> (Copy)". Relations pointing at the original are deliberately not
+ * copied — a duplicate is a starting point, not a second identity.
+ */
+export function duplicateEntity(
+  projectId: string,
+  projectPath: string,
+  type: EntityType,
+  id: string
+): EntityData | null {
+  const source = getEntity(projectId, projectPath, type, id);
+  if (!source) return null;
+
+  const carried = Object.fromEntries(
+    Object.entries(source.frontmatter).filter(
+      ([key]) => !['id', 'name', 'slug', 'type', 'created', 'modified', 'tags'].includes(key)
+    )
+  );
+
+  return createEntity(projectId, projectPath, type, {
+    ...carried,
+    name: `${source.name} (Copy)`,
+    body: source.body,
+    tags: [...source.tags]
+  });
+}
+
 export function deleteEntity(
   projectId: string,
   projectPath: string,

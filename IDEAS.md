@@ -105,13 +105,6 @@ Stored as JSON in `templates/entity-schemas/`:
 - Re-map entity IDs if collisions occur
 - Retain all frontmatter, tags, images
 
-### Duplicate within a project
-
-- "Duplicate" button on entity detail page
-- Creates a copy: `name (Copy)` with new ID
-- Duplicates all fields, body, tags, image references
-- Relations targeting the original are NOT copied (user can re-link)
-
 ## Real-Time Collaboration
 
 **Files:** `src/lib/server/collab.ts`, `src/lib/components/CollabCursor.svelte`

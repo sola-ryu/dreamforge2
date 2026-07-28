@@ -1,5 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { getEntity, updateEntity, searchEntities } from '$lib/server/entities';
+import { getEntity, updateEntity, searchEntities, duplicateEntity } from '$lib/server/entities';
 import { routeToEntityType } from '$lib/utils/entityTypes';
 import { addBookmark, removeBookmark, isBookmarked } from '$lib/server/bookmarks';
 import { noteToScene } from '$lib/server/conversion';
@@ -123,6 +123,21 @@ export const actions = {
     }
     updateEntity(params.id, project.dataPath, entityType, params.entityId, data);
     return { success: true };
+  },
+
+  duplicate: async ({ params, locals }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
+    const entityType = routeToEntityType(params.type);
+    if (!entityType) return fail(400, { error: 'Invalid entity type' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
+
+    const copy = duplicateEntity(params.id, project.dataPath, entityType, params.entityId);
+    if (!copy) return fail(500, { error: 'Duplicate failed' });
+
+    throw redirect(303, `/projects/${params.id}/${params.type}/${copy.id}`);
   },
 
   delete: async ({ params, locals }) => {

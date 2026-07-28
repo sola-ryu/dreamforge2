@@ -20,6 +20,7 @@ import {
   createEntity,
   updateEntity,
   deleteEntity,
+  duplicateEntity,
   generateUniqueSlug,
   resolveEntityPath,
   searchEntities,
@@ -632,5 +633,53 @@ describe('syncEntityToDb', () => {
     const results = searchEntities(TEST_PROJECT_ID, 'Updated Name');
     expect(results).toHaveLength(1);
     expect(results[0].status).toBe('complete');
+  });
+});
+
+describe('duplicateEntity', () => {
+  it('returns null for an unknown entity', () => {
+    expect(duplicateEntity(TEST_PROJECT_ID, tmpDir, 'character', 'nope')).toBeNull();
+  });
+
+  it('copies the body, tags, status, and custom fields under a new id and name', () => {
+    const original = createEntity(TEST_PROJECT_ID, tmpDir, 'character', {
+      name: 'Holly',
+      body: 'A long backstory.',
+      tags: ['rebel', 'pilot'],
+      motivations: 'Find her brother'
+    });
+    updateEntity(TEST_PROJECT_ID, tmpDir, 'character', original.id, { status: 'wip' });
+
+    const copy = duplicateEntity(TEST_PROJECT_ID, tmpDir, 'character', original.id)!;
+
+    expect(copy.id).not.toBe(original.id);
+    expect(copy.name).toBe('Holly (Copy)');
+    expect(copy.body.trim()).toBe('A long backstory.');
+    expect(copy.tags).toEqual(['rebel', 'pilot']);
+    expect(copy.frontmatter.motivations).toBe('Find her brother');
+    expect(copy.frontmatter.status).toBe('wip');
+  });
+
+  it('writes the copy to its own file and leaves the original intact', () => {
+    const original = createEntity(TEST_PROJECT_ID, tmpDir, 'location', { name: 'Hollow Keep' });
+    const copy = duplicateEntity(TEST_PROJECT_ID, tmpDir, 'location', original.id)!;
+
+    const files = fs.readdirSync(path.join(tmpDir, 'locations')).sort();
+    expect(files).toEqual(['hollow-keep-copy.md', 'hollow-keep.md']);
+    expect(getEntity(TEST_PROJECT_ID, tmpDir, 'location', original.id)?.name).toBe('Hollow Keep');
+    expect(getEntity(TEST_PROJECT_ID, tmpDir, 'location', copy.id)?.name).toBe('Hollow Keep (Copy)');
+  });
+
+  it('does not collide when duplicated twice', () => {
+    const original = createEntity(TEST_PROJECT_ID, tmpDir, 'item', { name: 'Lantern' });
+    const first = duplicateEntity(TEST_PROJECT_ID, tmpDir, 'item', original.id)!;
+    const second = duplicateEntity(TEST_PROJECT_ID, tmpDir, 'item', original.id)!;
+
+    expect(first.id).not.toBe(second.id);
+    expect(fs.readdirSync(path.join(tmpDir, 'items')).sort()).toEqual([
+      'lantern-copy-1.md',
+      'lantern-copy.md',
+      'lantern.md'
+    ]);
   });
 });

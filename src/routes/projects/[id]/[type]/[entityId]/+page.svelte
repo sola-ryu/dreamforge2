@@ -19,7 +19,8 @@
     Link2,
     Unlink,
     ImagePlus,
-    FileText
+    FileText,
+    Copy
   } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
@@ -140,6 +141,12 @@
             </Button>
           </form>
           {#if canEdit}
+            <form method="POST" action="?/duplicate" use:enhance>
+              <Button type="submit" variant="outline" title="Duplicate this entity">
+                <Copy class="h-4 w-4" />
+                Duplicate
+              </Button>
+            </form>
             <Button onclick={toggleEdit}>Edit</Button>
           {/if}
         {/if}
