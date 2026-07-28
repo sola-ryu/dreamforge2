@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { generateId, isSafePathSegment } from '$lib/utils';
 
-interface StoryMeta {
+export interface StoryMeta {
   id: string;
   projectId: string;
   title: string;
@@ -12,7 +12,7 @@ interface StoryMeta {
   modifiedAt: string;
 }
 
-interface ChapterMeta {
+export interface ChapterMeta {
   id: string;
   storyId: string;
   title: string;
@@ -26,7 +26,7 @@ interface PlotThreadData {
   type: 'setup' | 'payoff' | 'ongoing';
 }
 
-interface SceneData {
+export interface SceneData {
   id: string;
   chapterId: string;
   title: string | null;
@@ -49,7 +49,10 @@ function assertSafeId(id: string): void {
   if (!isSafePathSegment(id)) throw new Error(`Unsafe id: ${JSON.stringify(id)}`);
 }
 
-function getStoryDir(projectPath: string, storyId: string): string {
+// Exported so trash.ts can compute the same live-location paths when soft-deleting
+// (source) and restoring (destination) stories/chapters/scenes, without duplicating
+// the assertSafeId guard.
+export function getStoryDir(projectPath: string, storyId: string): string {
   assertSafeId(storyId);
   return path.join(projectPath, 'stories', storyId);
 }
@@ -58,16 +61,16 @@ function getChaptersDir(projectPath: string, storyId: string): string {
   return path.join(getStoryDir(projectPath, storyId), 'chapters');
 }
 
-function getChapterDir(projectPath: string, storyId: string, chapterId: string): string {
+export function getChapterDir(projectPath: string, storyId: string, chapterId: string): string {
   assertSafeId(chapterId);
   return path.join(getChaptersDir(projectPath, storyId), chapterId);
 }
 
-function getScenesDir(projectPath: string, storyId: string, chapterId: string): string {
+export function getScenesDir(projectPath: string, storyId: string, chapterId: string): string {
   return path.join(getChapterDir(projectPath, storyId, chapterId), 'scenes');
 }
 
-function getScenePath(
+export function getScenePath(
   projectPath: string,
   storyId: string,
   chapterId: string,
@@ -121,15 +124,19 @@ export function listStories(projectPath: string): StoryMeta[] {
     .sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
-export function getStoryMeta(projectPath: string, storyId: string): StoryMeta | null {
-  if (!isSafePathSegment(storyId)) return null;
-  const filePath = path.join(getStoryDir(projectPath, storyId), 'story.json');
+// Reads story.json from an arbitrary path, so trash.ts can read a trashed story's
+// metadata without knowing anything about the live `stories/<id>` layout.
+export function readStoryFile(filePath: string): StoryMeta | null {
   try {
-    const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-    return data;
+    return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
   } catch {
     return null;
   }
+}
+
+export function getStoryMeta(projectPath: string, storyId: string): StoryMeta | null {
+  if (!isSafePathSegment(storyId)) return null;
+  return readStoryFile(path.join(getStoryDir(projectPath, storyId), 'story.json'));
 }
 
 export function createStory(projectPath: string, title: string, description?: string): StoryMeta {
@@ -171,14 +178,6 @@ export function updateStory(
   return updated;
 }
 
-export function deleteStory(projectPath: string, storyId: string): boolean {
-  if (!isSafePathSegment(storyId)) return false;
-  const dir = getStoryDir(projectPath, storyId);
-  if (!fs.existsSync(dir)) return false;
-  fs.rmSync(dir, { recursive: true, force: true });
-  return true;
-}
-
 // --- Chapters ---
 
 export function listChapters(projectPath: string, storyId: string): ChapterMeta[] {
@@ -200,13 +199,11 @@ export function listChapters(projectPath: string, storyId: string): ChapterMeta[
     .sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
-export function getChapterMeta(
-  projectPath: string,
-  storyId: string,
-  chapterId: string
-): ChapterMeta | null {
-  if (!isSafePathSegment(storyId) || !isSafePathSegment(chapterId)) return null;
-  const filePath = path.join(getChapterDir(projectPath, storyId, chapterId), 'chapter.md');
+// Reads chapter.md from an arbitrary path, so trash.ts can read a trashed chapter's
+// metadata without knowing anything about the live `stories/<id>/chapters/<id>`
+// layout. storyId isn't recoverable from the file itself, so it's a required param
+// purely to populate the returned ChapterMeta — pass '' where it isn't known/needed.
+export function readChapterFile(filePath: string, chapterId: string): ChapterMeta | null {
   try {
     const content = fs.readFileSync(filePath, 'utf-8');
     const match = content.match(/^---\n([\s\S]*?)\n---\n/);
@@ -220,7 +217,7 @@ export function getChapterMeta(
     }
     return {
       id: meta.id || chapterId,
-      storyId,
+      storyId: meta.storyId || '',
       title: meta.title || 'Untitled',
       sortOrder: parseInt(meta.sortOrder || '0', 10),
       createdAt: meta.createdAt || new Date().toISOString(),
@@ -229,6 +226,19 @@ export function getChapterMeta(
   } catch {
     return null;
   }
+}
+
+export function getChapterMeta(
+  projectPath: string,
+  storyId: string,
+  chapterId: string
+): ChapterMeta | null {
+  if (!isSafePathSegment(storyId) || !isSafePathSegment(chapterId)) return null;
+  const meta = readChapterFile(
+    path.join(getChapterDir(projectPath, storyId, chapterId), 'chapter.md'),
+    chapterId
+  );
+  return meta ? { ...meta, storyId } : null;
 }
 
 export function createChapter(projectPath: string, storyId: string, title: string): ChapterMeta {
@@ -275,15 +285,66 @@ export function updateChapter(
   return updated;
 }
 
-export function deleteChapter(projectPath: string, storyId: string, chapterId: string): boolean {
-  if (!isSafePathSegment(storyId) || !isSafePathSegment(chapterId)) return false;
-  const dir = getChapterDir(projectPath, storyId, chapterId);
-  if (!fs.existsSync(dir)) return false;
-  fs.rmSync(dir, { recursive: true, force: true });
-  return true;
-}
-
 // --- Scenes ---
+
+// Reads a scene .md file from an arbitrary path, so trash.ts can read a trashed
+// scene without knowing anything about the live
+// `stories/<id>/chapters/<id>/scenes/<id>.md` layout.
+export function readSceneFile(filePath: string, chapterId: string): SceneData | null {
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+    if (!match) return null;
+    const yaml = match[1];
+    const body = match[2].trim();
+    const lines = yaml.split('\n');
+    const meta: Record<string, unknown> = {};
+    for (const line of lines) {
+      const m = line.match(/^(\w+):\s*(.*)$/);
+      if (m) meta[m[1]] = unquoteYamlScalar(m[2]);
+    }
+
+    let participants: string[] = [];
+    if (meta.participants) {
+      try {
+        participants = JSON.parse(meta.participants as string);
+      } catch {
+        participants = ((meta.participants as string) || '')
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+      }
+    }
+
+    let plotThreads: PlotThreadData[] = [];
+    if (meta.plotThreads) {
+      try {
+        plotThreads = JSON.parse(meta.plotThreads as string);
+      } catch {
+        plotThreads = [];
+      }
+    }
+
+    return {
+      id: (meta.id as string) || path.basename(filePath, '.md'),
+      chapterId,
+      title: (meta.title as string) || null,
+      narrator: (meta.narrator as string) || null,
+      time: (meta.time as string) || null,
+      place: (meta.place as string) || null,
+      participants,
+      backgroundImage: (meta.backgroundImage as string) || null,
+      summary: (meta.summary as string) || null,
+      plotThreads,
+      sortOrder: parseInt((meta.sortOrder as string) || '0', 10),
+      body,
+      createdAt: (meta.createdAt as string) || new Date().toISOString(),
+      modifiedAt: (meta.modifiedAt as string) || new Date().toISOString()
+    };
+  } catch {
+    return null;
+  }
+}
 
 export function listScenes(projectPath: string, storyId: string, chapterId: string): SceneData[] {
   if (!isSafePathSegment(storyId) || !isSafePathSegment(chapterId)) return [];
@@ -293,62 +354,7 @@ export function listScenes(projectPath: string, storyId: string, chapterId: stri
   return fs
     .readdirSync(dir)
     .filter((f) => f.endsWith('.md'))
-    .map((f) => {
-      const filePath = path.join(dir, f);
-      try {
-        const content = fs.readFileSync(filePath, 'utf-8');
-        const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-        if (!match) return null;
-        const yaml = match[1];
-        const body = match[2].trim();
-        const lines = yaml.split('\n');
-        const meta: Record<string, unknown> = {};
-        for (const line of lines) {
-          const m = line.match(/^(\w+):\s*(.*)$/);
-          if (m) meta[m[1]] = unquoteYamlScalar(m[2]);
-        }
-
-        let participants: string[] = [];
-        if (meta.participants) {
-          try {
-            participants = JSON.parse(meta.participants as string);
-          } catch {
-            participants = ((meta.participants as string) || '')
-              .split(',')
-              .map((s) => s.trim())
-              .filter(Boolean);
-          }
-        }
-
-        let plotThreads: PlotThreadData[] = [];
-        if (meta.plotThreads) {
-          try {
-            plotThreads = JSON.parse(meta.plotThreads as string);
-          } catch {
-            plotThreads = [];
-          }
-        }
-
-        return {
-          id: (meta.id as string) || f.replace('.md', ''),
-          chapterId,
-          title: (meta.title as string) || null,
-          narrator: (meta.narrator as string) || null,
-          time: (meta.time as string) || null,
-          place: (meta.place as string) || null,
-          participants,
-          backgroundImage: (meta.backgroundImage as string) || null,
-          summary: (meta.summary as string) || null,
-          plotThreads,
-          sortOrder: parseInt((meta.sortOrder as string) || '0', 10),
-          body,
-          createdAt: (meta.createdAt as string) || new Date().toISOString(),
-          modifiedAt: (meta.modifiedAt as string) || new Date().toISOString()
-        };
-      } catch {
-        return null;
-      }
-    })
+    .map((f) => readSceneFile(path.join(dir, f), chapterId))
     .filter((s): s is SceneData => s !== null)
     .sort((a, b) => a.sortOrder - b.sortOrder);
 }
@@ -447,21 +453,6 @@ export function updateScene(
   fs.writeFileSync(filePath, content);
 
   return updated;
-}
-
-export function deleteScene(
-  projectPath: string,
-  storyId: string,
-  chapterId: string,
-  sceneId: string
-): boolean {
-  if (!isSafePathSegment(storyId) || !isSafePathSegment(chapterId) || !isSafePathSegment(sceneId)) {
-    return false;
-  }
-  const filePath = getScenePath(projectPath, storyId, chapterId, sceneId);
-  if (!fs.existsSync(filePath)) return false;
-  fs.unlinkSync(filePath);
-  return true;
 }
 
 export function reorderChapters(projectPath: string, storyId: string, chapterIds: string[]): void {

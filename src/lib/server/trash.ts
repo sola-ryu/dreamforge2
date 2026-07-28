@@ -14,7 +14,18 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { readMarkdownFile } from './markdown';
 import { ENTITY_DIRS, resolveEntityPath, generateUniqueSlug } from './entities';
 import { removeRelationsForEntity, restoreRelations, type RelationEntry } from './relations';
-import { generateId } from '$lib/utils';
+import {
+  getStoryDir,
+  getChapterDir,
+  getScenesDir,
+  getScenePath,
+  readStoryFile,
+  readChapterFile,
+  readSceneFile,
+  getStoryMeta,
+  getChapterMeta
+} from './stories';
+import { generateId, isSafePathSegment } from '$lib/utils';
 import type { EntityType } from '$lib/types';
 
 interface EntityTrashMetadata {
@@ -39,8 +50,17 @@ export interface TrashItem {
   name: string;
   body: string;
   frontmatter: Record<string, unknown>;
-  kind: 'entity' | 'image';
+  kind: 'entity' | 'image' | 'story' | 'chapter' | 'scene';
   metadata: Record<string, unknown> | null;
+}
+
+interface ChapterTrashMetadata {
+  storyId: string;
+}
+
+interface SceneTrashMetadata {
+  storyId: string;
+  chapterId: string;
 }
 
 function getEntityDir(projectPath: string, type: EntityType): string {
@@ -60,6 +80,18 @@ function getTrashEntityPath(projectPath: string, type: EntityType, id: string): 
 
 function getTrashImagePath(projectPath: string, filename: string): string {
   return path.join(getTrashDir(projectPath), 'images', filename);
+}
+
+function getTrashStoryPath(projectPath: string, storyId: string): string {
+  return path.join(getTrashDir(projectPath), 'stories', storyId);
+}
+
+function getTrashChapterPath(projectPath: string, chapterId: string): string {
+  return path.join(getTrashDir(projectPath), 'chapters', chapterId);
+}
+
+function getTrashScenePath(projectPath: string, sceneId: string): string {
+  return path.join(getTrashDir(projectPath), 'scenes', `${sceneId}.md`);
 }
 
 export function softDeleteEntity(
@@ -166,6 +198,172 @@ export function softDeleteEntity(
   };
 }
 
+export function softDeleteStory(
+  projectId: string,
+  projectPath: string,
+  storyId: string
+): TrashItem | null {
+  // getStoryDir throws on an unsafe id rather than returning null — the routes
+  // already validate before calling this, but guard here too since this is a
+  // library function other callers could reach directly.
+  if (!isSafePathSegment(storyId)) return null;
+
+  const sourcePath = getStoryDir(projectPath, storyId);
+  if (!fs.existsSync(sourcePath)) return null;
+
+  const meta = readStoryFile(path.join(sourcePath, 'story.json'));
+
+  const trashDir = path.join(getTrashDir(projectPath), 'stories');
+  const destPath = getTrashStoryPath(projectPath, storyId);
+  fs.mkdirSync(trashDir, { recursive: true });
+  fs.renameSync(sourcePath, destPath);
+
+  const now = new Date().toISOString();
+  const expiresAt = new Date(Date.now() + TRASH_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const trashId = generateId();
+
+  drizzleDb
+    .insert(trashTable)
+    .values({
+      id: trashId,
+      projectId,
+      entityId: storyId,
+      entityType: 'story',
+      originalPath: path.relative(projectPath, sourcePath),
+      deletedAt: now,
+      expiresAt,
+      kind: 'story',
+      metadata: null
+    })
+    .run();
+
+  return {
+    id: trashId,
+    projectId,
+    entityId: storyId,
+    entityType: 'story',
+    originalPath: path.relative(projectPath, sourcePath),
+    deletedAt: now,
+    expiresAt,
+    name: meta?.title || storyId,
+    body: meta?.description || '',
+    frontmatter: {},
+    kind: 'story',
+    metadata: null
+  };
+}
+
+export function softDeleteChapter(
+  projectId: string,
+  projectPath: string,
+  storyId: string,
+  chapterId: string
+): TrashItem | null {
+  if (!isSafePathSegment(storyId) || !isSafePathSegment(chapterId)) return null;
+
+  const sourcePath = getChapterDir(projectPath, storyId, chapterId);
+  if (!fs.existsSync(sourcePath)) return null;
+
+  const meta = readChapterFile(path.join(sourcePath, 'chapter.md'), chapterId);
+
+  const trashDir = path.join(getTrashDir(projectPath), 'chapters');
+  const destPath = getTrashChapterPath(projectPath, chapterId);
+  fs.mkdirSync(trashDir, { recursive: true });
+  fs.renameSync(sourcePath, destPath);
+
+  const metadata: ChapterTrashMetadata = { storyId };
+  const now = new Date().toISOString();
+  const expiresAt = new Date(Date.now() + TRASH_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const trashId = generateId();
+
+  drizzleDb
+    .insert(trashTable)
+    .values({
+      id: trashId,
+      projectId,
+      entityId: chapterId,
+      entityType: 'chapter',
+      originalPath: path.relative(projectPath, sourcePath),
+      deletedAt: now,
+      expiresAt,
+      kind: 'chapter',
+      metadata: JSON.stringify(metadata)
+    })
+    .run();
+
+  return {
+    id: trashId,
+    projectId,
+    entityId: chapterId,
+    entityType: 'chapter',
+    originalPath: path.relative(projectPath, sourcePath),
+    deletedAt: now,
+    expiresAt,
+    name: meta?.title || chapterId,
+    body: '',
+    frontmatter: {},
+    kind: 'chapter',
+    metadata: metadata as unknown as Record<string, unknown>
+  };
+}
+
+export function softDeleteScene(
+  projectId: string,
+  projectPath: string,
+  storyId: string,
+  chapterId: string,
+  sceneId: string
+): TrashItem | null {
+  if (!isSafePathSegment(storyId) || !isSafePathSegment(chapterId) || !isSafePathSegment(sceneId)) {
+    return null;
+  }
+
+  const sourcePath = getScenePath(projectPath, storyId, chapterId, sceneId);
+  if (!fs.existsSync(sourcePath)) return null;
+
+  const meta = readSceneFile(sourcePath, chapterId);
+
+  const trashDir = path.join(getTrashDir(projectPath), 'scenes');
+  const destPath = getTrashScenePath(projectPath, sceneId);
+  fs.mkdirSync(trashDir, { recursive: true });
+  fs.renameSync(sourcePath, destPath);
+
+  const metadata: SceneTrashMetadata = { storyId, chapterId };
+  const now = new Date().toISOString();
+  const expiresAt = new Date(Date.now() + TRASH_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const trashId = generateId();
+
+  drizzleDb
+    .insert(trashTable)
+    .values({
+      id: trashId,
+      projectId,
+      entityId: sceneId,
+      entityType: 'scene',
+      originalPath: path.relative(projectPath, sourcePath),
+      deletedAt: now,
+      expiresAt,
+      kind: 'scene',
+      metadata: JSON.stringify(metadata)
+    })
+    .run();
+
+  return {
+    id: trashId,
+    projectId,
+    entityId: sceneId,
+    entityType: 'scene',
+    originalPath: path.relative(projectPath, sourcePath),
+    deletedAt: now,
+    expiresAt,
+    name: meta?.title || 'Untitled Scene',
+    body: meta?.body || '',
+    frontmatter: {},
+    kind: 'scene',
+    metadata: metadata as unknown as Record<string, unknown>
+  };
+}
+
 export function softDeleteImage(
   projectId: string,
   projectPath: string,
@@ -243,6 +441,95 @@ export function softDeleteImage(
   };
 }
 
+function restoreStory(projectPath: string, item: typeof trashTable.$inferSelect): boolean {
+  const trashPath = getTrashStoryPath(projectPath, item.entityId);
+  if (!fs.existsSync(trashPath)) {
+    drizzleDb.delete(trashTable).where(eq(trashTable.id, item.id)).run();
+    return false;
+  }
+
+  const destPath = getStoryDir(projectPath, item.entityId);
+  if (fs.existsSync(destPath)) return false;
+
+  const parentDir = path.dirname(destPath);
+  if (!fs.existsSync(parentDir)) fs.mkdirSync(parentDir, { recursive: true });
+
+  fs.renameSync(trashPath, destPath);
+  drizzleDb.delete(trashTable).where(eq(trashTable.id, item.id)).run();
+  return true;
+}
+
+function restoreChapter(projectPath: string, item: typeof trashTable.$inferSelect): boolean {
+  const metadata = JSON.parse(item.metadata || '{}') as Partial<ChapterTrashMetadata>;
+  if (!metadata.storyId) return false;
+
+  const trashPath = getTrashChapterPath(projectPath, item.entityId);
+  if (!fs.existsSync(trashPath)) {
+    drizzleDb.delete(trashTable).where(eq(trashTable.id, item.id)).run();
+    return false;
+  }
+
+  // The parent story must still exist — restoring a chapter into a story that was
+  // itself deleted (and not yet, or never, restored) would orphan it. The trash
+  // item is left alone so it can be restored once the story comes back.
+  if (!getStoryMeta(projectPath, metadata.storyId)) return false;
+
+  const destPath = getChapterDir(projectPath, metadata.storyId, item.entityId);
+  if (fs.existsSync(destPath)) return false;
+
+  fs.renameSync(trashPath, destPath);
+  drizzleDb.delete(trashTable).where(eq(trashTable.id, item.id)).run();
+  return true;
+}
+
+function restoreScene(projectPath: string, item: typeof trashTable.$inferSelect): boolean {
+  const metadata = JSON.parse(item.metadata || '{}') as Partial<SceneTrashMetadata>;
+  if (!metadata.storyId || !metadata.chapterId) return false;
+
+  const trashPath = getTrashScenePath(projectPath, item.entityId);
+  if (!fs.existsSync(trashPath)) {
+    drizzleDb.delete(trashTable).where(eq(trashTable.id, item.id)).run();
+    return false;
+  }
+
+  // Same reasoning as restoreChapter: don't restore into a chapter that's gone.
+  if (!getChapterMeta(projectPath, metadata.storyId, metadata.chapterId)) return false;
+
+  const scenesDir = getScenesDir(projectPath, metadata.storyId, metadata.chapterId);
+  if (!fs.existsSync(scenesDir)) fs.mkdirSync(scenesDir, { recursive: true });
+
+  const destPath = getScenePath(projectPath, metadata.storyId, metadata.chapterId, item.entityId);
+  if (fs.existsSync(destPath)) return false;
+
+  fs.renameSync(trashPath, destPath);
+  drizzleDb.delete(trashTable).where(eq(trashTable.id, item.id)).run();
+  return true;
+}
+
+function permanentDeleteStory(projectPath: string, item: typeof trashTable.$inferSelect): boolean {
+  const trashPath = getTrashStoryPath(projectPath, item.entityId);
+  if (fs.existsSync(trashPath)) fs.rmSync(trashPath, { recursive: true, force: true });
+  drizzleDb.delete(trashTable).where(eq(trashTable.id, item.id)).run();
+  return true;
+}
+
+function permanentDeleteChapter(
+  projectPath: string,
+  item: typeof trashTable.$inferSelect
+): boolean {
+  const trashPath = getTrashChapterPath(projectPath, item.entityId);
+  if (fs.existsSync(trashPath)) fs.rmSync(trashPath, { recursive: true, force: true });
+  drizzleDb.delete(trashTable).where(eq(trashTable.id, item.id)).run();
+  return true;
+}
+
+function permanentDeleteScene(projectPath: string, item: typeof trashTable.$inferSelect): boolean {
+  const trashPath = getTrashScenePath(projectPath, item.entityId);
+  if (fs.existsSync(trashPath)) fs.unlinkSync(trashPath);
+  drizzleDb.delete(trashTable).where(eq(trashTable.id, item.id)).run();
+  return true;
+}
+
 function restoreImage(
   projectId: string,
   projectPath: string,
@@ -309,6 +596,15 @@ export function restoreEntity(projectId: string, projectPath: string, trashId: s
 
   if (item.kind === 'image') {
     return restoreImage(projectId, projectPath, item);
+  }
+  if (item.kind === 'story') {
+    return restoreStory(projectPath, item);
+  }
+  if (item.kind === 'chapter') {
+    return restoreChapter(projectPath, item);
+  }
+  if (item.kind === 'scene') {
+    return restoreScene(projectPath, item);
   }
 
   const trashPath = getTrashEntityPath(projectPath, item.entityType as EntityType, item.entityId);
@@ -396,6 +692,15 @@ export function permanentDeleteEntity(
   if (item.kind === 'image') {
     return permanentDeleteImage(projectId, projectPath, item);
   }
+  if (item.kind === 'story') {
+    return permanentDeleteStory(projectPath, item);
+  }
+  if (item.kind === 'chapter') {
+    return permanentDeleteChapter(projectPath, item);
+  }
+  if (item.kind === 'scene') {
+    return permanentDeleteScene(projectPath, item);
+  }
 
   const trashPath = getTrashEntityPath(projectPath, item.entityType as EntityType, item.entityId);
   if (fs.existsSync(trashPath)) {
@@ -431,6 +736,70 @@ export function listTrashItems(projectId: string, projectPath: string): TrashIte
         frontmatter: {},
         kind: 'image' as const,
         metadata
+      };
+    }
+
+    if (item.kind === 'story') {
+      const meta = readStoryFile(
+        path.join(getTrashStoryPath(projectPath, item.entityId), 'story.json')
+      );
+      return {
+        id: item.id,
+        projectId: item.projectId,
+        entityId: item.entityId,
+        entityType: 'story',
+        originalPath: item.originalPath,
+        deletedAt: item.deletedAt,
+        expiresAt: item.expiresAt,
+        name: meta?.title || item.entityId,
+        body: meta?.description || '',
+        frontmatter: {},
+        kind: 'story' as const,
+        metadata: null
+      };
+    }
+
+    if (item.kind === 'chapter') {
+      const metadata = JSON.parse(item.metadata || '{}') as Partial<ChapterTrashMetadata>;
+      const meta = readChapterFile(
+        path.join(getTrashChapterPath(projectPath, item.entityId), 'chapter.md'),
+        item.entityId
+      );
+      return {
+        id: item.id,
+        projectId: item.projectId,
+        entityId: item.entityId,
+        entityType: 'chapter',
+        originalPath: item.originalPath,
+        deletedAt: item.deletedAt,
+        expiresAt: item.expiresAt,
+        name: meta?.title || item.entityId,
+        body: '',
+        frontmatter: {},
+        kind: 'chapter' as const,
+        metadata: metadata as Record<string, unknown>
+      };
+    }
+
+    if (item.kind === 'scene') {
+      const metadata = JSON.parse(item.metadata || '{}') as Partial<SceneTrashMetadata>;
+      const meta = readSceneFile(
+        getTrashScenePath(projectPath, item.entityId),
+        metadata.chapterId || ''
+      );
+      return {
+        id: item.id,
+        projectId: item.projectId,
+        entityId: item.entityId,
+        entityType: 'scene',
+        originalPath: item.originalPath,
+        deletedAt: item.deletedAt,
+        expiresAt: item.expiresAt,
+        name: meta?.title || 'Untitled Scene',
+        body: meta?.body || '',
+        frontmatter: {},
+        kind: 'scene' as const,
+        metadata: metadata as Record<string, unknown>
       };
     }
 
@@ -471,18 +840,32 @@ export function purgeExpiredTrashItems(): void {
     const projectPath = projectPaths.get(item.projectId);
 
     if (projectPath) {
-      const trashPath =
-        item.kind === 'image'
-          ? getTrashImagePath(
-              projectPath,
-              (JSON.parse(item.metadata || '{}').filename as string) || item.entityId
-            )
-          : getTrashEntityPath(projectPath, item.entityType as EntityType, item.entityId);
-
       try {
-        if (fs.existsSync(trashPath)) fs.unlinkSync(trashPath);
+        if (item.kind === 'image') {
+          const trashPath = getTrashImagePath(
+            projectPath,
+            (JSON.parse(item.metadata || '{}').filename as string) || item.entityId
+          );
+          if (fs.existsSync(trashPath)) fs.unlinkSync(trashPath);
+        } else if (item.kind === 'story') {
+          const trashPath = getTrashStoryPath(projectPath, item.entityId);
+          if (fs.existsSync(trashPath)) fs.rmSync(trashPath, { recursive: true, force: true });
+        } else if (item.kind === 'chapter') {
+          const trashPath = getTrashChapterPath(projectPath, item.entityId);
+          if (fs.existsSync(trashPath)) fs.rmSync(trashPath, { recursive: true, force: true });
+        } else if (item.kind === 'scene') {
+          const trashPath = getTrashScenePath(projectPath, item.entityId);
+          if (fs.existsSync(trashPath)) fs.unlinkSync(trashPath);
+        } else {
+          const trashPath = getTrashEntityPath(
+            projectPath,
+            item.entityType as EntityType,
+            item.entityId
+          );
+          if (fs.existsSync(trashPath)) fs.unlinkSync(trashPath);
+        }
       } catch {
-        // Leave the DB row removal to proceed even if the file cannot be unlinked
+        // Leave the DB row removal to proceed even if the file cannot be removed
       }
     }
 

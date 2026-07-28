@@ -7,18 +7,15 @@ import {
   getStoryMeta,
   createStory,
   updateStory,
-  deleteStory,
   listChapters,
   getChapterMeta,
   createChapter,
   updateChapter,
-  deleteChapter,
   listScenes,
   getScene,
   findSceneById,
   createScene,
   updateScene,
-  deleteScene,
   reorderChapters,
   reorderScenes
 } from '../stories';
@@ -115,17 +112,8 @@ describe('updateStory', () => {
   });
 });
 
-describe('deleteStory', () => {
-  it('deletes story directory', () => {
-    const story = createStory(tmpDir, 'Delete Me');
-    expect(deleteStory(tmpDir, story.id)).toBe(true);
-    expect(fs.existsSync(path.join(tmpDir, 'stories', story.id))).toBe(false);
-  });
-
-  it('returns false for non-existent story', () => {
-    expect(deleteStory(tmpDir, 'nonexistent')).toBe(false);
-  });
-});
+// Story/chapter/scene deletion now goes through trash.ts's softDelete* functions
+// (which move rather than remove), tested in trash.test.ts.
 
 // --- Chapters ---
 
@@ -220,22 +208,6 @@ describe('updateChapter', () => {
     const reloaded = getChapterMeta(tmpDir, story.id, chapter.id);
     expect(reloaded!.title).toBe('Line one\nLine two');
     expect(reloaded!.sortOrder).toBe(3);
-  });
-});
-
-describe('deleteChapter', () => {
-  it('deletes chapter directory', () => {
-    const story = createStory(tmpDir, 'Story');
-    const chapter = createChapter(tmpDir, story.id, 'Delete Me');
-    expect(deleteChapter(tmpDir, story.id, chapter.id)).toBe(true);
-    expect(fs.existsSync(path.join(tmpDir, 'stories', story.id, 'chapters', chapter.id))).toBe(
-      false
-    );
-  });
-
-  it('returns false for non-existent chapter', () => {
-    const story = createStory(tmpDir, 'Story');
-    expect(deleteChapter(tmpDir, story.id, 'nonexistent')).toBe(false);
   });
 });
 
@@ -392,32 +364,6 @@ describe('updateScene', () => {
   });
 });
 
-describe('deleteScene', () => {
-  it('deletes a scene file', () => {
-    const story = createStory(tmpDir, 'Story');
-    const chapter = createChapter(tmpDir, story.id, 'Ch 1');
-    const scene = createScene(tmpDir, story.id, chapter.id, 'Delete Me');
-    const deleted = deleteScene(tmpDir, story.id, chapter.id, scene.id);
-    expect(deleted).toBe(true);
-    const filePath = path.join(
-      tmpDir,
-      'stories',
-      story.id,
-      'chapters',
-      chapter.id,
-      'scenes',
-      `${scene.id}.md`
-    );
-    expect(fs.existsSync(filePath)).toBe(false);
-  });
-
-  it('returns false for non-existent scene', () => {
-    const story = createStory(tmpDir, 'Story');
-    const chapter = createChapter(tmpDir, story.id, 'Ch 1');
-    expect(deleteScene(tmpDir, story.id, chapter.id, 'nonexistent')).toBe(false);
-  });
-});
-
 // --- Reordering ---
 
 describe('reorderChapters', () => {
@@ -454,27 +400,6 @@ describe('reorderScenes', () => {
 });
 
 describe('path traversal guards', () => {
-  it('deleteStory refuses ids that escape the stories directory', () => {
-    const victim = fs.mkdtempSync(path.join(os.tmpdir(), 'df-victim-'));
-    fs.writeFileSync(path.join(victim, 'keep.txt'), 'important');
-
-    const escape = path.relative(path.join(tmpDir, 'stories'), victim);
-    expect(deleteStory(tmpDir, escape)).toBe(false);
-    expect(fs.existsSync(path.join(victim, 'keep.txt'))).toBe(true);
-
-    fs.rmSync(victim, { recursive: true, force: true });
-  });
-
-  it('deleteScene refuses ids that escape the scenes directory', () => {
-    const story = createStory(tmpDir, 'S');
-    const chapter = createChapter(tmpDir, story.id, 'C');
-    const outside = path.join(tmpDir, 'outside.md');
-    fs.writeFileSync(outside, 'keep');
-
-    expect(deleteScene(tmpDir, story.id, chapter.id, '../../../../outside')).toBe(false);
-    expect(fs.existsSync(outside)).toBe(true);
-  });
-
   it('read helpers return empty results for unsafe ids', () => {
     expect(getStoryMeta(tmpDir, '../../../etc')).toBeNull();
     expect(listChapters(tmpDir, '..')).toEqual([]);

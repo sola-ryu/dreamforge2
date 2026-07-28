@@ -3,15 +3,14 @@ import {
   getStoryMeta,
   listChapters,
   createChapter,
-  deleteChapter,
   listScenes,
   createScene,
   updateScene,
-  deleteScene,
   reorderChapters,
   reorderScenes,
   updateStory
 } from '$lib/server/stories';
+import { softDeleteChapter, softDeleteScene } from '$lib/server/trash';
 import { searchEntities } from '$lib/server/entities';
 import { sceneToNote } from '$lib/server/conversion';
 import { getProjectAccess } from '$lib/server/members';
@@ -88,8 +87,9 @@ export const actions = {
     const form = await request.formData();
     const chapterId = form.get('chapterId') as string;
     if (!isSafePathSegment(chapterId)) return fail(400, { error: 'Invalid chapter ID' });
-    deleteChapter(project.dataPath, params.storyId, chapterId);
-    return { success: true };
+    const trashItem = softDeleteChapter(params.id, project.dataPath, params.storyId, chapterId);
+    if (!trashItem) return fail(404, { error: 'Chapter not found' });
+    return { success: true, trashItem };
   },
 
   createScene: async ({ params, locals, request }) => {
@@ -142,8 +142,15 @@ export const actions = {
     if (!isSafePathSegment(chapterId) || !isSafePathSegment(sceneId)) {
       return fail(400, { error: 'Invalid chapter or scene ID' });
     }
-    deleteScene(project.dataPath, params.storyId, chapterId, sceneId);
-    return { success: true };
+    const trashItem = softDeleteScene(
+      params.id,
+      project.dataPath,
+      params.storyId,
+      chapterId,
+      sceneId
+    );
+    if (!trashItem) return fail(404, { error: 'Scene not found' });
+    return { success: true, trashItem };
   },
 
   reorderChapters: async ({ params, locals, request }) => {

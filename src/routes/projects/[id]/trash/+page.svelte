@@ -10,9 +10,31 @@
   import { Button } from '$lib/components/ui/button';
   import { Badge } from '$lib/components/ui/badge';
 
+  const KIND_LABELS: Record<string, string> = {
+    image: 'Image',
+    story: 'Story',
+    chapter: 'Chapter',
+    scene: 'Scene'
+  };
+
+  function itemLabel(item: any): string {
+    return (
+      KIND_LABELS[item.entityType] ||
+      ENTITY_LABELS[item.entityType as EntityType] ||
+      item.entityType
+    );
+  }
+
   function goToEntity(item: any) {
     if (item.entityType === 'image') {
       goto(`/projects/${page.params.id}/images/${item.entityId}`);
+    } else if (item.entityType === 'story') {
+      goto(`/projects/${page.params.id}/stories/${item.entityId}`);
+    } else if (item.entityType === 'chapter' || item.entityType === 'scene') {
+      // Chapters and scenes are shown inline within their story page, not at a
+      // route of their own.
+      const storyId = item.metadata?.storyId;
+      if (storyId) goto(`/projects/${page.params.id}/stories/${storyId}`);
     } else {
       const route = entityTypeToRoute(item.entityType);
       goto(`/projects/${page.params.id}/${route}/${item.entityId}`);
@@ -37,7 +59,7 @@
       <div>
         <h1 class="text-2xl font-bold">Trash</h1>
         <p class="text-sm text-muted-foreground">
-          Deleted entities are stored here for 30 days before automatic permanent deletion.
+          Deleted content is stored here for 30 days before automatic permanent deletion.
         </p>
       </div>
       {#if (page.data?.items || []).length > 0}
@@ -69,11 +91,7 @@
                 >
                   {item.name}
                 </button>
-                <Badge variant="secondary">
-                  {item.entityType === 'image'
-                    ? 'Image'
-                    : ENTITY_LABELS[item.entityType as EntityType] || item.entityType}
-                </Badge>
+                <Badge variant="secondary">{itemLabel(item)}</Badge>
               </div>
               <p class="mt-1 text-xs text-muted-foreground">
                 Deleted {formatDate(item.deletedAt)}

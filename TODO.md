@@ -30,24 +30,6 @@ permanently empty. Only `linkScene` and `reorderBeats` exist.
 
 ---
 
-## 5. Stories / chapters / scenes are deleted permanently
-
-**Status:** Entities go to `.trash` with a 30-day TTL and a restore UI. Stories, chapters,
-and scenes call `fs.rmSync` / `fs.unlinkSync` directly — one misclick is unrecoverable.
-
-**Files:** `src/lib/server/stories.ts`, `src/lib/server/trash.ts`
-
-**Steps:**
-
-1. Add `kind: 'story' | 'chapter' | 'scene'` to the trash `kind` column (no migration
-   needed, it is a free-text column with a default).
-2. Move the directory/file into `.trash/stories/<id>/` instead of removing it, and insert
-   a trash row with the story/chapter path recorded in `metadata`.
-3. Extend `restoreEntity` and `permanentDeleteEntity` in `trash.ts` with the new kinds,
-   and render them in `trash/+page.svelte`.
-
----
-
 ## 10. Mentions are not persisted as links
 
 **Status:** `IDEAS.md` specifies mentions should round-trip through Markdown as

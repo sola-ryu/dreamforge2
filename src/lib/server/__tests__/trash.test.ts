@@ -15,8 +15,26 @@ vi.mock('../db', () => {
 
 import { migrate } from '../migrate';
 import { createEntity, syncEntityToDb } from '../entities';
-import { softDeleteEntity, restoreEntity } from '../trash';
+import {
+  softDeleteEntity,
+  restoreEntity,
+  softDeleteStory,
+  softDeleteChapter,
+  softDeleteScene,
+  permanentDeleteEntity,
+  listTrashItems
+} from '../trash';
 import { loadRelations, addRelation } from '../relations';
+import {
+  createStory,
+  createChapter,
+  createScene,
+  getStoryMeta,
+  getChapterMeta,
+  getScene,
+  listChapters,
+  listScenes
+} from '../stories';
 import { generateId } from '$lib/utils';
 
 let tmpDir: string;
@@ -171,5 +189,210 @@ describe('softDeleteEntity / restoreEntity relation and link cleanup', () => {
         `SELECT COUNT(*) c FROM image_entity_links WHERE entity_id = '${a.id}' AND project_id = '${projectId}'`
       )
     ).toBe(1);
+  });
+});
+
+describe('softDeleteStory / restoreEntity / permanentDeleteEntity for stories', () => {
+  it('moves the story directory into trash and removes it from its live location', () => {
+    const story = createStory(tmpDir, 'My Story', 'A description');
+
+    const trashItem = softDeleteStory(projectId, tmpDir, story.id);
+    expect(trashItem).not.toBeNull();
+    expect(trashItem!.kind).toBe('story');
+    expect(trashItem!.name).toBe('My Story');
+    expect(trashItem!.body).toBe('A description');
+
+    expect(getStoryMeta(tmpDir, story.id)).toBeNull();
+    expect(fs.existsSync(path.join(tmpDir, '.trash', 'stories', story.id))).toBe(true);
+  });
+
+  it('returns null for a non-existent story', () => {
+    expect(softDeleteStory(projectId, tmpDir, 'nonexistent')).toBeNull();
+  });
+
+  it('restores a trashed story back to its live location', () => {
+    const story = createStory(tmpDir, 'Restore Me');
+    const trashItem = softDeleteStory(projectId, tmpDir, story.id);
+
+    const restored = restoreEntity(projectId, tmpDir, trashItem!.id);
+    expect(restored).toBe(true);
+
+    const meta = getStoryMeta(tmpDir, story.id);
+    expect(meta).not.toBeNull();
+    expect(meta!.title).toBe('Restore Me');
+    expect(fs.existsSync(path.join(tmpDir, '.trash', 'stories', story.id))).toBe(false);
+  });
+
+  it('permanently deletes a trashed story directory', () => {
+    const story = createStory(tmpDir, 'Gone Forever');
+    const trashItem = softDeleteStory(projectId, tmpDir, story.id);
+
+    const deleted = permanentDeleteEntity(projectId, tmpDir, trashItem!.id);
+    expect(deleted).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.trash', 'stories', story.id))).toBe(false);
+    expect(listTrashItems(projectId, tmpDir)).toHaveLength(0);
+  });
+
+  it('preserves chapters and scenes nested inside a trashed story', () => {
+    const story = createStory(tmpDir, 'Story With Content');
+    const chapter = createChapter(tmpDir, story.id, 'Chapter 1');
+    createScene(tmpDir, story.id, chapter.id, 'Scene 1');
+
+    const trashItem = softDeleteStory(projectId, tmpDir, story.id);
+    restoreEntity(projectId, tmpDir, trashItem!.id);
+
+    const chapters = listChapters(tmpDir, story.id);
+    expect(chapters).toHaveLength(1);
+    expect(chapters[0].title).toBe('Chapter 1');
+    expect(listScenes(tmpDir, story.id, chapter.id)).toHaveLength(1);
+  });
+});
+
+describe('softDeleteChapter / restoreEntity / permanentDeleteEntity for chapters', () => {
+  it('moves the chapter directory into trash and removes it from its live location', () => {
+    const story = createStory(tmpDir, 'Story');
+    const chapter = createChapter(tmpDir, story.id, 'My Chapter');
+
+    const trashItem = softDeleteChapter(projectId, tmpDir, story.id, chapter.id);
+    expect(trashItem).not.toBeNull();
+    expect(trashItem!.kind).toBe('chapter');
+    expect(trashItem!.name).toBe('My Chapter');
+    expect(trashItem!.metadata).toEqual({ storyId: story.id });
+
+    expect(getChapterMeta(tmpDir, story.id, chapter.id)).toBeNull();
+    expect(fs.existsSync(path.join(tmpDir, '.trash', 'chapters', chapter.id))).toBe(true);
+  });
+
+  it('returns null for a non-existent chapter', () => {
+    const story = createStory(tmpDir, 'Story');
+    expect(softDeleteChapter(projectId, tmpDir, story.id, 'nonexistent')).toBeNull();
+  });
+
+  it('restores a trashed chapter back into its parent story', () => {
+    const story = createStory(tmpDir, 'Story');
+    const chapter = createChapter(tmpDir, story.id, 'Restore Me');
+    const trashItem = softDeleteChapter(projectId, tmpDir, story.id, chapter.id);
+
+    const restored = restoreEntity(projectId, tmpDir, trashItem!.id);
+    expect(restored).toBe(true);
+
+    const meta = getChapterMeta(tmpDir, story.id, chapter.id);
+    expect(meta).not.toBeNull();
+    expect(meta!.title).toBe('Restore Me');
+  });
+
+  it('refuses to restore a chapter whose parent story no longer exists', () => {
+    const story = createStory(tmpDir, 'Story');
+    const chapter = createChapter(tmpDir, story.id, 'Orphan');
+    const trashItem = softDeleteChapter(projectId, tmpDir, story.id, chapter.id);
+
+    // Remove the story out from under the trashed chapter without going through
+    // trash — simulates the story having been permanently deleted in the meantime.
+    fs.rmSync(path.join(tmpDir, 'stories', story.id), { recursive: true, force: true });
+
+    const restored = restoreEntity(projectId, tmpDir, trashItem!.id);
+    expect(restored).toBe(false);
+
+    // The trash item is left intact rather than silently dropped.
+    expect(listTrashItems(projectId, tmpDir)).toHaveLength(1);
+  });
+
+  it('permanently deletes a trashed chapter directory', () => {
+    const story = createStory(tmpDir, 'Story');
+    const chapter = createChapter(tmpDir, story.id, 'Gone Forever');
+    const trashItem = softDeleteChapter(projectId, tmpDir, story.id, chapter.id);
+
+    const deleted = permanentDeleteEntity(projectId, tmpDir, trashItem!.id);
+    expect(deleted).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.trash', 'chapters', chapter.id))).toBe(false);
+  });
+});
+
+describe('softDeleteScene / restoreEntity / permanentDeleteEntity for scenes', () => {
+  it('moves the scene file into trash and removes it from its live location', () => {
+    const story = createStory(tmpDir, 'Story');
+    const chapter = createChapter(tmpDir, story.id, 'Chapter');
+    const scene = createScene(tmpDir, story.id, chapter.id, 'My Scene');
+
+    const trashItem = softDeleteScene(projectId, tmpDir, story.id, chapter.id, scene.id);
+    expect(trashItem).not.toBeNull();
+    expect(trashItem!.kind).toBe('scene');
+    expect(trashItem!.name).toBe('My Scene');
+    expect(trashItem!.metadata).toEqual({ storyId: story.id, chapterId: chapter.id });
+
+    expect(getScene(tmpDir, story.id, chapter.id, scene.id)).toBeNull();
+    expect(fs.existsSync(path.join(tmpDir, '.trash', 'scenes', `${scene.id}.md`))).toBe(true);
+  });
+
+  it('returns null for a non-existent scene', () => {
+    const story = createStory(tmpDir, 'Story');
+    const chapter = createChapter(tmpDir, story.id, 'Chapter');
+    expect(softDeleteScene(projectId, tmpDir, story.id, chapter.id, 'nonexistent')).toBeNull();
+  });
+
+  it('restores a trashed scene back into its parent chapter, preserving body text', () => {
+    const story = createStory(tmpDir, 'Story');
+    const chapter = createChapter(tmpDir, story.id, 'Chapter');
+    const scene = createScene(tmpDir, story.id, chapter.id, 'Restore Me');
+    // updateScene lives on the live-location scene file, so write body before trashing.
+    const withBody = softDeleteScene(projectId, tmpDir, story.id, chapter.id, scene.id);
+    expect(withBody).not.toBeNull();
+
+    const restored = restoreEntity(projectId, tmpDir, withBody!.id);
+    expect(restored).toBe(true);
+
+    const reloaded = getScene(tmpDir, story.id, chapter.id, scene.id);
+    expect(reloaded).not.toBeNull();
+    expect(reloaded!.title).toBe('Restore Me');
+  });
+
+  it('refuses to restore a scene whose parent chapter no longer exists', () => {
+    const story = createStory(tmpDir, 'Story');
+    const chapter = createChapter(tmpDir, story.id, 'Chapter');
+    const scene = createScene(tmpDir, story.id, chapter.id, 'Orphan');
+    const trashItem = softDeleteScene(projectId, tmpDir, story.id, chapter.id, scene.id);
+
+    fs.rmSync(path.join(tmpDir, 'stories', story.id, 'chapters', chapter.id), {
+      recursive: true,
+      force: true
+    });
+
+    const restored = restoreEntity(projectId, tmpDir, trashItem!.id);
+    expect(restored).toBe(false);
+    expect(listTrashItems(projectId, tmpDir)).toHaveLength(1);
+  });
+
+  it('permanently deletes a trashed scene file', () => {
+    const story = createStory(tmpDir, 'Story');
+    const chapter = createChapter(tmpDir, story.id, 'Chapter');
+    const scene = createScene(tmpDir, story.id, chapter.id, 'Gone Forever');
+    const trashItem = softDeleteScene(projectId, tmpDir, story.id, chapter.id, scene.id);
+
+    const deleted = permanentDeleteEntity(projectId, tmpDir, trashItem!.id);
+    expect(deleted).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.trash', 'scenes', `${scene.id}.md`))).toBe(false);
+  });
+});
+
+describe('story/chapter/scene trash path-safety', () => {
+  it('softDeleteStory refuses ids that escape the stories directory', () => {
+    const victim = fs.mkdtempSync(path.join(os.tmpdir(), 'df-victim-'));
+    fs.writeFileSync(path.join(victim, 'keep.txt'), 'important');
+
+    const escape = path.relative(path.join(tmpDir, 'stories'), victim);
+    expect(softDeleteStory(projectId, tmpDir, escape)).toBeNull();
+    expect(fs.existsSync(path.join(victim, 'keep.txt'))).toBe(true);
+
+    fs.rmSync(victim, { recursive: true, force: true });
+  });
+
+  it('softDeleteChapter and softDeleteScene refuse ids that escape their directories', () => {
+    const story = createStory(tmpDir, 'S');
+    const chapter = createChapter(tmpDir, story.id, 'C');
+
+    expect(softDeleteChapter(projectId, tmpDir, story.id, '../../../../outside')).toBeNull();
+    expect(
+      softDeleteScene(projectId, tmpDir, story.id, chapter.id, '../../../../outside')
+    ).toBeNull();
   });
 });

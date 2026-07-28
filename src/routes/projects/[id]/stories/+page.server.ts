@@ -1,11 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
-import {
-  listStories,
-  createStory,
-  createChapter,
-  createScene,
-  deleteStory
-} from '$lib/server/stories';
+import { listStories, createStory, createChapter, createScene } from '$lib/server/stories';
+import { softDeleteStory } from '$lib/server/trash';
 import { getProjectAccess } from '$lib/server/members';
 import { isSafePathSegment } from '$lib/utils';
 import type { PageServerLoad } from './$types';
@@ -54,8 +49,10 @@ export const actions = {
     const form = await request.formData();
     const storyId = form.get('storyId') as string;
     if (!isSafePathSegment(storyId)) return fail(400, { error: 'Invalid story ID' });
-    deleteStory(project.dataPath, storyId);
 
-    return { success: true };
+    const trashItem = softDeleteStory(params.id, project.dataPath, storyId);
+    if (!trashItem) return fail(404, { error: 'Story not found' });
+
+    return { success: true, trashItem };
   }
 };
