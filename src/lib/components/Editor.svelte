@@ -7,8 +7,8 @@
   import ImageExt from '@tiptap/extension-image';
   import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table';
   import { Markdown } from '@tiptap/markdown';
-  import Mention from '@tiptap/extension-mention';
   import { HighlightMarkdown } from './highlight';
+  import { MentionWithMarkdown } from './mentionMarkdown';
 
   import { Maximize2, Minimize2, SpellCheck } from '@lucide/svelte';
   import { getZenMode } from '$lib/stores/zenMode.svelte';
@@ -55,11 +55,16 @@
     const view = editor.view;
     if (!view) return;
     view.dom.addEventListener('mouseover', (e: MouseEvent) => {
-      const target = (e.target as HTMLElement).closest('[data-mention]');
+      // Mention's own renderHTML uses data-type="mention" as its node-type
+      // discriminator (for when a doc mixes multiple mention flavors), so the
+      // entity's actual type lives in data-mention-type instead — see
+      // mentionMarkdown.ts. The old code targeted `[data-mention]`, which nothing
+      // ever rendered, so the hover card never fired.
+      const target = (e.target as HTMLElement).closest('[data-type="mention"]');
       if (target instanceof HTMLElement) {
         hoverMention = {
           id: target.dataset.id || '',
-          type: target.dataset.type || '',
+          type: target.dataset.mentionType || '',
           label: target.textContent?.replace(/^@/, '') || '',
           x: e.clientX,
           y: e.clientY
@@ -113,7 +118,7 @@
   }
 
   onMount(() => {
-    const mentionExt = Mention.configure({
+    const mentionExt = MentionWithMarkdown.configure({
       HTMLAttributes: { class: 'mention-node' },
       suggestion: {
         items: ({ query }: { query: string }) => {
@@ -458,7 +463,7 @@
     text-decoration: underline;
     cursor: pointer;
   }
-  .editor-wrapper :global([data-mention]) {
+  .editor-wrapper :global([data-type='mention']) {
     background: var(--accent);
     border-radius: 0.25em;
     padding: 0.125em 0.25em;

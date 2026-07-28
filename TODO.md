@@ -27,22 +27,3 @@ permanently empty. Only `linkScene` and `reorderBeats` exist.
    the `PlotBeat` interface, generate it with `generateId()`, and switch `linkScene` /
    `reorderBeats` to match on `id`. Backfill ids on read for existing plotline JSON.
 3. Add the corresponding buttons to `PlotTimeline.svelte`.
-
----
-
-## 10. Mentions are not persisted as links
-
-**Status:** `IDEAS.md` specifies mentions should round-trip through Markdown as
-`[@Name](mention://character/<id>)` and be re-hydrated on load. Today the Tiptap mention
-node is serialized by `@tiptap/markdown` with no custom rule, so the entity id is lost on
-save — the mention degrades to plain text and the hover card stops resolving.
-
-**Files:** `src/lib/components/Editor.svelte`
-
-**Steps:**
-
-1. Extend the configured `Mention` node with `renderMarkdown` (or a `Markdown` serializer
-   rule) emitting `[@${label}](mention://${type}/${id})`.
-2. Add a matching `parseMarkdown` input rule so the link form is read back into a mention
-   node on load.
-3. Add a round-trip unit test: mention node → markdown → mention node.
