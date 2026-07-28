@@ -2,7 +2,8 @@
   import { Badge } from '$lib/components/ui/badge';
   import { cn } from '$lib/utils';
   import { getCellValue, toEditString, type GridColumn } from '$lib/utils/entityGrid';
-  import { Maximize2 } from '@lucide/svelte';
+  import { autoWidth } from '$lib/utils/gridDom';
+  import { Maximize2, Circle, CircleCheck, CircleDashed } from '@lucide/svelte';
 
   type Move = 'down' | 'right' | 'left' | 'none';
 
@@ -12,6 +13,7 @@
     editing = false,
     editSeed = '',
     canEdit = false,
+    covered = false,
     refOptions = [],
     href,
     onCommit,
@@ -24,6 +26,8 @@
     /** Value the editor opens with — a typed character, or the current value. */
     editSeed?: string;
     canEdit?: boolean;
+    /** An earlier cell overflows across this one, so drop the empty placeholder. */
+    covered?: boolean;
     refOptions?: { id: string; name: string }[];
     href?: string;
     onCommit: (raw: string, move: Move) => void;
@@ -33,6 +37,7 @@
 
   let value = $derived(getCellValue(entity, column.key));
   let display = $derived(toEditString(value));
+  let placeholder = $derived(covered ? '' : '—');
 
   let draft = $state('');
   let editorEl = $state<HTMLElement | null>(null);
@@ -65,23 +70,18 @@
   });
 
   function onEditorKeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      resolved = true;
-      onCommit(draft, 'down');
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      resolved = true;
-      onCancel();
-    } else if (e.key === 'Tab') {
-      e.preventDefault();
-      resolved = true;
-      onCommit(draft, e.shiftKey ? 'left' : 'right');
-    }
+    if (e.key !== 'Enter' && e.key !== 'Escape' && e.key !== 'Tab') return;
+    // The grid's own handler would otherwise act on the same key once editing ends.
+    e.preventDefault();
+    e.stopPropagation();
+    resolved = true;
+    if (e.key === 'Enter') onCommit(draft, 'down');
+    else if (e.key === 'Escape') onCancel();
+    else onCommit(draft, e.shiftKey ? 'left' : 'right');
   }
 
   const inputClass =
-    'w-full rounded-sm border border-primary bg-background px-1 py-0.5 text-sm focus:outline-none';
+    'h-full min-w-0 rounded-none border-0 bg-background px-2 py-0 text-sm shadow-md ring-2 ring-inset ring-primary focus:outline-none';
 
   let inputType = $derived(
     column.type === 'number' ? 'number' : column.type === 'date' ? 'date' : 'text'
@@ -95,6 +95,7 @@
     bind:this={editorEl}
     bind:value={draft}
     class={inputClass}
+    use:autoWidth
     onkeydown={onEditorKeydown}
     onblur={commitOnBlur}
   >
@@ -110,6 +111,7 @@
     list={listId}
     bind:value={draft}
     class={inputClass}
+    use:autoWidth
     onkeydown={onEditorKeydown}
     onblur={commitOnBlur}
   />
@@ -125,6 +127,7 @@
     bind:value={draft}
     placeholder={column.type === 'tags' ? 'tag1, tag2' : column.placeholder || ''}
     class={inputClass}
+    use:autoWidth
     onkeydown={onEditorKeydown}
     onblur={commitOnBlur}
   />
@@ -138,16 +141,19 @@
       onCommit((e.currentTarget as HTMLInputElement).checked ? 'true' : 'false', 'none')}
   />
 {:else if column.key === 'status'}
-  <span
-    class={cn(
-      'text-xs',
-      value === 'complete' && 'text-green-600 dark:text-green-400',
-      value === 'wip' && 'text-yellow-600 dark:text-yellow-400',
-      value === 'draft' && 'text-muted-foreground'
-    )}
-  >
-    {value === 'complete' ? 'Complete' : value === 'wip' ? 'In Progress' : 'Draft'}
-  </span>
+  {#if value === 'complete'}
+    <span role="img" aria-label="Complete" title="Complete">
+      <CircleCheck class="h-4 w-4 text-green-600 dark:text-green-400" />
+    </span>
+  {:else if value === 'wip'}
+    <span role="img" aria-label="In Progress" title="In Progress">
+      <CircleDashed class="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+    </span>
+  {:else}
+    <span role="img" aria-label="Draft" title="Draft">
+      <Circle class="h-4 w-4 text-muted-foreground" />
+    </span>
+  {/if}
 {:else if column.key === 'name'}
   <a class="truncate font-medium hover:underline" {href} tabindex={-1}>{display}</a>
 {:else if column.type === 'tags'}
@@ -161,11 +167,11 @@
       {/if}
     </span>
   {:else}
-    <span class="text-xs text-muted-foreground">—</span>
+    <span class="text-xs text-muted-foreground">{placeholder}</span>
   {/if}
 {:else if column.panelOnly}
-  <span class="flex items-center gap-1">
-    <span class="truncate text-sm text-muted-foreground">{display || '—'}</span>
+  <span class={cn('flex min-w-0 items-center gap-1', !display && 'w-full')}>
+    <span class="truncate text-sm text-muted-foreground">{display || placeholder}</span>
     {#if canEdit}
       <button
         type="button"
@@ -179,5 +185,5 @@
     {/if}
   </span>
 {:else}
-  <span class="truncate text-sm text-muted-foreground">{display || '—'}</span>
+  <span class="truncate text-sm text-muted-foreground">{display || placeholder}</span>
 {/if}

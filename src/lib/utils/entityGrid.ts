@@ -7,8 +7,8 @@ export interface GridColumn extends FieldDef {
 }
 
 const CORE_COLUMNS: FieldDef[] = [
-  { key: 'name', label: 'Name', type: 'text' },
   { key: 'status', label: 'Status', type: 'text' },
+  { key: 'name', label: 'Name', type: 'text' },
   { key: 'tags', label: 'Tags', type: 'tags' }
 ];
 
@@ -33,6 +33,40 @@ export function getCellValue(entity: Record<string, any>, key: string): unknown 
   if (key === 'status') return entity.status;
   if (key === 'tags') return entity.tags;
   return entity.frontmatter?.[key];
+}
+
+/** Whether a cell renders nothing of its own, so a neighbour may overflow across it. */
+export function isCellEmpty(entity: Record<string, any>, column: GridColumn): boolean {
+  // Both always paint something: a checkbox, or the status icon (draft is the default).
+  if (column.type === 'boolean' || column.key === 'status') return false;
+  const value = getCellValue(entity, column.key);
+  if (value == null) return true;
+  if (Array.isArray(value)) return value.length === 0;
+  return String(value).trim() === '';
+}
+
+/** How a row's cells share horizontal space, spreadsheet-style. */
+export interface CellLayout {
+  /** Number of following columns this cell may overflow into. */
+  spill: number;
+  /** This cell sits in the overflow path of an earlier one, so it draws no placeholder. */
+  covered: boolean;
+}
+
+export function layoutRow(entity: Record<string, any>, columns: GridColumn[]): CellLayout[] {
+  const empty = columns.map((c) => isCellEmpty(entity, c));
+  const layout: CellLayout[] = columns.map(() => ({ spill: 0, covered: false }));
+
+  for (let i = 0; i < columns.length; i++) {
+    if (empty[i]) {
+      layout[i].covered = i > 0 && (!empty[i - 1] || layout[i - 1].covered);
+      continue;
+    }
+    let run = 0;
+    while (i + run + 1 < columns.length && empty[i + run + 1]) run++;
+    layout[i].spill = run;
+  }
+  return layout;
 }
 
 /** The string an inline editor starts with for a given cell. */
