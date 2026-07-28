@@ -107,7 +107,8 @@
       </p>
     {/if}
 
-    {#each page.data?.plotlines || [] as plotline}
+    {#each page.data?.plotlines || [] as plotline (plotline.id)}
+      {@const linked = plotline.beats.filter((b: { sceneId: string | null }) => b.sceneId).length}
       <div class="rounded-lg border border-border bg-card hover:bg-secondary/50">
         <a
           href="/projects/{page.params.id}/plots/{plotline.id}"
@@ -122,8 +123,18 @@
               {/if}
             </div>
             <p class="text-xs text-muted-foreground">
-              {plotline.beats.length} beats &middot; Modified {formatDate(plotline.modifiedAt)}
+              {plotline.beats.length} beats &middot; {linked} linked to scenes &middot; Modified {formatDate(
+                plotline.modifiedAt
+              )}
             </p>
+            {#if plotline.beats.length > 0}
+              <div class="mt-1.5 h-1 w-full max-w-xs overflow-hidden rounded-full bg-secondary">
+                <div
+                  class="h-full rounded-full bg-primary"
+                  style="width: {Math.round((linked / plotline.beats.length) * 100)}%"
+                ></div>
+              </div>
+            {/if}
           </div>
           <form method="POST" action="?/delete" onsubmit={() => confirm('Delete this plotline?')}>
             <input type="hidden" name="plotlineId" value={plotline.id} />

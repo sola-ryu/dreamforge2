@@ -12,11 +12,20 @@
     id: string;
     title: string | null;
     chapterTitle?: string;
+    status?: string;
+    wordCount?: number;
   }
+
+  const STATUS_DOTS: Record<string, string> = {
+    draft: 'bg-muted-foreground/40',
+    revised: 'bg-amber-500',
+    final: 'bg-emerald-500'
+  };
 
   let {
     beats = [],
     scenes = [],
+    sceneHref,
     onReorder,
     onLinkScene,
     onAddBeat,
@@ -25,6 +34,7 @@
   }: {
     beats: Beat[];
     scenes: SceneInfo[];
+    sceneHref?: (sceneId: string) => string;
     onReorder?: (beatIds: string[]) => void;
     onLinkScene?: (beatId: string, sceneId: string | null) => void;
     onAddBeat?: (title: string) => void;
@@ -60,10 +70,14 @@
     if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
   }
 
+  function getScene(sceneId: string | null): SceneInfo | undefined {
+    return sceneId ? scenes.find((s) => s.id === sceneId) : undefined;
+  }
+
   function getSceneLabel(sceneId: string | null): string {
-    if (!sceneId) return '';
-    const scene = scenes.find((s) => s.id === sceneId);
-    return scene ? scene.title || 'Untitled Scene' : sceneId;
+    const scene = getScene(sceneId);
+    if (!scene) return 'Missing scene';
+    return scene.title || 'Untitled Scene';
   }
 
   function startEditing(beat: Beat) {
@@ -134,13 +148,22 @@
       {:else}
         <span class="flex-1 text-sm">{beat.title}</span>
         {#if beat.sceneId}
-          <a
-            href="/scenes/{beat.sceneId}"
+          {@const scene = getScene(beat.sceneId)}
+          {@const href = sceneHref && scene ? sceneHref(beat.sceneId) : null}
+          <svelte:element
+            this={href ? 'a' : 'span'}
+            {href}
             class="flex items-center gap-1 rounded bg-secondary/50 px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground"
           >
             <Link2 class="h-3 w-3" />
             {getSceneLabel(beat.sceneId)}
-          </a>
+            {#if scene}
+              <span class="h-1.5 w-1.5 rounded-full {STATUS_DOTS[scene.status || 'draft']}"></span>
+              {#if scene.wordCount !== undefined}
+                <span>{scene.wordCount}w</span>
+              {/if}
+            {/if}
+          </svelte:element>
         {/if}
         <select
           class="rounded border border-input bg-background px-1 py-0.5 text-xs"

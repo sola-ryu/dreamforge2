@@ -1,22 +1,35 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { enhance } from '$app/forms';
+  import { invalidateAll } from '$app/navigation';
   import { ArrowLeft, Save } from '@lucide/svelte';
   import PlotTimeline from '$lib/components/PlotTimeline.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Badge } from '$lib/components/ui/badge';
+  import { countWords } from '$lib/utils/wordCount';
 
   let scenes = $derived(
     (page.data?.chapters || []).flatMap((ch: any) =>
-      (ch.scenes || []).map((s: any) => ({ ...s, chapterTitle: ch.title }))
+      (ch.scenes || []).map((s: any) => ({
+        ...s,
+        chapterTitle: ch.title,
+        wordCount: countWords(s.body)
+      }))
     )
   );
+
+  let beats = $derived(page.data?.plotline?.beats || []);
+  let linkedBeats = $derived(beats.filter((b: { sceneId: string | null }) => b.sceneId).length);
+
+  function sceneHref(sceneId: string) {
+    return `/projects/${page.params.id}/stories/${page.data?.plotline?.storyId}?scene=${sceneId}`;
+  }
 
   async function handleReorder(beatIds: string[]) {
     const form = new FormData();
     form.set('beatIds', JSON.stringify(beatIds));
     await fetch('?/reorderBeats', { method: 'POST', body: form });
-    window.location.reload();
+    await invalidateAll();
   }
 
   async function handleLinkScene(beatId: string, sceneId: string | null) {
@@ -24,14 +37,14 @@
     form.set('beatId', beatId);
     form.set('sceneId', sceneId || '');
     await fetch('?/linkScene', { method: 'POST', body: form });
-    window.location.reload();
+    await invalidateAll();
   }
 
   async function handleAddBeat(title: string) {
     const form = new FormData();
     form.set('title', title);
     await fetch('?/addBeat', { method: 'POST', body: form });
-    window.location.reload();
+    await invalidateAll();
   }
 
   async function handleRenameBeat(beatId: string, title: string) {
@@ -39,14 +52,14 @@
     form.set('beatId', beatId);
     form.set('title', title);
     await fetch('?/renameBeat', { method: 'POST', body: form });
-    window.location.reload();
+    await invalidateAll();
   }
 
   async function handleDeleteBeat(beatId: string) {
     const form = new FormData();
     form.set('beatId', beatId);
     await fetch('?/deleteBeat', { method: 'POST', body: form });
-    window.location.reload();
+    await invalidateAll();
   }
 </script>
 
@@ -88,10 +101,18 @@
   </form>
 
   <div class="rounded-lg border border-border bg-card p-4">
-    <h2 class="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wide">Beats</h2>
+    <div class="mb-4 flex items-center justify-between">
+      <h2 class="text-sm font-medium uppercase tracking-wide text-muted-foreground">Beats</h2>
+      {#if beats.length > 0}
+        <span class="text-xs text-muted-foreground">
+          {linkedBeats} of {beats.length} linked to a scene
+        </span>
+      {/if}
+    </div>
     <PlotTimeline
-      beats={page.data?.plotline?.beats || []}
+      {beats}
       {scenes}
+      {sceneHref}
       onReorder={handleReorder}
       onLinkScene={handleLinkScene}
       onAddBeat={handleAddBeat}
