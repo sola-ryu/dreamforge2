@@ -13,6 +13,7 @@ import {
   getUserByEmailOrUsername
 } from '$lib/server/members';
 import { updateProject, deleteProject } from '$lib/server/projects';
+import { readWritingLog, setDailyGoal } from '$lib/server/writingLog';
 import type { EntityType } from '$lib/types';
 import type { PageServerLoad } from './$types';
 
@@ -31,6 +32,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     project: { ...project, pinned: Boolean(project.pinned) },
     customFields,
     members,
+    dailyGoal: readWritingLog(project.dataPath).dailyGoal,
     role
   };
 };
@@ -54,6 +56,22 @@ export const actions = {
       name,
       description: description || null
     });
+
+    return { success: true };
+  },
+
+  updateDailyGoal: async ({ params, locals, request }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
+
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+
+    const form = await request.formData();
+    const goal = Number(form.get('dailyGoal'));
+    if (!Number.isFinite(goal) || goal < 0) return fail(400, { error: 'Invalid daily goal' });
+
+    setDailyGoal(access.project.dataPath, goal);
 
     return { success: true };
   },

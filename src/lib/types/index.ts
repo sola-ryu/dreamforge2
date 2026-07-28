@@ -97,6 +97,16 @@ export interface Tag {
 
 export type Theme = 'light' | 'dark';
 
+export interface WritingProgress {
+  dailyGoal: number;
+  storyTargets: Record<string, number>;
+  todayWords: number;
+  streak: number;
+  best: number;
+  total30: number;
+  recent: Array<{ date: string; words: number }>;
+}
+
 export interface StoryStats {
   id: string;
   title: string;

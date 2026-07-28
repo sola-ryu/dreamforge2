@@ -20,19 +20,29 @@
     PenLine,
     Search,
     Download,
-    ArrowRight
+    ArrowRight,
+    Target,
+    Flame
   } from '@lucide/svelte';
   import Button from '$lib/components/ui/button/button.svelte';
   import { formatWordCount, readingMinutes } from '$lib/utils/wordCount';
   import { formatDate } from '$lib/utils';
   import { ENTITY_PLURAL } from '$lib/entityFields';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
-  import type { EntityType, ProjectStats } from '$lib/types';
+  import type { EntityType, ProjectStats, WritingProgress } from '$lib/types';
 
   let syncing = $state(false);
 
   let stats = $derived((page.data?.stats || null) as ProjectStats | null);
+  let progress = $derived((page.data?.progress || null) as WritingProgress | null);
   let projectId = $derived(page.params.id);
+
+  let goalPercent = $derived(
+    progress && progress.dailyGoal > 0
+      ? Math.min(100, Math.round((progress.todayWords / progress.dailyGoal) * 100))
+      : 0
+  );
+  let peakDay = $derived(progress ? Math.max(1, ...progress.recent.map((d) => d.words)) : 1);
 
   async function syncProject() {
     syncing = true;
@@ -124,6 +134,68 @@
       </div>
     </div>
 
+    {#if progress}
+      <div class="mb-6 rounded-lg border border-border bg-card p-4">
+        <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 class="flex items-center gap-2 text-sm font-semibold">
+            <Target class="h-4 w-4 text-primary" />
+            Today
+          </h2>
+          <div class="flex items-center gap-3 text-xs text-muted-foreground">
+            {#if progress.streak > 0}
+              <span class="flex items-center gap-1 text-primary">
+                <Flame class="h-3.5 w-3.5" />
+                {progress.streak}-day streak
+              </span>
+            {/if}
+            <span>{formatWordCount(progress.total30)} words in 30 days</span>
+            <a class="hover:text-foreground" href="/projects/{projectId}/settings">Edit goal</a>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="min-w-48 flex-1">
+            <div class="mb-1 flex items-baseline justify-between text-sm">
+              <span class="font-medium">
+                {formatWordCount(progress.todayWords)}
+                {#if progress.dailyGoal > 0}
+                  <span class="text-muted-foreground">
+                    / {formatWordCount(progress.dailyGoal)} words</span
+                  >
+                {:else}
+                  <span class="text-muted-foreground"> words written</span>
+                {/if}
+              </span>
+              {#if progress.dailyGoal > 0}
+                <span class="text-xs text-muted-foreground">{goalPercent}%</span>
+              {/if}
+            </div>
+            {#if progress.dailyGoal > 0}
+              <div class="h-2 w-full overflow-hidden rounded-full bg-secondary">
+                <div
+                  class="h-full rounded-full transition-all"
+                  class:bg-primary={goalPercent < 100}
+                  class:bg-emerald-500={goalPercent >= 100}
+                  style="width: {goalPercent}%"
+                ></div>
+              </div>
+            {/if}
+          </div>
+
+          <div class="flex h-12 items-end gap-1" title="Words per day, last 14 days">
+            {#each progress.recent as day (day.date)}
+              <div
+                class="w-2 rounded-sm bg-primary/70"
+                class:bg-secondary={day.words === 0}
+                style="height: {Math.max(2, Math.round((day.words / peakDay) * 48))}px"
+                title="{day.date}: {formatWordCount(day.words)} words"
+              ></div>
+            {/each}
+          </div>
+        </div>
+      </div>
+    {/if}
+
     <div class="mb-6 grid gap-4 lg:grid-cols-2">
       <div class="rounded-lg border border-border bg-card p-4">
         <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold">
@@ -152,14 +224,26 @@
         {#if stats.stories.length > 0}
           <div class="mt-4 space-y-2">
             {#each stats.stories as story (story.id)}
+              {@const target = progress?.storyTargets?.[story.id] || 0}
               <a
-                class="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 text-sm hover:bg-secondary"
+                class="block rounded-md px-2 py-1.5 text-sm hover:bg-secondary"
                 href="/projects/{projectId}/stories/{story.id}"
               >
-                <span class="truncate">{story.title}</span>
-                <span class="whitespace-nowrap text-xs text-muted-foreground">
-                  {formatWordCount(story.wordCount)} words · {story.sceneCount} scenes
-                </span>
+                <div class="flex items-center justify-between gap-3">
+                  <span class="truncate">{story.title}</span>
+                  <span class="whitespace-nowrap text-xs text-muted-foreground">
+                    {formatWordCount(story.wordCount)}
+                    {#if target > 0}/ {formatWordCount(target)}{/if} words · {story.sceneCount} scenes
+                  </span>
+                </div>
+                {#if target > 0}
+                  <div class="mt-1 h-1 w-full overflow-hidden rounded-full bg-secondary">
+                    <div
+                      class="h-full rounded-full bg-primary"
+                      style="width: {Math.min(100, Math.round((story.wordCount / target) * 100))}%"
+                    ></div>
+                  </div>
+                {/if}
               </a>
             {/each}
           </div>

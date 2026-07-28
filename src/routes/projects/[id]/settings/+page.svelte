@@ -9,7 +9,8 @@
     Settings,
     Users,
     UserPlus,
-    TriangleAlert
+    TriangleAlert,
+    Target
   } from '@lucide/svelte';
   import type { EntityType } from '$lib/types';
   import { Button } from '$lib/components/ui/button';
@@ -24,6 +25,8 @@
   } from '$lib/components/ui/select';
 
   let selectedType = $state<EntityType>('character');
+  let dailyGoal = $state(page.data?.dailyGoal ?? 500);
+  let goalSaved = $state(false);
   let newKey = $state('');
   let newLabel = $state('');
   let newFieldType = $state('text');
@@ -151,6 +154,44 @@
       </form>
     </div>
   {/if}
+
+  <div class="mb-8 rounded-lg border border-border bg-card p-4">
+    <h2 class="mb-1 flex items-center gap-2 text-lg font-semibold">
+      <Target class="h-4 w-4" />
+      Writing Goal
+    </h2>
+    <p class="mb-4 text-sm text-muted-foreground">
+      Words per day to aim for. Progress toward it shows on the dashboard.
+    </p>
+    <form
+      method="POST"
+      action="?/updateDailyGoal"
+      use:enhance={() => {
+        return async ({ result, update }) => {
+          if (result.type === 'success') {
+            goalSaved = true;
+            setTimeout(() => (goalSaved = false), 2000);
+          }
+          await update();
+        };
+      }}
+      class="flex items-end gap-2"
+    >
+      <div class="space-y-1">
+        <Label for="daily-goal" class="text-xs text-muted-foreground">Daily word goal</Label>
+        <Input
+          id="daily-goal"
+          name="dailyGoal"
+          type="number"
+          min="0"
+          step="50"
+          class="w-40"
+          bind:value={dailyGoal}
+        />
+      </div>
+      <Button type="submit">{goalSaved ? 'Saved' : 'Save'}</Button>
+    </form>
+  </div>
 
   <div class="mb-6">
     <Label class="mb-2">Entity Type</Label>

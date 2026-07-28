@@ -6,6 +6,62 @@ import type { EntityType, ProjectStats, RecentItem, StoryStats } from '$lib/type
 
 const RECENT_LIMIT = 8;
 
+export interface SceneRef {
+  storyId: string;
+  storyTitle: string;
+  chapterTitle: string;
+  sceneId: string;
+  title: string;
+  wordCount: number;
+  modifiedAt: string;
+}
+
+/**
+ * Reads every story once, returning both the per-story rollups and a flat list of
+ * scenes so callers that need scene-level detail don't have to walk the files again.
+ */
+export function collectStories(projectPath: string): { stories: StoryStats[]; scenes: SceneRef[] } {
+  const stories: StoryStats[] = [];
+  const scenes: SceneRef[] = [];
+
+  for (const story of listStories(projectPath)) {
+    const chapters = listChapters(projectPath, story.id);
+    let storyScenes = 0;
+    let storyWords = 0;
+
+    for (const chapter of chapters) {
+      const chapterScenes = listScenes(projectPath, story.id, chapter.id);
+      storyScenes += chapterScenes.length;
+
+      chapterScenes.forEach((scene, i) => {
+        const words = countWords(scene.body);
+        storyWords += words;
+        scenes.push({
+          storyId: story.id,
+          storyTitle: story.title,
+          chapterTitle: chapter.title,
+          sceneId: scene.id,
+          title: scene.title || `Scene ${i + 1}`,
+          wordCount: words,
+          modifiedAt: scene.modifiedAt
+        });
+      });
+    }
+
+    stories.push({
+      id: story.id,
+      title: story.title,
+      description: story.description,
+      chapterCount: chapters.length,
+      sceneCount: storyScenes,
+      wordCount: storyWords,
+      modifiedAt: story.modifiedAt
+    });
+  }
+
+  return { stories, scenes };
+}
+
 /**
  * Walks every scene and entity file once and aggregates the numbers the dashboard
  * shows. This reads the filesystem rather than the SQLite index because word counts
@@ -33,56 +89,30 @@ export function getProjectStats(projectId: string, projectPath: string): Project
     }
   }
 
-  const stories: StoryStats[] = [];
-  let chapterCount = 0;
-  let sceneCount = 0;
-  let wordCount = 0;
+  const { stories, scenes } = collectStories(projectPath);
+
   let lastScene: ProjectStats['lastScene'] = null;
   let lastSceneModified = '';
 
-  for (const story of listStories(projectPath)) {
-    const chapters = listChapters(projectPath, story.id);
-    let storyScenes = 0;
-    let storyWords = 0;
-
-    chapters.forEach((chapter) => {
-      const scenes = listScenes(projectPath, story.id, chapter.id);
-      storyScenes += scenes.length;
-
-      scenes.forEach((scene, i) => {
-        const words = countWords(scene.body);
-        storyWords += words;
-
-        const title = scene.title || `Scene ${i + 1}`;
-        recent.push({
-          kind: 'scene',
-          id: scene.id,
-          name: title,
-          context: `${story.title} › ${chapter.title}`,
-          href: `/projects/${projectId}/stories/${story.id}?scene=${scene.id}`,
-          modifiedAt: scene.modifiedAt
-        });
-
-        if (scene.modifiedAt > lastSceneModified) {
-          lastSceneModified = scene.modifiedAt;
-          lastScene = { storyId: story.id, sceneId: scene.id, title, storyTitle: story.title };
-        }
-      });
+  for (const scene of scenes) {
+    recent.push({
+      kind: 'scene',
+      id: scene.sceneId,
+      name: scene.title,
+      context: `${scene.storyTitle} › ${scene.chapterTitle}`,
+      href: `/projects/${projectId}/stories/${scene.storyId}?scene=${scene.sceneId}`,
+      modifiedAt: scene.modifiedAt
     });
 
-    stories.push({
-      id: story.id,
-      title: story.title,
-      description: story.description,
-      chapterCount: chapters.length,
-      sceneCount: storyScenes,
-      wordCount: storyWords,
-      modifiedAt: story.modifiedAt
-    });
-
-    chapterCount += chapters.length;
-    sceneCount += storyScenes;
-    wordCount += storyWords;
+    if (scene.modifiedAt > lastSceneModified) {
+      lastSceneModified = scene.modifiedAt;
+      lastScene = {
+        storyId: scene.storyId,
+        sceneId: scene.sceneId,
+        title: scene.title,
+        storyTitle: scene.storyTitle
+      };
+    }
   }
 
   recent.sort((a, b) => (a.modifiedAt < b.modifiedAt ? 1 : -1));
@@ -91,9 +121,9 @@ export function getProjectStats(projectId: string, projectPath: string): Project
     entityCounts,
     totalEntities,
     storyCount: stories.length,
-    chapterCount,
-    sceneCount,
-    wordCount,
+    chapterCount: stories.reduce((sum, s) => sum + s.chapterCount, 0),
+    sceneCount: stories.reduce((sum, s) => sum + s.sceneCount, 0),
+    wordCount: stories.reduce((sum, s) => sum + s.wordCount, 0),
     stories,
     recent: recent.slice(0, RECENT_LIMIT),
     lastScene

@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import {
   getStoryMeta,
+  getScene,
   listChapters,
   createChapter,
   listScenes,
@@ -10,6 +11,8 @@ import {
   reorderScenes,
   updateStory
 } from '$lib/server/stories';
+import { recordWords } from '$lib/server/writingLog';
+import { countWords } from '$lib/utils/wordCount';
 import { softDeleteChapter, softDeleteScene } from '$lib/server/trash';
 import { searchEntities } from '$lib/server/entities';
 import { sceneToNote } from '$lib/server/conversion';
@@ -126,7 +129,14 @@ export const actions = {
           .filter(Boolean);
       else if (key !== 'chapterId' && key !== 'sceneId') data[key] = value;
     }
-    updateScene(project.dataPath, params.storyId, chapterId, sceneId, data as any);
+
+    const before = getScene(project.dataPath, params.storyId, chapterId, sceneId);
+    const updated = updateScene(project.dataPath, params.storyId, chapterId, sceneId, data as any);
+
+    if (updated) {
+      recordWords(project.dataPath, countWords(updated.body) - countWords(before?.body));
+    }
+
     return { success: true };
   },
 

@@ -1,6 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import { getProjectAccess } from '$lib/server/members';
 import { getProjectStats } from '$lib/server/stats';
+import { getWritingProgress } from '$lib/server/writingLog';
 import { scanProject, watchProject } from '$lib/server/watcher';
 import type { PageServerLoad } from './$types';
 
@@ -25,6 +26,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       pinned: Boolean(project.pinned)
     },
     stats: getProjectStats(params.id, project.dataPath),
+    progress: getWritingProgress(project.dataPath),
     role
   };
 };
