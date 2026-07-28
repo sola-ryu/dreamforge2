@@ -7,7 +7,13 @@
   import Editor from '$lib/components/Editor.svelte';
   import EntityCardList from '$lib/components/EntityCardList.svelte';
   import EntityGrid from '$lib/components/EntityGrid.svelte';
-  import { buildGridColumns, applyCellValue, type GridColumn } from '$lib/utils/entityGrid';
+  import {
+    buildGridColumns,
+    applyCellValue,
+    STATUS_OPTIONS,
+    type GridColumn
+  } from '$lib/utils/entityGrid';
+  import { filterEntities, collectTags, type EntitySort } from '$lib/utils/entityFilter';
   import { cn } from '$lib/utils';
   import type { EntityType } from '$lib/types';
   import { Plus, Search, Undo2, Download, Upload, LayoutList, Table2 } from '@lucide/svelte';
@@ -28,6 +34,9 @@
   let newBody = $state('');
   let selectedTemplate = $state('');
   let searchQuery = $state('');
+  let statusFilter = $state('');
+  let tagFilters = $state<string[]>([]);
+  let sort = $state<EntitySort>('modified');
   let toastMessage = $state('');
   let toastTrashId = $state('');
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -87,11 +96,30 @@
     allEntities = page.data?.entities || [];
   });
 
+  let availableTags = $derived(collectTags(allEntities));
+
   let entities = $derived(
-    searchQuery
-      ? allEntities.filter((e) => e.name.toLowerCase().includes(searchQuery.toLowerCase()))
-      : allEntities
+    filterEntities(allEntities, {
+      query: searchQuery,
+      status: statusFilter,
+      tags: tagFilters,
+      sort
+    })
   );
+
+  function toggleTag(tag: string) {
+    tagFilters = tagFilters.includes(tag)
+      ? tagFilters.filter((t) => t !== tag)
+      : [...tagFilters, tag];
+  }
+
+  function clearFilters() {
+    searchQuery = '';
+    statusFilter = '';
+    tagFilters = [];
+  }
+
+  let filtersActive = $derived(!!searchQuery || !!statusFilter || tagFilters.length > 0);
 
   let gridColumns = $derived(buildGridColumns(page.data?.customFields || []));
 
@@ -273,17 +301,69 @@
     </div>
   {/if}
 
-  <div class="mb-4">
+  <div class="mb-4 space-y-3">
     <div class="relative">
       <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <input
         type="search"
-        placeholder="Search..."
+        placeholder="Search by name..."
         bind:value={searchQuery}
-        oninput={() => {}}
-        class="w-full rounded-lg border border-input bg-background pl-9 pr-3 py-2 text-sm"
+        class="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm"
       />
     </div>
+
+    <div class="flex flex-wrap items-center gap-1.5">
+      <Button
+        size="xs"
+        variant={statusFilter === '' ? 'default' : 'outline'}
+        onclick={() => (statusFilter = '')}
+      >
+        All
+      </Button>
+      {#each STATUS_OPTIONS as option (option.value)}
+        <Button
+          size="xs"
+          variant={statusFilter === option.value ? 'default' : 'outline'}
+          onclick={() => (statusFilter = statusFilter === option.value ? '' : option.value)}
+        >
+          {option.label}
+        </Button>
+      {/each}
+
+      <span class="mx-1 h-4 w-px bg-border"></span>
+
+      <select
+        bind:value={sort}
+        aria-label="Sort entities"
+        class="h-7 rounded-lg border border-input bg-background px-2 text-xs"
+      >
+        <option value="modified">Recently edited</option>
+        <option value="created">Recently created</option>
+        <option value="name">Name A–Z</option>
+      </select>
+
+      <span class="ml-auto text-xs text-muted-foreground">
+        {entities.length} of {allEntities.length}
+      </span>
+      {#if filtersActive}
+        <Button size="xs" variant="ghost" onclick={clearFilters}>Clear</Button>
+      {/if}
+    </div>
+
+    {#if availableTags.length > 0}
+      <div class="flex flex-wrap items-center gap-1.5">
+        {#each availableTags as { tag, count } (tag)}
+          <Button
+            size="xs"
+            variant={tagFilters.includes(tag) ? 'default' : 'outline'}
+            onclick={() => toggleTag(tag)}
+          >
+            {tag}
+            <span class="text-[10px] opacity-70">{count}</span>
+          </Button>
+        {/each}
+      </div>
+    {/if}
   </div>
 
   {#if layout === 'cards'}
