@@ -18,7 +18,8 @@
     Download,
     Check,
     CloudOff,
-    Loader2
+    Loader2,
+    Scan
   } from '@lucide/svelte';
   import { getZenMode } from '$lib/stores/zenMode.svelte';
   import Editor from '$lib/components/Editor.svelte';
@@ -339,8 +340,11 @@
 </svelte:head>
 
 <div class="flex h-[calc(100vh-4rem)]">
-  <!-- Left panel: chapter/scene tree -->
-  <div class="w-72 flex-shrink-0 overflow-y-auto border-r border-border bg-card p-4 sm:w-80">
+  <!-- Left panel: chapter/scene tree — hidden while writing in Zen mode -->
+  <div
+    class="w-72 flex-shrink-0 overflow-y-auto border-r border-border bg-card p-4 sm:w-80"
+    class:hidden={zen.active}
+  >
     <div class="mb-4">
       <a
         href="/projects/{page.params.id}/stories"
@@ -563,7 +567,7 @@
             class="min-w-0 flex-1 border-0 bg-transparent text-lg font-semibold outline-none"
             placeholder="Scene title..."
           />
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2" class:hidden={zen.active}>
             <span class="whitespace-nowrap text-xs text-muted-foreground">
               {formatWordCount(sceneWords)} words
             </span>
@@ -592,6 +596,15 @@
             <Button
               variant="outline"
               size="icon-sm"
+              title={zen.active ? 'Exit focus mode' : 'Focus mode (F11)'}
+              aria-label={zen.active ? 'Exit focus mode' : 'Focus mode'}
+              onclick={() => zen.toggle()}
+            >
+              <Scan class="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon-sm"
               title="Convert to Note"
               aria-label="Convert to Note"
               onclick={async () => {
@@ -610,7 +623,7 @@
           </div>
         </div>
 
-        <div class="mb-4 flex flex-wrap gap-4 text-sm">
+        <div class="mb-4 flex flex-wrap gap-4 text-sm" class:hidden={zen.active}>
           <div class="flex items-center gap-2">
             <label for="scene-narrator" class="text-muted-foreground">Narrator:</label>
             <Input
@@ -675,6 +688,29 @@
             <option value={entity.name}></option>
           {/each}
         </datalist>
+
+        {#if zen.active}
+          <div
+            class="fixed bottom-4 right-4 z-40 flex items-center gap-3 rounded-full border border-border bg-card/90 px-4 py-2 text-xs shadow-lg backdrop-blur"
+          >
+            <span>{formatWordCount(sceneWords)} words</span>
+            {#if sessionWords > 0}
+              <span class="text-primary">+{formatWordCount(sessionWords)} this session</span>
+            {/if}
+            <span class="text-muted-foreground">
+              {#if saveError}
+                {saveError}
+              {:else if saving}
+                Saving…
+              {:else if dirty}
+                Unsaved
+              {:else}
+                Saved
+              {/if}
+            </span>
+            <Button variant="ghost" size="xs" onclick={() => zen.toggle()}>Exit</Button>
+          </div>
+        {/if}
 
         {#key activeSceneId}
           <Editor
