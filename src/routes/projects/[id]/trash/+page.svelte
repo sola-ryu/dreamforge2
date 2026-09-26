@@ -9,6 +9,10 @@
   import { ArrowLeft, Trash2, RotateCcw, AlertTriangle } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
   import { Badge } from '$lib/components/ui/badge';
+  import * as Dialog from '$lib/components/ui/dialog/index.js';
+
+  let confirmEmpty = $state(false);
+  let emptying = $state(false);
 
   const KIND_LABELS: Record<string, string> = {
     image: 'Image',
@@ -42,6 +46,39 @@
   }
 </script>
 
+<Dialog.Root bind:open={confirmEmpty}>
+  <Dialog.Content class="max-w-md">
+    <Dialog.Header>
+      <Dialog.Title>Empty trash?</Dialog.Title>
+      <Dialog.Description>
+        {(page.data?.items || []).length}
+        {(page.data?.items || []).length === 1 ? 'item' : 'items'} will be permanently deleted. This can't
+        be undone.
+      </Dialog.Description>
+    </Dialog.Header>
+    <Dialog.Footer>
+      <Button variant="outline" onclick={() => (confirmEmpty = false)}>Cancel</Button>
+      <form
+        method="POST"
+        action="?/emptyTrash"
+        use:enhance={() => {
+          emptying = true;
+          return async ({ update }) => {
+            await update();
+            emptying = false;
+            confirmEmpty = false;
+          };
+        }}
+      >
+        <Button type="submit" variant="destructive" disabled={emptying}>
+          <Trash2 class="h-4 w-4" />
+          Delete Forever
+        </Button>
+      </form>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
+
 <svelte:head>
   <title>Trash — {page.data?.project?.name || 'Project'} — DreamForge</title>
 </svelte:head>
@@ -63,12 +100,10 @@
         </p>
       </div>
       {#if (page.data?.items || []).length > 0}
-        <form method="POST" action="?/emptyTrash" use:enhance>
-          <Button type="submit" variant="destructive">
-            <Trash2 class="h-4 w-4" />
-            Empty Trash
-          </Button>
-        </form>
+        <Button variant="destructive" onclick={() => (confirmEmpty = true)}>
+          <Trash2 class="h-4 w-4" />
+          Empty Trash
+        </Button>
       {/if}
     </div>
   </div>

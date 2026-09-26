@@ -90,7 +90,40 @@ export const actions = {
 
     const body = entityType === 'note' ? (form.get('body') as string) || '' : undefined;
 
-    createEntity(params.id, project.dataPath, entityType, { name, body: body || undefined });
+    const customFieldDefs = getCustomFieldDefs(params.id, entityType).map((f) => ({
+      key: f.key,
+      label: f.label,
+      type: f.fieldType,
+      entityType: f.refEntityType || undefined
+    }));
+    const fieldValues: Record<string, unknown> = {};
+    for (const field of mergeFields(ENTITY_FIELDS[entityType], customFieldDefs)) {
+      if (field.type === 'image') continue;
+      const raw = form.get(field.key);
+      if (field.type === 'boolean') {
+        if (raw !== null) fieldValues[field.key] = true;
+        continue;
+      }
+      if (typeof raw !== 'string' || !raw.trim()) continue;
+      if (field.type === 'tags') {
+        fieldValues[field.key] = raw
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+      } else if (field.type === 'number') {
+        const num = Number(raw);
+        if (Number.isNaN(num)) return fail(400, { error: `Invalid number for ${field.label}` });
+        fieldValues[field.key] = num;
+      } else {
+        fieldValues[field.key] = raw;
+      }
+    }
+
+    createEntity(params.id, project.dataPath, entityType, {
+      ...fieldValues,
+      name,
+      body: body || undefined
+    });
 
     return { success: true };
   },
