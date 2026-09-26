@@ -116,3 +116,95 @@ export function applyCellValue(
   if (column.key === 'tags') return { ...entity, tags: parsed as string[] };
   return { ...entity, frontmatter: { ...entity.frontmatter, [column.key]: parsed } };
 }
+
+/** Columns the grid always shows: the spreadsheet's row header and its cursor anchor. */
+export const LOCKED_COLUMNS = ['status', 'name'];
+
+/**
+ * The columns worth showing before the user has chosen: the locked ones, tags, and any
+ * field at least one row has filled in. Fields nobody has touched stay behind the picker.
+ */
+export function defaultVisibleKeys(
+  rows: Record<string, any>[],
+  columns: GridColumn[]
+): Set<string> {
+  const keys = new Set<string>([...LOCKED_COLUMNS, 'tags']);
+  for (const column of columns) {
+    const filled = (row: Record<string, any>) =>
+      column.type === 'boolean'
+        ? getCellValue(row, column.key) === true
+        : !isCellEmpty(row, column);
+    if (rows.some(filled)) keys.add(column.key);
+  }
+  return keys;
+}
+
+export type SortDirection = 'asc' | 'desc';
+
+function sortKey(entity: Record<string, any>, column: GridColumn): string | number | null {
+  const value = getCellValue(entity, column.key);
+  if (value == null) return null;
+  if (Array.isArray(value)) return value.length ? value.join(', ').toLowerCase() : null;
+  if (column.type === 'number') {
+    const num = Number(value);
+    return Number.isNaN(num) ? null : num;
+  }
+  if (column.type === 'boolean') return value === true ? 1 : 0;
+  const text = String(value).trim().toLowerCase();
+  return text === '' ? null : text;
+}
+
+/** Stable sort by one column; rows with nothing in the cell always sink to the bottom. */
+export function sortRows<T extends Record<string, any>>(
+  rows: T[],
+  column: GridColumn,
+  direction: SortDirection
+): T[] {
+  const sign = direction === 'asc' ? 1 : -1;
+  return rows
+    .map((row, index) => ({ row, index, key: sortKey(row, column) }))
+    .sort((a, b) => {
+      if (a.key === null && b.key === null) return a.index - b.index;
+      if (a.key === null) return 1;
+      if (b.key === null) return -1;
+      if (typeof a.key === 'number' && typeof b.key === 'number') {
+        return (a.key - b.key) * sign || a.index - b.index;
+      }
+      return (
+        String(a.key).localeCompare(String(b.key), undefined, { numeric: true }) * sign ||
+        a.index - b.index
+      );
+    })
+    .map((entry) => entry.row);
+}
+
+/** Split clipboard text (spreadsheet-style TSV) into a rows × cells matrix. */
+export function parseClipboardGrid(text: string): string[][] {
+  const lines = text.replace(/\r\n?/g, '\n').split('\n');
+  if (lines.length > 1 && lines[lines.length - 1] === '') lines.pop();
+  return lines.map((line) => line.split('\t'));
+}
+
+/**
+ * A pasted value in the form `quickUpdate` accepts, or null when the column cannot take
+ * it (an unknown status, a number that is not one).
+ */
+export function normalizePastedValue(column: GridColumn, raw: string): string | null {
+  const value = raw.trim();
+  if (column.key === 'status') {
+    const option = STATUS_OPTIONS.find(
+      (o) => o.value === value.toLowerCase() || o.label.toLowerCase() === value.toLowerCase()
+    );
+    return option ? option.value : null;
+  }
+  if (column.key === 'name') return value === '' ? null : value;
+  if (column.type === 'number') return value === '' || !Number.isNaN(Number(value)) ? value : null;
+  if (column.type === 'boolean') {
+    const truthy = ['true', 'yes', 'y', '1', 'x', 'on'];
+    const falsy = ['false', 'no', 'n', '0', '', 'off'];
+    if (truthy.includes(value.toLowerCase())) return 'true';
+    if (falsy.includes(value.toLowerCase())) return 'false';
+    return null;
+  }
+  return column.type === 'textarea' || column.type === 'markdown' ? raw.trimEnd() : value;
+}

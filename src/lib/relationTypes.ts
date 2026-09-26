@@ -30,3 +30,41 @@ export function isRelationType(value: unknown): value is RelationType {
 export function relationLabel(type: string): string {
   return type.replace(/_/g, ' ');
 }
+
+const PEOPLE: RelationType[] = [
+  'friend',
+  'lover',
+  'sibling',
+  'parent',
+  'child',
+  'mentor',
+  'student',
+  'ally',
+  'enemy',
+  'rival',
+  'related_to'
+];
+
+/**
+ * Relation types worth offering first for a pair of entity types; the rest are still
+ * available, just under "Other", so nothing becomes unreachable.
+ */
+export function relationTypeGroups(
+  sourceType: string,
+  targetType: string | null
+): { suggested: RelationType[]; other: RelationType[] } {
+  const pair = [sourceType, targetType ?? sourceType];
+  const has = (type: string) => pair.includes(type);
+
+  let suggested: RelationType[];
+  if (pair.every((t) => t === 'character')) suggested = PEOPLE;
+  else if (has('organization'))
+    suggested = ['member_of', 'leader_of', 'ally', 'enemy', 'related_to'];
+  else if (has('character') && has('location')) suggested = ['home', 'located_in', 'related_to'];
+  else if (has('character') && has('item'))
+    suggested = ['owns', 'used_by', 'created_by', 'related_to'];
+  else if (pair.every((t) => t === 'location')) suggested = ['located_in', 'part_of', 'related_to'];
+  else suggested = ['related_to'];
+
+  return { suggested, other: RELATION_TYPES.filter((t) => !suggested.includes(t)) };
+}

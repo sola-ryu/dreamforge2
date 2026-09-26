@@ -8,7 +8,7 @@
   import type { Backlink, BacklinkReason, EntityType } from '$lib/types';
   import Editor from '$lib/components/Editor.svelte';
   import EntityPicker from '$lib/components/EntityPicker.svelte';
-  import { RELATION_TYPES, relationLabel } from '$lib/relationTypes';
+  import { RELATION_TYPES, relationLabel, relationTypeGroups } from '$lib/relationTypes';
   import { renderBodyHtml } from '$lib/utils/markdown';
   import Comments from '$lib/components/Comments.svelte';
   import BrainstormDeck from '$lib/components/BrainstormDeck.svelte';
@@ -75,6 +75,33 @@
   let relationTypeValue = $state<string>(RELATION_TYPES[0]);
   let relationTarget = $state<string[]>([]);
   let relationLabelText = $state('');
+  let newTarget = $state<{ name: string; type: EntityType } | null>(null);
+  let keepRelationFormOpen = false;
+
+  let relationTargetType = $derived.by(() => {
+    if (newTarget) return newTarget.type;
+    const id = relationTarget[0];
+    const all = (page.data?.entities || []) as Array<{ id: string; type: string }>;
+    return all.find((e) => e.id === id)?.type ?? null;
+  });
+  let relationGroups = $derived(
+    relationTypeGroups(page.data?.entityType || 'character', relationTargetType)
+  );
+
+  $effect(() => {
+    const groups = relationGroups;
+    untrack(() => {
+      const all = [...groups.suggested, ...groups.other];
+      if (!all.includes(relationTypeValue as (typeof all)[number])) {
+        relationTypeValue = groups.suggested[0];
+      } else if (
+        !groups.suggested.includes(relationTypeValue as (typeof groups.suggested)[number]) &&
+        (newTarget || relationTarget.length > 0)
+      ) {
+        relationTypeValue = groups.suggested[0];
+      }
+    });
+  });
 
   /** Suggestions for an entityRef field, limited to the referenced type when one is set. */
   function refOptions(refType?: string): Array<{ id: string; name: string }> {
@@ -614,11 +641,13 @@
         method="POST"
         action="?/addRelation"
         class="mb-3 flex flex-wrap items-end gap-2 rounded-md border border-border p-3"
-        use:enhance={() => {
+        use:enhance={({ submitter }) => {
+          keepRelationFormOpen = submitter?.getAttribute('name') === 'another';
           return async ({ result, update }) => {
             if (result.type === 'success') {
-              addingRelation = false;
+              addingRelation = keepRelationFormOpen;
               relationTarget = [];
+              newTarget = null;
               relationLabelText = '';
             }
             await update({ reset: false });
@@ -626,28 +655,61 @@
         }}
       >
         <div class="space-y-1">
+          <span class="block text-xs text-muted-foreground">Who</span>
+          {#if newTarget}
+            <span
+              class="inline-flex h-8 items-center gap-1 rounded-full border border-border bg-secondary px-3 text-sm"
+            >
+              {newTarget.name}
+              <span class="text-xs text-muted-foreground">
+                (new {ENTITY_LABELS[newTarget.type].toLowerCase()})
+              </span>
+              <button
+                type="button"
+                class="text-muted-foreground hover:text-destructive"
+                aria-label="Remove {newTarget.name}"
+                onclick={() => (newTarget = null)}
+              >
+                &times;
+              </button>
+            </span>
+          {:else}
+            <EntityPicker
+              entities={page.data?.entities || []}
+              bind:value={relationTarget}
+              multiple={false}
+              createTypes={['character', 'organization', 'location']}
+              onCreate={(name, type) => {
+                newTarget = { name, type };
+                relationTarget = [];
+              }}
+              placeholder="Choose or create…"
+              searchPlaceholder="Search, or type a new name…"
+            />
+          {/if}
+          <input type="hidden" name="targetId" value={relationTarget[0] || ''} />
+          {#if newTarget}
+            <input type="hidden" name="newName" value={newTarget.name} />
+            <input type="hidden" name="newType" value={newTarget.type} />
+          {/if}
+        </div>
+
+        <div class="space-y-1">
           <Label class="text-xs text-muted-foreground">Relation</Label>
           <select
             name="relationType"
             bind:value={relationTypeValue}
             class="h-8 rounded border border-input bg-background px-2 text-sm"
           >
-            {#each RELATION_TYPES as type (type)}
+            {#each relationGroups.suggested as type (type)}
               <option value={type}>{relationLabel(type)}</option>
             {/each}
+            <optgroup label="Other">
+              {#each relationGroups.other as type (type)}
+                <option value={type}>{relationLabel(type)}</option>
+              {/each}
+            </optgroup>
           </select>
-        </div>
-
-        <div class="space-y-1">
-          <span class="block text-xs text-muted-foreground">Entity</span>
-          <EntityPicker
-            entities={page.data?.entities || []}
-            bind:value={relationTarget}
-            multiple={false}
-            placeholder="Choose an entity"
-            searchPlaceholder="Search entities…"
-          />
-          <input type="hidden" name="targetId" value={relationTarget[0] || ''} />
         </div>
 
         <div class="space-y-1">
@@ -661,7 +723,19 @@
           />
         </div>
 
-        <Button type="submit" size="sm" disabled={relationTarget.length === 0}>Save</Button>
+        <Button type="submit" size="sm" disabled={relationTarget.length === 0 && !newTarget}>
+          Save
+        </Button>
+        <Button
+          type="submit"
+          name="another"
+          value="1"
+          size="sm"
+          variant="outline"
+          disabled={relationTarget.length === 0 && !newTarget}
+        >
+          Save &amp; add another
+        </Button>
         <Button type="button" size="sm" variant="ghost" onclick={() => (addingRelation = false)}>
           Cancel
         </Button>

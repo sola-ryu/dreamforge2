@@ -1,17 +1,23 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import { enhance } from '$app/forms';
-  import { goto } from '$app/navigation';
+  import { untrack } from 'svelte';
+  import { enhance, deserialize } from '$app/forms';
+  import { goto, invalidateAll } from '$app/navigation';
   import { ENTITY_LABELS, ENTITY_PLURAL } from '$lib/entityFields';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import Editor from '$lib/components/Editor.svelte';
   import EntityCardList from '$lib/components/EntityCardList.svelte';
   import EntityGrid from '$lib/components/EntityGrid.svelte';
+  import GridColumnsMenu from '$lib/components/GridColumnsMenu.svelte';
   import {
     buildGridColumns,
     applyCellValue,
+    defaultVisibleKeys,
+    sortRows,
+    LOCKED_COLUMNS,
     STATUS_OPTIONS,
-    type GridColumn
+    type GridColumn,
+    type SortDirection
   } from '$lib/utils/entityGrid';
   import { filterEntities, collectTags, type EntitySort } from '$lib/utils/entityFilter';
   import { cn } from '$lib/utils';
@@ -127,6 +133,109 @@
 
   let gridColumns = $derived(buildGridColumns(page.data?.customFields || []));
 
+  const COLUMNS_KEY = $derived(`entity-columns-${page.data?.entityType || 'entity'}`);
+  let columnChoice = $state<string[] | null>(null);
+  let autoKeys = $state<Set<string>>(
+    untrack(() => defaultVisibleKeys(page.data?.entities || [], gridColumns))
+  );
+
+  $effect(() => {
+    const stored = localStorage.getItem(COLUMNS_KEY);
+    try {
+      const parsed = stored ? JSON.parse(stored) : null;
+      columnChoice = Array.isArray(parsed) ? parsed : null;
+    } catch {
+      columnChoice = null;
+    }
+  });
+
+  // Auto columns are fixed when a list loads, so clearing a field never makes its column vanish.
+  $effect(() => {
+    const signature = `${page.data?.entityType}:${gridColumns.map((c) => c.key).join(',')}`;
+    untrack(() => {
+      if (signature) autoKeys = defaultVisibleKeys(page.data?.entities || [], gridColumns);
+    });
+  });
+
+  let visibleKeys = $derived(
+    columnChoice ? new Set([...columnChoice, ...LOCKED_COLUMNS]) : autoKeys
+  );
+  let shownColumns = $derived(gridColumns.filter((c) => visibleKeys.has(c.key)));
+
+  function chooseColumns(keys: string[]) {
+    columnChoice = keys;
+    localStorage.setItem(COLUMNS_KEY, JSON.stringify(keys));
+    if (gridSort && !keys.includes(gridSort.key) && !LOCKED_COLUMNS.includes(gridSort.key)) {
+      gridSort = null;
+    }
+  }
+
+  function resetColumns() {
+    columnChoice = null;
+    localStorage.removeItem(COLUMNS_KEY);
+    autoKeys = defaultVisibleKeys(allEntities, gridColumns);
+  }
+
+  let gridSort = $state<{ key: string; dir: SortDirection } | null>(null);
+  let gridOrder = $state<string[]>([]);
+
+  function toggleGridSort(key: string) {
+    if (gridSort?.key !== key) gridSort = { key, dir: 'asc' };
+    else if (gridSort.dir === 'asc') gridSort = { key, dir: 'desc' };
+    else gridSort = null;
+  }
+
+  // Row order is fixed when the view is (re)sorted or filtered, not on every edit or add:
+  // rows keep their place while you type, and a row you add lands at the bottom.
+  $effect(() => {
+    void [
+      layout,
+      entityType,
+      searchQuery,
+      statusFilter,
+      tagFilters.join(','),
+      sort,
+      gridSort?.key,
+      gridSort?.dir
+    ];
+    untrack(() => {
+      const column = gridSort ? gridColumns.find((c) => c.key === gridSort!.key) : undefined;
+      const ordered = column && gridSort ? sortRows(entities, column, gridSort.dir) : entities;
+      gridOrder = ordered.map((e) => e.id);
+    });
+  });
+
+  let gridRows = $derived.by(() => {
+    const byId = new Map(entities.map((e) => [e.id, e]));
+    const placed = new Set(gridOrder);
+    return [
+      ...gridOrder.filter((id) => byId.has(id)).map((id) => byId.get(id)!),
+      ...entities.filter((e) => !placed.has(e.id))
+    ];
+  });
+
+  async function addGridRow(name: string): Promise<string | null> {
+    const body = new URLSearchParams({ name });
+    try {
+      const res = await fetch(`${page.url.pathname}?/quickCreate`, {
+        method: 'POST',
+        headers: { 'x-sveltekit-action': 'true' },
+        body
+      });
+      const result = deserialize(await res.text());
+      if (result.type === 'success') {
+        await invalidateAll();
+        return null;
+      }
+      if (result.type === 'failure') {
+        return (result.data as { error?: string } | undefined)?.error || 'Could not add row';
+      }
+      return 'Could not add row';
+    } catch {
+      return 'Could not add row';
+    }
+  }
+
   let entityType = $derived((page.data?.entityType || 'character') as EntityType);
   let route = $derived(entityTypeToRoute(entityType));
   let emptyMessage = $derived(
@@ -161,24 +270,37 @@
       </p>
     </div>
     <div class="flex items-center gap-2">
+      {#if layout === 'table'}
+        <GridColumnsMenu
+          columns={gridColumns}
+          visible={visibleKeys}
+          customized={columnChoice !== null}
+          onChange={chooseColumns}
+          onReset={resetColumns}
+        />
+      {/if}
       <div class="flex rounded-lg border border-border overflow-hidden">
         <Button
           variant="ghost"
-          size="icon-sm"
+          size="sm"
           onclick={() => setLayout('cards')}
           class={cn('rounded-none', layout === 'cards' && 'bg-secondary')}
           aria-label="Card layout"
+          aria-pressed={layout === 'cards'}
         >
           <LayoutList class="h-4 w-4" />
+          Cards
         </Button>
         <Button
           variant="ghost"
-          size="icon-sm"
+          size="sm"
           onclick={() => setLayout('table')}
           class={cn('rounded-none', layout === 'table' && 'bg-secondary')}
           aria-label="Table layout"
+          aria-pressed={layout === 'table'}
         >
           <Table2 class="h-4 w-4" />
+          Table
         </Button>
       </div>
       <Button variant="outline" onclick={downloadCsv}>
@@ -310,7 +432,7 @@
     </div>
   {/if}
 
-  {#if canEdit}
+  {#if canEdit && (layout === 'cards' || entities.length === 0)}
     <form
       method="POST"
       action="?/quickCreate"
@@ -428,9 +550,12 @@
     />
   {:else}
     <EntityGrid
-      rows={entities}
+      rows={gridRows}
       entities={allEntities}
-      columns={gridColumns}
+      columns={shownColumns}
+      sort={gridSort}
+      onSort={toggleGridSort}
+      onAddRow={addGridRow}
       projectId={page.params.id || ''}
       {route}
       {canEdit}

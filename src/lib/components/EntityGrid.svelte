@@ -2,7 +2,16 @@
   import { tick } from 'svelte';
   import EntityGridCell from '$lib/components/EntityGridCell.svelte';
   import EntityGridPanel from '$lib/components/EntityGridPanel.svelte';
-  import { getCellValue, toEditString, layoutRow, type GridColumn } from '$lib/utils/entityGrid';
+  import {
+    getCellValue,
+    toEditString,
+    layoutRow,
+    parseClipboardGrid,
+    normalizePastedValue,
+    type GridColumn,
+    type SortDirection
+  } from '$lib/utils/entityGrid';
+  import { ArrowUp, ArrowDown, Plus } from '@lucide/svelte';
   import { spill, scrollTracker, stickyColumns } from '$lib/utils/gridDom';
   import { cn, formatDate } from '$lib/utils';
 
@@ -16,7 +25,10 @@
     refEntities = {},
     emptyMessage = 'Nothing here yet.',
     entityHref,
-    onSaved
+    onSaved,
+    sort = null,
+    onSort,
+    onAddRow
   }: {
     /** Rows currently visible (search-filtered). */
     rows: Record<string, any>[];
@@ -30,6 +42,10 @@
     emptyMessage?: string;
     entityHref: (entity: Record<string, any>) => string;
     onSaved: (entityId: string, column: GridColumn, raw: string) => void;
+    sort?: { key: string; dir: SortDirection } | null;
+    onSort?: (key: string) => void;
+    /** Resolves to an error message, or null once the row exists. */
+    onAddRow?: (name: string) => Promise<string | null>;
   } = $props();
 
   // `activeCell` is the spreadsheet cursor, `editing` means an inline editor is open.
@@ -39,6 +55,10 @@
   let panelTarget = $state<{ entityId: string; colIndex: number } | null>(null);
   let gridEl = $state<HTMLElement | null>(null);
   let gridError = $state('');
+  let gridNotice = $state('');
+  let addName = $state('');
+  let addError = $state('');
+  let addInput = $state<HTMLInputElement | null>(null);
 
   let panelEntity = $derived(
     panelTarget ? entities.find((e) => e.id === panelTarget!.entityId) : null
@@ -49,7 +69,7 @@
     const current = toEditString(
       getCellValue(entities.find((e) => e.id === entityId) || {}, column.key)
     );
-    if (current === raw) return;
+    if (current === raw) return true;
 
     const body = new FormData();
     body.set('entityId', entityId);
@@ -63,10 +83,89 @@
 
     if (res.ok) {
       onSaved(entityId, column, raw);
-    } else {
-      gridError = `Could not save ${column.label}.`;
-      setTimeout(() => (gridError = ''), 4000);
+      return true;
     }
+    gridError = `Could not save ${column.label}.`;
+    setTimeout(() => (gridError = ''), 4000);
+    return false;
+  }
+
+  function notify(message: string) {
+    gridNotice = message;
+    setTimeout(() => (gridNotice = ''), 3500);
+  }
+
+  async function submitAddRow() {
+    const name = addName.trim();
+    if (!name || !onAddRow) return;
+    const error = await onAddRow(name);
+    if (error) {
+      addError = error;
+      return;
+    }
+    addError = '';
+    addName = '';
+    addInput?.focus();
+  }
+
+  function onCopy(e: ClipboardEvent) {
+    if (editing || !activeCell) return;
+    if ((e.target as HTMLElement | null)?.closest('input, textarea')) return;
+    const entity = rows[activeCell.row];
+    if (!entity) return;
+    e.preventDefault();
+    e.clipboardData?.setData(
+      'text/plain',
+      toEditString(getCellValue(entity, columns[activeCell.col].key))
+    );
+  }
+
+  async function onPaste(e: ClipboardEvent) {
+    if (editing || !activeCell || !canEdit || panelTarget) return;
+    if ((e.target as HTMLElement | null)?.closest('input, textarea')) return;
+    const text = e.clipboardData?.getData('text/plain') ?? '';
+    if (!text) return;
+    e.preventDefault();
+
+    const matrix = parseClipboardGrid(text);
+    const start = activeCell;
+    let applied = 0;
+    let skipped = 0;
+    for (let r = 0; r < matrix.length; r++) {
+      const entity = rows[start.row + r];
+      if (!entity) {
+        skipped += matrix[r].length;
+        continue;
+      }
+      for (let c = 0; c < matrix[r].length; c++) {
+        const column = columns[start.col + c];
+        if (!column) {
+          skipped++;
+          continue;
+        }
+        const value = normalizePastedValue(column, matrix[r][c]);
+        if (value === null) {
+          skipped++;
+          continue;
+        }
+        if (await saveCell(entity.id, column, value)) applied++;
+        else skipped++;
+      }
+    }
+    notify(
+      skipped > 0
+        ? `Pasted ${applied} ${applied === 1 ? 'cell' : 'cells'}, skipped ${skipped} that did not fit`
+        : `Pasted ${applied} ${applied === 1 ? 'cell' : 'cells'}`
+    );
+  }
+
+  async function fillDown() {
+    if (!canEdit || !activeCell || activeCell.row === 0) return;
+    const column = columns[activeCell.col];
+    const above = rows[activeCell.row - 1];
+    const entity = rows[activeCell.row];
+    if (!above || !entity || column.key === 'name') return;
+    await saveCell(entity.id, column, toEditString(getCellValue(above, column.key)));
   }
 
   function moveActive(dRow: number, dCol: number) {
@@ -136,9 +235,19 @@
     const column = columns[activeCell.col];
     const entity = rows[activeCell.row];
 
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+      e.preventDefault();
+      fillDown();
+      return;
+    }
+
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
+        if (activeCell.row === rows.length - 1 && onAddRow && canEdit) {
+          addInput?.focus();
+          return;
+        }
         moveActive(1, 0);
         break;
       case 'ArrowUp':
@@ -155,7 +264,17 @@
         break;
       case 'Tab':
         e.preventDefault();
-        moveActive(0, e.shiftKey ? -1 : 1);
+        if (
+          !e.shiftKey &&
+          activeCell.col === columns.length - 1 &&
+          activeCell.row < rows.length - 1
+        ) {
+          activeCell = { row: activeCell.row + 1, col: Math.min(1, columns.length - 1) };
+        } else if (e.shiftKey && activeCell.col <= 1 && activeCell.row > 0) {
+          activeCell = { row: activeCell.row - 1, col: columns.length - 1 };
+        } else {
+          moveActive(0, e.shiftKey ? -1 : 1);
+        }
         break;
       case 'Enter':
       case 'F2':
@@ -200,7 +319,8 @@
 
 <p class="mb-2 text-xs text-muted-foreground">
   Click a cell, then use arrow keys to move. Type or press Enter to edit, Enter/Tab to commit,
-  Escape to cancel, Space to toggle checkboxes, Delete to clear.
+  Escape to cancel, Space to toggle checkboxes, Delete to clear. Ctrl/⌘+D fills down, and you can
+  paste cells copied from a spreadsheet. Click a column header to sort.
 </p>
 <div class="rounded-lg border border-border overflow-x-auto" use:scrollTracker bind:this={gridEl}>
   {#if rows.length === 0}
@@ -211,6 +331,8 @@
       class="w-full text-sm min-w-max border-separate border-spacing-0"
       use:stickyColumns
       onkeydown={onGridKeydown}
+      oncopy={onCopy}
+      onpaste={onPaste}
     >
       <thead class="sticky top-0 z-20 bg-background">
         <tr class="bg-muted/40">
@@ -224,11 +346,25 @@
               )}
               style={col === 0 ? 'left: 0' : col === 1 ? 'left: var(--grid-col0, 4rem)' : undefined}
             >
-              {#if col === 0}
-                <span class="sr-only">{column.label}</span>
-              {:else}
-                {column.label}
-              {/if}
+              <button
+                type="button"
+                class="flex items-center gap-1 hover:text-foreground"
+                aria-label="Sort by {column.label}"
+                onclick={() => onSort?.(column.key)}
+              >
+                {#if col === 0}
+                  <span class="sr-only">{column.label}</span>
+                {:else}
+                  {column.label}
+                {/if}
+                {#if sort?.key === column.key}
+                  {#if sort.dir === 'asc'}
+                    <ArrowUp class="h-3 w-3" />
+                  {:else}
+                    <ArrowDown class="h-3 w-3" />
+                  {/if}
+                {/if}
+              </button>
             </th>
           {/each}
           <th
@@ -304,6 +440,40 @@
             </td>
           </tr>
         {/each}
+        {#if canEdit && onAddRow}
+          <tr>
+            <td colspan={columns.length + 1} class="p-0">
+              <div class="relative">
+                <Plus
+                  class="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
+                />
+                <input
+                  bind:this={addInput}
+                  bind:value={addName}
+                  type="text"
+                  autocomplete="off"
+                  aria-label="Add row"
+                  placeholder="Add a row: type a name and press Enter"
+                  class="h-9 w-full bg-transparent pl-9 pr-3 text-sm outline-none placeholder:text-muted-foreground/70 focus:bg-muted/30"
+                  onkeydown={(e) => {
+                    e.stopPropagation();
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      submitAddRow();
+                    } else if (e.key === 'ArrowUp' && rows.length > 0) {
+                      e.preventDefault();
+                      activeCell = { row: rows.length - 1, col: Math.min(1, columns.length - 1) };
+                      focusActiveCell();
+                    }
+                  }}
+                />
+              </div>
+              {#if addError}
+                <p class="px-3 pb-1 text-xs text-destructive">{addError}</p>
+              {/if}
+            </td>
+          </tr>
+        {/if}
       </tbody>
     </table>
   {/if}
@@ -322,6 +492,15 @@
       onClose={closePanel}
     />
   {/key}
+{/if}
+
+{#if gridNotice && !gridError}
+  <div
+    class="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-border bg-card px-4 py-2 text-sm shadow-lg"
+    role="status"
+  >
+    {gridNotice}
+  </div>
 {/if}
 
 {#if gridError}

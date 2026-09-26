@@ -21,6 +21,8 @@
     /** Store the entity name instead of its id — for fields that stay human-readable. */
     storeNames = false,
     allowFreeText = false,
+    createTypes = [],
+    onCreate,
     placeholder = 'Add…',
     searchPlaceholder = 'Search…',
     disabled = false
@@ -31,6 +33,9 @@
     multiple?: boolean;
     storeNames?: boolean;
     allowFreeText?: boolean;
+    /** Types offered as "Create …" for a name that matches nothing; needs onCreate. */
+    createTypes?: EntityType[];
+    onCreate?: (name: string, type: EntityType) => void;
     placeholder?: string;
     searchPlaceholder?: string;
     disabled?: boolean;
@@ -51,6 +56,19 @@
       12
     )
   );
+
+  let creatable = $derived.by(() => {
+    const name = query.trim();
+    if (!onCreate || !name) return [];
+    if (candidates.some((e) => e.name.toLowerCase() === name.toLowerCase())) return [];
+    return createTypes;
+  });
+
+  function create(type: EntityType) {
+    onCreate?.(query.trim(), type);
+    query = '';
+    open = false;
+  }
 
   /** Stored values may be ids, names, or leftover free text — show the best label we have. */
   function labelFor(stored: string): string {
@@ -107,7 +125,7 @@
         <Command.Root shouldFilter={false} loop>
           <Command.Input bind:value={query} placeholder={searchPlaceholder} />
           <Command.List>
-            {#if matches.length === 0 && !(allowFreeText && query.trim())}
+            {#if matches.length === 0 && creatable.length === 0 && !(allowFreeText && query.trim())}
               <Command.Empty>No matches.</Command.Empty>
             {/if}
             {#each matches as entity (entity.id)}
@@ -119,6 +137,14 @@
                 <span class="ml-auto text-xs text-muted-foreground">
                   {ENTITY_LABELS[entity.type]}
                 </span>
+              </Command.Item>
+            {/each}
+            {#each creatable as type (type)}
+              <Command.Item value="__create-{type}" onSelect={() => create(type)}>
+                <Plus class="h-3 w-3" />
+                <span class="truncate"
+                  >Create {ENTITY_LABELS[type].toLowerCase()} “{query.trim()}”</span
+                >
               </Command.Item>
             {/each}
             {#if allowFreeText && query.trim()}

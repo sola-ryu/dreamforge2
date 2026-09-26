@@ -1,5 +1,11 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { getEntity, updateEntity, searchEntities, duplicateEntity } from '$lib/server/entities';
+import {
+  getEntity,
+  updateEntity,
+  searchEntities,
+  duplicateEntity,
+  createEntity
+} from '$lib/server/entities';
 import { routeToEntityType } from '$lib/utils/entityTypes';
 import { addBookmark, removeBookmark, isBookmarked } from '$lib/server/bookmarks';
 import { noteToScene } from '$lib/server/conversion';
@@ -15,8 +21,8 @@ import {
   linkEntityToImage,
   unlinkEntityFromImage
 } from '$lib/server/images';
-import { mergeFields } from '$lib/entityFields';
-import { ENTITY_FIELDS } from '$lib/entityFields';
+import { mergeFields, ENTITY_FIELDS, ENTITY_LABELS } from '$lib/entityFields';
+import type { EntityType } from '$lib/types';
 import { getProjectAccess } from '$lib/server/members';
 import { isSafePathSegment } from '$lib/utils';
 import { applyPromptAnswer, getPrompt } from '$lib/brainstorm';
@@ -179,13 +185,23 @@ export const actions = {
     const { project } = access;
 
     const form = await request.formData();
-    const targetId = form.get('targetId') as string;
+    let targetId = (form.get('targetId') as string) || '';
+    const newName = ((form.get('newName') as string) || '').trim();
+    const newType = form.get('newType') as string;
     const relationType = form.get('relationType') as string;
 
-    if (!targetId) return fail(400, { error: 'Pick an entity to relate to' });
+    if (!targetId && !newName) return fail(400, { error: 'Pick an entity to relate to' });
     if (targetId === params.entityId)
       return fail(400, { error: 'An entity cannot relate to itself' });
     if (!isRelationType(relationType)) return fail(400, { error: 'Unknown relation type' });
+    if (!targetId && !Object.keys(ENTITY_LABELS).includes(newType))
+      return fail(400, { error: 'Unknown type' });
+
+    if (!targetId) {
+      targetId = createEntity(params.id, project.dataPath, newType as EntityType, {
+        name: newName
+      }).id;
+    }
 
     addRelation(project.dataPath, {
       sourceId: params.entityId,
