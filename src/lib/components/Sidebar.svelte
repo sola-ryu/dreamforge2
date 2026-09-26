@@ -1,6 +1,8 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
+  import { ENTITY_PLURAL, ENTITY_LABELS } from '$lib/entityFields';
+  import type { EntityType } from '$lib/types';
   import { getTheme } from '$lib/stores/theme.svelte';
   import { getZenMode } from '$lib/stores/zenMode.svelte';
   import { getOverlays } from '$lib/stores/overlays.svelte';
@@ -19,12 +21,51 @@
     Scan,
     Sparkles,
     Command,
-    Keyboard
+    Keyboard,
+    Users,
+    Building2,
+    MapPin,
+    Globe,
+    Bug,
+    Package,
+    FileText,
+    Plus,
+    ChevronRight
   } from '@lucide/svelte';
 
   const theme = getTheme();
   const zen = getZenMode();
   const overlays = getOverlays();
+
+  const ENTITY_ICONS: Record<EntityType, typeof Users> = {
+    character: Users,
+    organization: Building2,
+    location: MapPin,
+    culture: Globe,
+    species: Bug,
+    item: Package,
+    note: FileText
+  };
+
+  const ENTITY_TYPES = Object.keys(ENTITY_PLURAL) as EntityType[];
+
+  let showMore = $state(false);
+
+  let base = $derived(`/projects/${page.params?.id}`);
+  let counts = $derived((page.data?.entityCounts || {}) as Record<string, number>);
+
+  function inSection(section: string) {
+    let path = `${base}/${section}`;
+    return page.url.pathname === path || page.url.pathname.startsWith(`${path}/`);
+  }
+
+  let onEntityRoute = $derived(
+    ENTITY_TYPES.filter((t) => inSection(entityTypeToRoute(t)))[0] as EntityType | undefined
+  );
+  let primaryTypes = $derived(
+    ENTITY_TYPES.filter((t) => t === 'character' || (counts[t] ?? 0) > 0 || t === onEntityRoute)
+  );
+  let moreTypes = $derived(ENTITY_TYPES.filter((t) => !primaryTypes.includes(t)));
 </script>
 
 <Sidebar.Root collapsible="icon">
@@ -91,7 +132,7 @@
             </Sidebar.MenuItem>
 
             <Sidebar.MenuItem>
-              <Sidebar.MenuButton tooltipContent="Stories">
+              <Sidebar.MenuButton isActive={inSection('stories')} tooltipContent="Stories">
                 {#snippet child({ props })}
                   <a href={`/projects/${page.params.id}/stories`} {...props}>
                     <BookOpenText class="h-4 w-4" />
@@ -102,7 +143,7 @@
             </Sidebar.MenuItem>
 
             <Sidebar.MenuItem>
-              <Sidebar.MenuButton tooltipContent="Plots">
+              <Sidebar.MenuButton isActive={inSection('plots')} tooltipContent="Plots">
                 {#snippet child({ props })}
                   <a href={`/projects/${page.params.id}/plots`} {...props}>
                     <Sparkles class="h-4 w-4" />
@@ -113,7 +154,7 @@
             </Sidebar.MenuItem>
 
             <Sidebar.MenuItem>
-              <Sidebar.MenuButton tooltipContent="Timelines">
+              <Sidebar.MenuButton isActive={inSection('timelines')} tooltipContent="Timelines">
                 {#snippet child({ props })}
                   <a href={`/projects/${page.params.id}/timelines`} {...props}>
                     <Clock class="h-4 w-4" />
@@ -124,7 +165,7 @@
             </Sidebar.MenuItem>
 
             <Sidebar.MenuItem>
-              <Sidebar.MenuButton tooltipContent="Relations">
+              <Sidebar.MenuButton isActive={inSection('relations')} tooltipContent="Relations">
                 {#snippet child({ props })}
                   <a href={`/projects/${page.params.id}/relations`} {...props}>
                     <GitBranch class="h-4 w-4" />
@@ -135,7 +176,7 @@
             </Sidebar.MenuItem>
 
             <Sidebar.MenuItem>
-              <Sidebar.MenuButton tooltipContent="Search">
+              <Sidebar.MenuButton isActive={inSection('search')} tooltipContent="Search">
                 {#snippet child({ props })}
                   <a href={`/projects/${page.params.id}/search`} {...props}>
                     <Search class="h-4 w-4" />
@@ -144,6 +185,62 @@
                 {/snippet}
               </Sidebar.MenuButton>
             </Sidebar.MenuItem>
+          </Sidebar.Menu>
+        </Sidebar.GroupContent>
+      </Sidebar.Group>
+
+      <Sidebar.Group>
+        <Sidebar.GroupLabel>World</Sidebar.GroupLabel>
+        <Sidebar.GroupContent>
+          <Sidebar.Menu>
+            {#each showMore ? ENTITY_TYPES : primaryTypes as type (type)}
+              {@const Icon = ENTITY_ICONS[type]}
+              <Sidebar.MenuItem>
+                <Sidebar.MenuButton
+                  isActive={inSection(entityTypeToRoute(type))}
+                  tooltipContent={ENTITY_PLURAL[type]}
+                >
+                  {#snippet child({ props })}
+                    <a href={`${base}/${entityTypeToRoute(type)}`} {...props}>
+                      <Icon class="h-4 w-4" />
+                      <span>{ENTITY_PLURAL[type]}</span>
+                    </a>
+                  {/snippet}
+                </Sidebar.MenuButton>
+                {#if (counts[type] ?? 0) > 0}
+                  <Sidebar.MenuBadge class="group-hover/menu-item:opacity-0">
+                    {counts[type]}
+                  </Sidebar.MenuBadge>
+                {/if}
+                <Sidebar.MenuAction showOnHover>
+                  {#snippet child({ props })}
+                    <a
+                      href={`${base}/${entityTypeToRoute(type)}?new=1`}
+                      aria-label="New {ENTITY_LABELS[type].toLowerCase()}"
+                      title="New {ENTITY_LABELS[type].toLowerCase()}"
+                      {...props}
+                    >
+                      <Plus />
+                    </a>
+                  {/snippet}
+                </Sidebar.MenuAction>
+              </Sidebar.MenuItem>
+            {/each}
+
+            {#if moreTypes.length > 0}
+              <Sidebar.MenuItem>
+                <Sidebar.MenuButton
+                  onclick={() => (showMore = !showMore)}
+                  tooltipContent={showMore ? 'Show fewer' : 'More types'}
+                  class="text-muted-foreground"
+                >
+                  <ChevronRight
+                    class="h-4 w-4 transition-transform {showMore ? 'rotate-90' : ''}"
+                  />
+                  <span>{showMore ? 'Fewer' : `More (${moreTypes.length})`}</span>
+                </Sidebar.MenuButton>
+              </Sidebar.MenuItem>
+            {/if}
           </Sidebar.Menu>
         </Sidebar.GroupContent>
       </Sidebar.Group>

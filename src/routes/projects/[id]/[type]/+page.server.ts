@@ -7,6 +7,7 @@ import { getNoteTemplates } from '$lib/server/templates';
 import { getCustomFieldDefs } from '$lib/server/customFields';
 import { mergeFields, ENTITY_FIELDS } from '$lib/entityFields';
 import { getProjectAccess } from '$lib/server/members';
+import { parseQuickAdd } from '$lib/utils/quickAdd';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals, url }) => {
@@ -119,13 +120,39 @@ export const actions = {
       }
     }
 
-    createEntity(params.id, project.dataPath, entityType, {
+    const created = createEntity(params.id, project.dataPath, entityType, {
       ...fieldValues,
       name,
       body: body || undefined
     });
 
-    return { success: true };
+    return { success: true, entityId: created.id };
+  },
+
+  quickCreate: async ({ params, locals, request }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
+
+    const entityType = routeToEntityType(params.type);
+    if (!entityType) return fail(400, { error: 'Invalid entity type' });
+
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
+
+    const form = await request.formData();
+    const allowTraits = ENTITY_FIELDS[entityType].some(
+      (f) => f.key === 'traits' && f.type === 'tags'
+    );
+    const { name, traits } = parseQuickAdd((form.get('name') as string) || '', allowTraits);
+    if (!name) return fail(400, { error: 'Name is required' });
+
+    const created = createEntity(params.id, project.dataPath, entityType, {
+      name,
+      ...(traits.length > 0 ? { traits } : {})
+    });
+
+    return { success: true, entityId: created.id, name: created.name };
   },
 
   quickUpdate: async ({ params, locals, request }) => {

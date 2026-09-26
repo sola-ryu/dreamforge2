@@ -42,6 +42,10 @@
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
   let toastVisible = $state(false);
   let layout = $state<'cards' | 'table'>('cards');
+  let quickName = $state('');
+  let quickInput = $state<HTMLInputElement | null>(null);
+  let quickAdded = $state<string[]>([]);
+  let quickError = $state('');
 
   let role = $derived(page.data?.role || 'owner');
   let canEdit = $derived(role !== 'commenter');
@@ -209,6 +213,11 @@
             if (result.type === 'success') {
               showCreate = false;
               newName = '';
+              const created = (result.data as { entityId?: string } | undefined)?.entityId;
+              if (created) {
+                goto(`/projects/${page.params.id}/${route}/${created}`);
+                return;
+              }
               update();
             }
           };
@@ -299,6 +308,49 @@
         </div>
       </form>
     </div>
+  {/if}
+
+  {#if canEdit}
+    <form
+      method="POST"
+      action="?/quickCreate"
+      class="mb-4"
+      use:enhance={() => {
+        quickError = '';
+        return async ({ result, update }) => {
+          if (result.type === 'success') {
+            const added = (result.data as { name?: string } | undefined)?.name;
+            if (added) quickAdded = [added, ...quickAdded].slice(0, 5);
+            quickName = '';
+            await update({ reset: false });
+          } else if (result.type === 'failure') {
+            quickError = (result.data as { error?: string } | undefined)?.error || 'Could not add';
+          }
+          quickInput?.focus();
+        };
+      }}
+    >
+      <div class="relative">
+        <Plus class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <input
+          name="name"
+          type="text"
+          autocomplete="off"
+          bind:this={quickInput}
+          bind:value={quickName}
+          placeholder={entityType === 'character' || entityType === 'species'
+            ? 'Quick add: type a name, or "Vess: cynical, smuggler", then press Enter'
+            : `Quick add: type a name and press Enter`}
+          aria-label="Quick add {ENTITY_LABELS[entityType].toLowerCase()}"
+          class="w-full rounded-lg border border-dashed border-input bg-background py-2 pl-9 pr-3 text-sm focus:border-primary"
+        />
+      </div>
+      {#if quickError}
+        <p class="mt-1 text-xs text-destructive">{quickError}</p>
+      {:else if quickAdded.length > 0}
+        <p class="mt-1 text-xs text-muted-foreground">Added {quickAdded.join(', ')}</p>
+      {/if}
+    </form>
   {/if}
 
   <div class="mb-4 space-y-3">
