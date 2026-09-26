@@ -6,23 +6,18 @@ These are things not yet implemented but worth eventually adding. When something
 
 The app is strong at storing structured data but has few tools for _generating_ it. The goal: a blank entity page should never feel blank.
 
-### Trait prompts / "Ask me questions" mode
+### Brainstorm deck follow-ups
 
-**Files:** `src/lib/brainstorm/prompts.ts`, `src/lib/components/PromptDeck.svelte`
+**Files:** `src/lib/brainstorm.ts`, `src/lib/components/BrainstormDeck.svelte`
 
-- Per-entity-type question decks shown on the entity page ("What does this character fear most?", "Who would they betray, and for what?", "What does this place smell like after rain?")
-- One question at a time, card-style; answer inline and it appends to the body under a heading (or into a mapped field)
-- Skip / shuffle / "show me another"; remember which prompts were answered per entity (frontmatter `answeredPrompts: []`)
-- User-editable decks per project (stored as `project/prompts/<type>.json`) so writers can add their own questionnaires
-- Ship classic sets: Proust questionnaire, Marcel/Bernhardt-style character interview, "30 questions for your villain", location sensory checklist
+- User-editable decks per project (stored as `project/prompts/<type>.json`) so writers can add their own questionnaires; prompts could also target custom fields
+- Selectable question sets: Proust questionnaire, Bernhardt-style character interview, "30 questions for your villain", location sensory checklist
+- Weighted "contrast roll" across decks (one virtue + one flaw + one quirk), and lock individual chips before re-rolling
+- More chip categories (speech patterns, fears, desires, habits) and suggestion chips for text prompts
+- "Reset answered" to revisit a whole deck, and a list of past answers per prompt
 
-### Trait pickers and random rolls
+### Random tables and name generation
 
-**Files:** `src/lib/brainstorm/tables/`, `src/lib/components/TraitPicker.svelte`
-
-- Click-to-add chips for the `traits` tags field, grouped by category (virtues, flaws, quirks, habits, speech patterns, fears, desires)
-- "Roll" button: pick N random traits, optionally weighted toward contrast (one virtue + one flaw + one quirk)
-- Lock individual chips and re-roll the rest
 - Generic random tables (name syllables, occupations, weather, rumors, tavern names, plot hooks) as JSON, user-extendable per project
 - Name generator per culture/species: define syllable lists or example names on the culture entity, generate names from them (Markov chain over examples, no dependency needed)
 

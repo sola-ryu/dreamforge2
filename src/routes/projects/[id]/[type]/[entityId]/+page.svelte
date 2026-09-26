@@ -10,6 +10,7 @@
   import { RELATION_TYPES, relationLabel } from '$lib/relationTypes';
   import { renderBodyHtml } from '$lib/utils/markdown';
   import Comments from '$lib/components/Comments.svelte';
+  import BrainstormDeck from '$lib/components/BrainstormDeck.svelte';
   import {
     ArrowLeft,
     Save,
@@ -411,6 +412,15 @@
       {/if}
     </div>
   </form>
+
+  {#if canEdit && !editing && page.data?.entityType}
+    <BrainstormDeck
+      type={page.data.entityType as EntityType}
+      answeredIds={(page.data.entity?.frontmatter?.answeredPrompts as string[]) || []}
+      startOpen={!page.data.entity?.body?.trim() &&
+        !(page.data.entity?.frontmatter?.answeredPrompts as string[] | undefined)?.length}
+    />
+  {/if}
 
   <div class="mt-6 rounded-lg border border-border bg-card p-4">
     <div class="mb-3 flex items-center justify-between">

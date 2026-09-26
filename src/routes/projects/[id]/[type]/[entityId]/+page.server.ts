@@ -19,6 +19,7 @@ import { mergeFields } from '$lib/entityFields';
 import { ENTITY_FIELDS } from '$lib/entityFields';
 import { getProjectAccess } from '$lib/server/members';
 import { isSafePathSegment } from '$lib/utils';
+import { applyPromptAnswer, getPrompt } from '$lib/brainstorm';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -143,6 +144,29 @@ export const actions = {
     for (const key of boolFields) {
       if (!(key in data)) data[key] = false;
     }
+    updateEntity(params.id, project.dataPath, entityType, params.entityId, data);
+    return { success: true };
+  },
+
+  answerPrompt: async ({ params, locals, request }) => {
+    if (!locals.user) return fail(401, { error: 'Unauthorized' });
+    const entityType = routeToEntityType(params.type);
+    if (!entityType) return fail(400, { error: 'Invalid entity type' });
+    const access = getProjectAccess(params.id, locals.user.id);
+    if (!access) return fail(404, { error: 'Project not found' });
+    if (access.role === 'commenter') return fail(403, { error: 'Insufficient permissions' });
+    const { project } = access;
+
+    const form = await request.formData();
+    const prompt = getPrompt(entityType, (form.get('promptId') as string) || '');
+    if (!prompt) return fail(400, { error: 'Unknown prompt' });
+    const answer = ((form.get('answer') as string) || '').trim();
+    if (!answer) return fail(400, { error: 'Answer is empty' });
+
+    const entity = getEntity(params.id, project.dataPath, entityType, params.entityId);
+    if (!entity) return fail(404, { error: 'Entity not found' });
+
+    const data = applyPromptAnswer(entityType, entity, prompt, answer);
     updateEntity(params.id, project.dataPath, entityType, params.entityId, data);
     return { success: true };
   },

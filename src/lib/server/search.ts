@@ -32,7 +32,8 @@ const SKIP_FRONTMATTER_KEYS = new Set([
   'status',
   'imagePath',
   'created',
-  'modified'
+  'modified',
+  'answeredPrompts'
 ]);
 
 function stripHtml(text: string): string {
