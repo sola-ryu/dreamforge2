@@ -16,7 +16,7 @@ export const load: PageServerLoad = async () => {
 };
 
 export const actions = {
-  register: async ({ request, cookies }) => {
+  register: async ({ request, cookies, url }) => {
     if (!registrationAllowed()) {
       return fail(403, { error: 'Registration is disabled' });
     }
@@ -74,7 +74,7 @@ export const actions = {
       path: '/',
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure: url.protocol === 'https:',
       maxAge: 60 * 60 * 24 * 30
     });
 

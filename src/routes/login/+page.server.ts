@@ -9,7 +9,7 @@ import { generateId } from '$lib/utils';
 const drizzleDb = drizzle(db);
 
 export const actions = {
-  login: async ({ request, cookies }) => {
+  login: async ({ request, cookies, url }) => {
     const form = await request.formData();
     const email = form.get('email') as string;
     const password = form.get('password') as string;
@@ -45,7 +45,7 @@ export const actions = {
       path: '/',
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure: url.protocol === 'https:',
       maxAge: 60 * 60 * 24 * 30
     });
 

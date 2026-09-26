@@ -1,18 +1,32 @@
-import db from '$lib/server/db';
+import db, { dbPath } from '$lib/server/db';
 import { sessions, users } from '$lib/server/schema';
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from '$lib/server/migrate';
 import { seed } from '$lib/server/seed';
 import { purgeExpiredTrashItems } from '$lib/server/trash';
-import type { Handle } from '@sveltejs/kit';
+import { getDataDir } from '$lib/server/paths';
+import type { Handle, HandleServerError } from '@sveltejs/kit';
 
 const drizzleDb = drizzle(db);
 
-// Run migrations, seed, and purge expired trash on startup
-migrate();
-seed();
-purgeExpiredTrashItems();
+// Run migrations, seed, and purge expired trash on startup. A startup failure is
+// fatal — crash loudly so the container logs show it instead of serving 500s.
+try {
+  migrate();
+  await seed();
+  purgeExpiredTrashItems();
+  console.log(
+    `[${new Date().toISOString()}] DreamForge startup complete (database=${dbPath}, dataDir=${getDataDir()})`
+  );
+} catch (err) {
+  console.error(`[${new Date().toISOString()}] DreamForge startup failed:`, err);
+  process.exit(1);
+}
+
+function requestLabel(event: { request: Request; url: URL }, status: number): string {
+  return `[${new Date().toISOString()}] ${status} ${event.request.method} ${event.url.pathname}`;
+}
 
 export const handle: Handle = async ({ event, resolve }) => {
   const sessionId = event.cookies.get('dreamforge-session');
@@ -39,5 +53,18 @@ export const handle: Handle = async ({ event, resolve }) => {
   }
 
   const response = await resolve(event);
+
+  // SvelteKit only reports unexpected exceptions to handleError — expected
+  // errors (error(), fail(500), manual 500 responses) would otherwise be silent.
+  if (response.status >= 500) {
+    console.error(`${requestLabel(event, response.status)} — returned ${response.status} response`);
+  }
+
   return response;
+};
+
+export const handleError: HandleServerError = async ({ error, event, status }) => {
+  console.error(`${requestLabel(event, status)} — unhandled error`);
+  const err = error as Error | undefined;
+  console.error(err?.stack ?? err);
 };
