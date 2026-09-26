@@ -34,11 +34,33 @@ describe('applyPromptAnswer', () => {
     const data = applyPromptAnswer(
       'character',
       { body: 'Existing notes.\n\n', frontmatter: {} },
-      prompt('character', 'fear'),
-      '  Deep water.  '
+      prompt('character', 'bad-day'),
+      '  Stranded in a storm.  '
     );
-    expect(data.body).toBe('Existing notes.\n\n### What are they most afraid of?\n\nDeep water.\n');
-    expect(data.answeredPrompts).toEqual(['fear']);
+    expect(data.body).toBe(
+      'Existing notes.\n\n### What does a truly bad day look like for them?\n\nStranded in a storm.\n'
+    );
+    expect(data.answeredPrompts).toEqual(['bad-day']);
+  });
+
+  it('writes character answers to their own fields instead of the body', () => {
+    const fear = applyPromptAnswer(
+      'character',
+      { body: '', frontmatter: {} },
+      prompt('character', 'fear'),
+      'Deep water.'
+    );
+    expect(fear.fears).toBe('Deep water.');
+    expect(fear.body).toBeUndefined();
+
+    const flaws = applyPromptAnswer(
+      'character',
+      { body: '', frontmatter: { virtues: ['brave'] } },
+      prompt('character', 'flaws'),
+      'reckless, vain'
+    );
+    expect(flaws.flaws).toEqual(['reckless', 'vain']);
+    expect(flaws.virtues).toBeUndefined();
   });
 
   it('starts the body with the section when it was empty', () => {
@@ -54,11 +76,11 @@ describe('applyPromptAnswer', () => {
   it('merges tags case-insensitively without duplicates', () => {
     const data = applyPromptAnswer(
       'character',
-      { body: '', frontmatter: { traits: ['Loyal'] } },
+      { body: '', frontmatter: { virtues: ['Loyal'] } },
       prompt('character', 'virtues'),
       'loyal, brave, brave, curious'
     );
-    expect(data.traits).toEqual(['Loyal', 'brave', 'curious']);
+    expect(data.virtues).toEqual(['Loyal', 'brave', 'curious']);
     expect(data.body).toBeUndefined();
   });
 

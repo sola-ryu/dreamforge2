@@ -13,9 +13,10 @@
     type: EntityType;
     answeredIds: string[];
     startOpen?: boolean;
+    beforeSubmit?: () => Promise<unknown>;
   }
 
-  let { type, answeredIds, startOpen = false }: Props = $props();
+  let { type, answeredIds, startOpen = false, beforeSubmit }: Props = $props();
 
   let prompts = $derived(getPrompts(type));
   let answered = $derived(new Set(answeredIds));
@@ -116,12 +117,13 @@
         method="POST"
         action="?/answerPrompt"
         class="mt-3 space-y-3"
-        use:enhance={({ cancel }) => {
+        use:enhance={async ({ cancel }) => {
           if (!submitValue) {
             cancel();
             return;
           }
           saving = true;
+          await beforeSubmit?.();
           return async ({ result, update }) => {
             saving = false;
             if (result.type === 'success') {

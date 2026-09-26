@@ -20,8 +20,20 @@ export interface FieldDef {
 
 export const ENTITY_FIELDS: Record<EntityType, FieldDef[]> = {
   character: [
-    { key: 'motivations', label: 'Motivations', type: 'textarea' },
+    { key: 'age', label: 'Age', type: 'text' },
+    { key: 'appearance', label: 'Appearance', type: 'textarea' },
+    { key: 'virtues', label: 'Virtues', type: 'tags' },
+    { key: 'flaws', label: 'Flaws', type: 'tags' },
+    { key: 'quirks', label: 'Quirks', type: 'tags' },
     { key: 'traits', label: 'Traits', type: 'tags' },
+    { key: 'interests', label: 'Interests', type: 'tags' },
+    { key: 'motivations', label: 'Motivations', type: 'textarea' },
+    { key: 'fears', label: 'Fears', type: 'textarea' },
+    { key: 'falseBelief', label: 'False Belief', type: 'textarea' },
+    { key: 'secrets', label: 'Secrets', type: 'textarea' },
+    { key: 'voice', label: 'Voice & Mannerisms', type: 'textarea' },
+    { key: 'treasuredPossession', label: 'Treasured Possession', type: 'textarea' },
+    { key: 'lines', label: 'Lines They Will Not Cross', type: 'textarea' },
     { key: 'backstory', label: 'Backstory', type: 'markdown' },
     {
       key: 'personalityType',

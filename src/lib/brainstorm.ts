@@ -90,21 +90,21 @@ export const BRAINSTORM_PROMPTS: Record<EntityType, BrainstormPrompt[]> = {
       id: 'virtues',
       category: 'Traits',
       question: 'What are their best qualities?',
-      field: 'traits',
+      field: 'virtues',
       suggestions: VIRTUES
     },
     {
       id: 'flaws',
       category: 'Traits',
       question: 'What flaws get them into trouble?',
-      field: 'traits',
+      field: 'flaws',
       suggestions: FLAWS
     },
     {
       id: 'quirks',
       category: 'Traits',
       question: 'What quirks or habits make them memorable?',
-      field: 'traits',
+      field: 'quirks',
       suggestions: QUIRKS
     },
     {
@@ -119,11 +119,12 @@ export const BRAINSTORM_PROMPTS: Record<EntityType, BrainstormPrompt[]> = {
       question: 'What do they actually need, even if they do not realize it?',
       field: 'motivations'
     },
-    { id: 'fear', category: 'Drive', question: 'What are they most afraid of?' },
+    { id: 'fear', category: 'Drive', question: 'What are they most afraid of?', field: 'fears' },
     {
       id: 'lie',
       category: 'Drive',
-      question: 'What false belief about themselves or the world do they hold?'
+      question: 'What false belief about themselves or the world do they hold?',
+      field: 'falseBelief'
     },
     {
       id: 'wound',
@@ -137,17 +138,29 @@ export const BRAINSTORM_PROMPTS: Record<EntityType, BrainstormPrompt[]> = {
       question: 'Describe a formative moment from their childhood.',
       field: 'backstory'
     },
-    { id: 'secret', category: 'Past', question: 'What secret are they keeping, and from whom?' },
+    {
+      id: 'secret',
+      category: 'Past',
+      question: 'What secret are they keeping, and from whom?',
+      field: 'secrets'
+    },
     {
       id: 'first-impression',
       category: 'Surface',
-      question: 'What do people notice first when they walk into a room?'
+      question: 'What do people notice first when they walk into a room?',
+      field: 'appearance'
     },
-    { id: 'voice', category: 'Surface', question: 'How do they talk? Any phrases they overuse?' },
+    {
+      id: 'voice',
+      category: 'Surface',
+      question: 'How do they talk? Any phrases they overuse?',
+      field: 'voice'
+    },
     {
       id: 'possession',
       category: 'Surface',
-      question: 'What object would they run back into a burning building for?'
+      question: 'What object would they run back into a burning building for?',
+      field: 'treasuredPossession'
     },
     {
       id: 'betrayal',
@@ -167,7 +180,8 @@ export const BRAINSTORM_PROMPTS: Record<EntityType, BrainstormPrompt[]> = {
     {
       id: 'line',
       category: 'Scenarios',
-      question: 'What line will they never cross? What would push them over it?'
+      question: 'What line will they never cross? What would push them over it?',
+      field: 'lines'
     }
   ],
   organization: [

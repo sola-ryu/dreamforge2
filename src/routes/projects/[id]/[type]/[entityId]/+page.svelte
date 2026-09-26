@@ -1,8 +1,9 @@
 <script lang="ts">
+  import { onMount, tick, untrack } from 'svelte';
   import { page } from '$app/state';
-  import { enhance } from '$app/forms';
-  import { goto, invalidateAll } from '$app/navigation';
-  import { ENTITY_LABELS, ENTITY_PLURAL } from '$lib/entityFields';
+  import { enhance, deserialize } from '$app/forms';
+  import { beforeNavigate, goto, invalidateAll } from '$app/navigation';
+  import { ENTITY_LABELS, ENTITY_PLURAL, type FieldDef } from '$lib/entityFields';
   import { entityTypeToRoute } from '$lib/utils/entityTypes';
   import type { Backlink, BacklinkReason, EntityType } from '$lib/types';
   import Editor from '$lib/components/Editor.svelte';
@@ -13,7 +14,6 @@
   import BrainstormDeck from '$lib/components/BrainstormDeck.svelte';
   import {
     ArrowLeft,
-    Save,
     Trash2,
     Bookmark,
     BookmarkMinus,
@@ -24,7 +24,10 @@
     FileText,
     Copy,
     Share2,
-    Plus
+    Plus,
+    Check,
+    CloudOff,
+    Loader2
   } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
@@ -39,6 +42,9 @@
     SelectValue
   } from '$lib/components/ui/select';
 
+  const AUTOSAVE_DELAY = 1000;
+  const RETRY_DELAY = 5000;
+
   const BACKLINK_LABELS: Record<BacklinkReason, string> = {
     mention: 'mention',
     field: 'field',
@@ -47,9 +53,12 @@
     place: 'setting'
   };
 
+  type Values = Record<string, string>;
+
   let role = $derived(page.data?.role || 'owner');
   let canEdit = $derived(role !== 'commenter');
   let backlinks = $derived((page.data?.backlinks || []) as Backlink[]);
+  let fieldDefs = $derived((page.data?.customFields || []) as FieldDef[]);
 
   interface EntityRelation {
     id: string;
@@ -73,46 +82,252 @@
     return refType ? all.filter((e) => e.type === refType) : all;
   }
 
-  let editing = $state(false);
+  function encodeField(field: FieldDef, raw: unknown): string {
+    if (field.type === 'tags') {
+      if (Array.isArray(raw)) return raw.join(', ');
+      return typeof raw === 'string' ? raw : '';
+    }
+    if (field.type === 'boolean') {
+      return raw === true || raw === 'on' || raw === 'true' ? 'true' : 'false';
+    }
+    return raw === null || raw === undefined ? '' : String(raw);
+  }
+
+  function hasValue(field: FieldDef, source: Values): boolean {
+    const value = source[field.key];
+    return field.type === 'boolean' ? value === 'true' : !!value?.trim();
+  }
+
+  function filledKeys(source: Values): Set<string> {
+    return new Set(fieldDefs.filter((f) => f.required || hasValue(f, source)).map((f) => f.key));
+  }
+
+  function snapshot(): Values {
+    const entity = page.data?.entity;
+    const out: Values = {
+      name: entity?.name || '',
+      body: entity?.body || '',
+      tags: (entity?.tags || []).join(', '),
+      status: entity?.status || 'draft'
+    };
+    for (const field of fieldDefs) {
+      out[field.key] = encodeField(field, entity?.frontmatter?.[field.key]);
+    }
+    return out;
+  }
+
   let showConvert = $state(false);
   let convertStoryId = $state('');
   let convertChapterId = $state('');
   let selectedImageId = $state('');
-  let name = $state(page.data?.entity?.name || '');
-  let body = $state(page.data?.entity?.body || '');
-  let fields = $state<Record<string, unknown>>({});
-  let tags = $state('');
-  let status = $state(page.data?.entity?.status || 'draft');
-  $effect(() => {
-    if (page.data?.entity) {
-      name = page.data.entity.name;
-      body = page.data.entity.body;
-      tags = (page.data.entity.tags || []).join(', ');
-      status = page.data.entity.status;
-      const f: Record<string, unknown> = {};
-      for (const field of page.data?.customFields || []) {
-        f[field.key] = page.data.entity.frontmatter?.[field.key];
-      }
-      fields = f;
-    }
+
+  let values = $state<Values>(untrack(() => snapshot()));
+  let synced = $state<Values>(untrack(() => snapshot()));
+  let shown = $state<Set<string>>(untrack(() => filledKeys(snapshot())));
+  let bodyEpoch = $state(0);
+  let loadedId = '';
+  let mounted = $state(false);
+
+  let saveStatus = $state<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  let saveError = $state('');
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  let dirty = $derived(Object.keys(values).some((key) => values[key] !== synced[key]));
+  let hiddenFields = $derived(fieldDefs.filter((f) => !shown.has(f.key)));
+  let visibleFields = $derived(fieldDefs.filter((f) => shown.has(f.key)));
+
+  onMount(() => {
+    mounted = true;
   });
+
+  function revealFilled(source: Values) {
+    shown = new Set([...shown, ...filledKeys(source)]);
+  }
+
+  // Server data replaces the sheet when a different entity loads. On a reload of the same
+  // entity (a deck answer, say) only fields the user has not touched are taken from the
+  // server, so edits made since the last save survive.
+  $effect(() => {
+    const entity = page.data?.entity;
+    if (!entity) return;
+    const incoming = snapshot();
+    untrack(() => {
+      if (entity.id !== loadedId) {
+        loadedId = entity.id;
+        values = incoming;
+        synced = incoming;
+        shown = new Set();
+        bodyEpoch++;
+        saveStatus = 'idle';
+        showConvert = false;
+        addingRelation = false;
+      } else {
+        const next = { ...values };
+        for (const key of Object.keys(incoming)) {
+          if (values[key] === synced[key] && values[key] !== incoming[key]) {
+            next[key] = incoming[key];
+            if (key === 'body') bodyEpoch++;
+          }
+        }
+        values = next;
+        synced = incoming;
+      }
+      revealFilled(values);
+    });
+  });
+
+  $effect(() => {
+    if (!canEdit || !dirty) return;
+    JSON.stringify(values);
+    const status = saveStatus;
+    if (status === 'saving') return;
+    timer = setTimeout(() => void save(), status === 'error' ? RETRY_DELAY : AUTOSAVE_DELAY);
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  });
+
+  async function save(keepalive = false): Promise<boolean> {
+    if (!canEdit) return true;
+    if (timer) clearTimeout(timer);
+    const payload = { ...values };
+    if (!Object.keys(payload).some((key) => payload[key] !== synced[key])) return true;
+    if (!payload.name.trim()) {
+      saveStatus = 'error';
+      saveError = 'Name cannot be empty';
+      return false;
+    }
+
+    saveStatus = 'saving';
+    saveError = '';
+    try {
+      const body = new URLSearchParams();
+      for (const [key, value] of Object.entries(payload)) {
+        const def = fieldDefs.find((f) => f.key === key);
+        if (def?.type === 'boolean') {
+          if (value === 'true') body.set(key, 'on');
+          continue;
+        }
+        if (value !== synced[key]) body.set(key, value);
+      }
+      const res = await fetch(`${page.url.pathname}?/update`, {
+        method: 'POST',
+        headers: { 'x-sveltekit-action': 'true' },
+        body,
+        keepalive
+      });
+      const result = deserialize(await res.text());
+      if (result.type !== 'success') {
+        throw new Error(
+          result.type === 'failure'
+            ? (result.data as { error?: string } | undefined)?.error || 'Save failed'
+            : 'Save failed'
+        );
+      }
+      synced = payload;
+      saveStatus = 'saved';
+      return true;
+    } catch (e) {
+      saveStatus = 'error';
+      saveError = e instanceof Error ? e.message : 'Save failed';
+      return false;
+    }
+  }
+
+  beforeNavigate((nav) => {
+    if (!canEdit || !dirty) return;
+    if (nav.willUnload) {
+      void save(true);
+      return;
+    }
+    nav.cancel();
+    const target = nav.to?.url;
+    void save().then((ok) => {
+      if (ok && target) goto(target);
+    });
+  });
+
+  function handleKeydown(e: KeyboardEvent) {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      void save();
+    }
+  }
+
+  async function reveal(key: string) {
+    shown = new Set([...shown, key]);
+    await tick();
+    document.getElementById(`field-${key}`)?.focus();
+  }
 
   $effect(() => {
     if (convertStoryId) convertChapterId = '';
   });
-
-  function toggleEdit() {
-    editing = !editing;
-  }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <svelte:head>
   <title
-    >{page.data?.entity?.name || 'Entity'} — {page.data?.entityType
+    >{values.name || 'Entity'} — {page.data?.entityType
       ? ENTITY_LABELS[page.data.entityType as EntityType]
       : ''} — {page.data?.project?.name || 'Project'} — DreamForge</title
   >
 </svelte:head>
+
+{#snippet fieldControl(field: FieldDef)}
+  {@const id = `field-${field.key}`}
+  {#if field.type === 'textarea' || field.type === 'markdown'}
+    <Textarea
+      {id}
+      disabled={!canEdit}
+      placeholder={field.placeholder || ''}
+      bind:value={values[field.key]}
+    />
+  {:else if field.type === 'tags'}
+    <Input
+      {id}
+      type="text"
+      disabled={!canEdit}
+      bind:value={values[field.key]}
+      placeholder="tag1, tag2, tag3"
+    />
+  {:else if field.type === 'boolean'}
+    <input
+      {id}
+      type="checkbox"
+      disabled={!canEdit}
+      checked={values[field.key] === 'true'}
+      onchange={(e) => (values[field.key] = e.currentTarget.checked ? 'true' : 'false')}
+      class="rounded border-input"
+    />
+  {:else if field.type === 'date'}
+    <Input {id} type="date" disabled={!canEdit} bind:value={values[field.key]} />
+  {:else if field.type === 'entityRef'}
+    <Input
+      {id}
+      type="text"
+      list="ref-{field.key}"
+      disabled={!canEdit}
+      bind:value={values[field.key]}
+      placeholder={field.placeholder ||
+        `Search ${ENTITY_PLURAL[field.entityType as EntityType]?.toLowerCase() || 'entities'}…`}
+    />
+    <datalist id="ref-{field.key}">
+      {#each refOptions(field.entityType) as option (option.id)}
+        <option value={option.name}></option>
+      {/each}
+    </datalist>
+  {:else}
+    <Input
+      {id}
+      type={field.type === 'number' ? 'number' : 'text'}
+      disabled={!canEdit}
+      bind:value={values[field.key]}
+      placeholder={field.placeholder || ''}
+    />
+  {/if}
+{/snippet}
 
 <div class="mx-auto max-w-4xl p-6">
   <div class="mb-6">
@@ -121,84 +336,84 @@
       class="mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
     >
       <ArrowLeft class="h-4 w-4" />
-      Back to {page.data?.entityType ? ENTITY_LABELS[page.data.entityType as EntityType] + 's' : ''}
+      Back to {page.data?.entityType ? ENTITY_PLURAL[page.data.entityType as EntityType] : ''}
     </a>
 
     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      {#if editing}
+      {#if canEdit}
         <input
           type="text"
-          bind:value={name}
-          class="text-2xl font-bold bg-transparent border-b border-primary/50 outline-none w-full"
-          placeholder="Entity name"
+          bind:value={values.name}
+          aria-label="Name"
+          class="w-full border-b border-transparent bg-transparent text-2xl font-bold outline-none hover:border-border focus:border-primary/50"
+          placeholder="Name"
         />
       {:else}
-        <h1 class="text-2xl font-bold">{name || 'Entity'}</h1>
+        <h1 class="text-2xl font-bold">{values.name || 'Entity'}</h1>
       {/if}
-      <div class="flex gap-2">
-        {#if editing}
-          <Button form="edit-form" type="submit">
-            <Save class="h-4 w-4" />
-            Save
+      <div class="flex shrink-0 items-center gap-2">
+        {#if canEdit}
+          <span
+            class="flex items-center gap-1 whitespace-nowrap text-xs"
+            class:text-destructive={saveStatus === 'error'}
+            class:text-muted-foreground={saveStatus !== 'error'}
+            aria-live="polite"
+          >
+            {#if saveStatus === 'error'}
+              <CloudOff class="h-3 w-3" />
+              {saveError}
+            {:else if saveStatus === 'saving'}
+              <Loader2 class="h-3 w-3 animate-spin" />
+              Saving…
+            {:else if dirty}
+              Unsaved changes
+            {:else if saveStatus === 'saved'}
+              <Check class="h-3 w-3" />
+              Saved
+            {/if}
+          </span>
+        {/if}
+        {#if canEdit && page.data?.entityType === 'note'}
+          <Button variant="outline" onclick={() => (showConvert = !showConvert)}>
+            <SwitchCamera class="h-4 w-4" />
+            Convert to Scene
           </Button>
-          <Button variant="outline" onclick={toggleEdit}>Cancel</Button>
-        {:else}
-          {#if canEdit && page.data?.entityType === 'note'}
-            <Button variant="outline" onclick={() => (showConvert = !showConvert)}>
-              <SwitchCamera class="h-4 w-4" />
-              Convert to Scene
-            </Button>
-          {/if}
-          <form method="POST" action="?/toggleBookmark" use:enhance>
-            <Button type="submit" variant="outline">
-              {#if page.data?.bookmarked}
-                <BookmarkMinus class="h-4 w-4" />
-                Unbookmark
-              {:else}
-                <Bookmark class="h-4 w-4" />
-                Bookmark
-              {/if}
+        {/if}
+        <form method="POST" action="?/toggleBookmark" use:enhance>
+          <Button type="submit" variant="outline">
+            {#if page.data?.bookmarked}
+              <BookmarkMinus class="h-4 w-4" />
+              Unbookmark
+            {:else}
+              <Bookmark class="h-4 w-4" />
+              Bookmark
+            {/if}
+          </Button>
+        </form>
+        {#if canEdit}
+          <form
+            method="POST"
+            action="?/duplicate"
+            use:enhance={async () => {
+              await save();
+            }}
+          >
+            <Button type="submit" variant="outline" title="Duplicate this entity">
+              <Copy class="h-4 w-4" />
+              Duplicate
             </Button>
           </form>
-          {#if canEdit}
-            <form method="POST" action="?/duplicate" use:enhance>
-              <Button type="submit" variant="outline" title="Duplicate this entity">
-                <Copy class="h-4 w-4" />
-                Duplicate
-              </Button>
-            </form>
-            <Button onclick={toggleEdit}>Edit</Button>
-          {/if}
         {/if}
       </div>
     </div>
   </div>
 
-  <form
-    id="edit-form"
-    method="POST"
-    action="?/update"
-    use:enhance={() => {
-      return async ({ result, update }) => {
-        if (result.type === 'success') {
-          await update();
-          editing = false;
-        } else {
-          await update();
-        }
-      };
-    }}
-    class="space-y-6"
-  >
-    <input type="hidden" name="name" bind:value={name} />
-    <input type="hidden" name="tags" bind:value={tags} />
-    <input type="hidden" name="status" bind:value={status} />
-
+  <div class="space-y-6">
     <div class="rounded-lg border border-border bg-card p-4">
-      <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
         <div class="flex items-center gap-2">
           <label for="status-select" class="text-sm font-medium">Status:</label>
-          <Select type="single" bind:value={status} disabled={!editing}>
+          <Select type="single" bind:value={values.status} disabled={!canEdit}>
             <SelectTrigger id="status-select" class="rounded px-2 py-1 text-sm">
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
@@ -209,91 +424,87 @@
             </SelectContent>
           </Select>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-1 items-center gap-2">
           <label for="tags-input" class="text-sm font-medium">Tags:</label>
           <input
             id="tags-input"
             type="text"
-            name="tags_display"
-            bind:value={tags}
-            disabled={!editing}
+            bind:value={values.tags}
+            disabled={!canEdit}
             class="flex-1 rounded border border-input bg-background px-2 py-1 text-sm"
             placeholder="tag1, tag2, tag3"
           />
         </div>
       </div>
+    </div>
 
-      {#if (page.data?.customFields || []).length > 0}
-        <div class="space-y-4">
-          {#each page.data.customFields as field}
-            <div>
-              <Label for={field.key} class="mb-1">
+    {#if canEdit && page.data?.entityType}
+      <BrainstormDeck
+        type={page.data.entityType as EntityType}
+        answeredIds={(page.data.entity?.frontmatter?.answeredPrompts as string[]) || []}
+        startOpen={!page.data.entity?.body?.trim() &&
+          !(page.data.entity?.frontmatter?.answeredPrompts as string[] | undefined)?.length}
+        beforeSubmit={() => save()}
+      />
+    {/if}
+
+    {#if visibleFields.length > 0 || (canEdit && hiddenFields.length > 0)}
+      <div class="rounded-lg border border-border bg-card p-4">
+        {#if visibleFields.length > 0}
+          <div class="space-y-4">
+            {#each visibleFields as field (field.key)}
+              <div>
+                <Label for="field-{field.key}" class="mb-1">
+                  {field.label}
+                  {#if field.required}<span class="text-destructive">*</span>{/if}
+                </Label>
+                {@render fieldControl(field)}
+              </div>
+            {/each}
+          </div>
+        {/if}
+
+        {#if canEdit && hiddenFields.length > 0}
+          <div
+            class="flex flex-wrap items-center gap-1.5"
+            class:mt-4={visibleFields.length > 0}
+            class:border-t={visibleFields.length > 0}
+            class:border-border={visibleFields.length > 0}
+            class:pt-3={visibleFields.length > 0}
+          >
+            <span class="text-xs text-muted-foreground">Add detail:</span>
+            {#each hiddenFields as field (field.key)}
+              <Button type="button" size="xs" variant="outline" onclick={() => reveal(field.key)}>
+                <Plus class="h-3 w-3" />
                 {field.label}
-                {#if field.required}<span class="text-destructive">*</span>{/if}
-              </Label>
-              {#if field.type === 'textarea' || field.type === 'markdown'}
-                <Textarea
-                  id={field.key}
-                  name={field.key}
-                  disabled={!editing}
-                  placeholder={field.placeholder || ''}
-                  value={(fields[field.key] as string) || ''}
-                />
-              {:else if field.type === 'tags'}
-                <Input
-                  id={field.key}
-                  name={field.key}
-                  type="text"
-                  disabled={!editing}
-                  value={((fields[field.key] as string[]) || []).join(', ')}
-                  placeholder="tag1, tag2, tag3"
-                />
-              {:else if field.type === 'boolean'}
-                <input
-                  id={field.key}
-                  name={field.key}
-                  type="checkbox"
-                  disabled={!editing}
-                  checked={fields[field.key] === true}
-                  class="rounded border-input"
-                />
-              {:else if field.type === 'date'}
-                <Input
-                  id={field.key}
-                  name={field.key}
-                  type="date"
-                  disabled={!editing}
-                  value={(fields[field.key] as string) || ''}
-                />
-              {:else if field.type === 'entityRef'}
-                <!-- Entity references are stored as plain names, matching the grid editor. -->
-                <Input
-                  id={field.key}
-                  name={field.key}
-                  type="text"
-                  list="ref-{field.key}"
-                  disabled={!editing}
-                  value={(fields[field.key] as string) || ''}
-                  placeholder={field.placeholder ||
-                    `Search ${ENTITY_PLURAL[field.entityType as EntityType]?.toLowerCase() || 'entities'}…`}
-                />
-                <datalist id="ref-{field.key}">
-                  {#each refOptions(field.entityType) as option (option.id)}
-                    <option value={option.name}></option>
-                  {/each}
-                </datalist>
-              {:else}
-                <Input
-                  id={field.key}
-                  name={field.key}
-                  type={field.type === 'number' ? 'number' : 'text'}
-                  disabled={!editing}
-                  value={(fields[field.key] as string) || ''}
-                  placeholder={field.placeholder || ''}
-                />
-              {/if}
-            </div>
-          {/each}
+              </Button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    {/if}
+
+    <div class="rounded-lg border border-border bg-card p-4">
+      <Label for="body" class="mb-2">
+        {page.data?.entityType === 'note' ? 'Content' : 'Notes'}
+      </Label>
+      {#if canEdit && mounted}
+        {#key bodyEpoch}
+          <Editor
+            content={untrack(() => values.body)}
+            placeholder={page.data?.entityType === 'note'
+              ? 'Start writing...'
+              : 'Anything that does not fit a field: scenes, ideas, references…'}
+            entities={page.data?.entities || []}
+            images={page.data?.projectImages || []}
+            projectId={page.params.id || ''}
+            onUpdate={(md) => (values.body = md)}
+          />
+        {/key}
+      {:else}
+        <div class="prose prose-sm mt-4 max-w-none">
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized in renderBodyHtml -->
+          {@html renderBodyHtml(values.body, page.params.id || '')}
         </div>
       {/if}
     </div>
@@ -301,7 +512,7 @@
     <div class="rounded-lg border border-border bg-card p-4">
       <div class="mb-2 flex items-center justify-between">
         <h2 class="text-sm font-medium">Images</h2>
-        {#if editing}
+        {#if canEdit}
           <a
             href="/projects/{page.params.id}/images"
             class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
@@ -315,7 +526,7 @@
         <p class="py-2 text-xs text-muted-foreground">No images linked to this entity.</p>
       {:else}
         <div class="flex flex-wrap gap-2">
-          {#each page.data.entityImages as img}
+          {#each page.data.entityImages as img (img.id)}
             <div class="group relative">
               <a href="/projects/{page.params.id}/images/{img.id}" class="block">
                 <img
@@ -324,13 +535,13 @@
                   class="h-20 w-20 rounded-lg border border-border object-cover"
                 />
               </a>
-              {#if editing}
+              {#if canEdit}
                 <Button
                   variant="destructive"
                   size="icon-xs"
-                  class="absolute -right-1.5 -top-1.5 rounded-full opacity-0 group-hover:opacity-100"
+                  class="absolute -right-1.5 -top-1.5 rounded-full opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
                   onclick={() =>
-                    fetch(window.location.href + '?/unlinkImage', {
+                    fetch(`${page.url.pathname}?/unlinkImage`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                       body: new URLSearchParams({ imageId: img.id })
@@ -344,7 +555,7 @@
           {/each}
         </div>
       {/if}
-      {#if editing}
+      {#if canEdit}
         <div class="mt-3 flex gap-2">
           <Combobox
             bind:value={selectedImageId}
@@ -363,11 +574,14 @@
             size="sm"
             onclick={() => {
               if (!selectedImageId) return;
-              fetch(window.location.href + '?/linkImage', {
+              fetch(`${page.url.pathname}?/linkImage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: new URLSearchParams({ imageId: selectedImageId })
-              }).then(() => window.location.reload());
+              }).then(() => {
+                selectedImageId = '';
+                return invalidateAll();
+              });
             }}
           >
             <Link2 class="h-3 w-3" />
@@ -376,51 +590,7 @@
         </div>
       {/if}
     </div>
-
-    <div class="rounded-lg border border-border bg-card p-4">
-      <Label for="body" class="mb-2">Content</Label>
-      {#if page.data?.entityType === 'note'}
-        <input type="hidden" name="body" value={body} />
-        {#if editing}
-          <Editor
-            content={body}
-            entities={page.data?.entities || []}
-            images={page.data?.projectImages || []}
-            projectId={page.params.id || ''}
-            onUpdate={(md) => (body = md)}
-          />
-        {:else}
-          <div class="prose prose-sm mt-4 max-w-none">
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized in renderBodyHtml -->
-            {@html renderBodyHtml(body, page.params.id || '')}
-          </div>
-        {/if}
-      {:else}
-        <Textarea
-          id="body"
-          name="body"
-          disabled={!editing}
-          class="min-h-[20rem] font-mono"
-          bind:value={body}
-        />
-        {#if !editing}
-          <div class="prose prose-sm mt-4 max-w-none">
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized in renderBodyHtml -->
-            {@html renderBodyHtml(page.data?.entity?.body, page.params.id || '')}
-          </div>
-        {/if}
-      {/if}
-    </div>
-  </form>
-
-  {#if canEdit && !editing && page.data?.entityType}
-    <BrainstormDeck
-      type={page.data.entityType as EntityType}
-      answeredIds={(page.data.entity?.frontmatter?.answeredPrompts as string[]) || []}
-      startOpen={!page.data.entity?.body?.trim() &&
-        !(page.data.entity?.frontmatter?.answeredPrompts as string[] | undefined)?.length}
-    />
-  {/if}
+  </div>
 
   <div class="mt-6 rounded-lg border border-border bg-card p-4">
     <div class="mb-3 flex items-center justify-between">
@@ -529,7 +699,7 @@
                   type="submit"
                   variant="ghost"
                   size="icon-xs"
-                  class="opacity-0 group-hover:opacity-100"
+                  class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
                   aria-label="Remove relationship"
                 >
                   <Trash2 class="h-3 w-3 text-destructive" />
@@ -580,30 +750,6 @@
     {role}
   />
 
-  {#if editing}
-    <div class="mt-6 border-t border-border pt-4">
-      <form
-        method="POST"
-        action="?/delete"
-        use:enhance={() => {
-          return async ({ result }) => {
-            if (result.type === 'success') {
-              const type = page.data?.entityType;
-              if (type) {
-                goto(`/projects/${page.params.id}/${entityTypeToRoute(type)}`);
-              }
-            }
-          };
-        }}
-      >
-        <Button type="submit" variant="destructive">
-          <Trash2 class="h-4 w-4" />
-          Delete Entity
-        </Button>
-      </form>
-    </div>
-  {/if}
-
   {#if showConvert && page.data?.entityType === 'note'}
     <div class="mt-4 rounded-lg border border-border bg-card p-4">
       <h3 class="mb-3 text-sm font-medium">Convert Note to Scene</h3>
@@ -643,14 +789,47 @@
     </div>
   {/if}
 
-  <div class="mt-4 rounded-lg border border-border bg-card p-4">
-    <p class="text-xs text-muted-foreground">
-      Created: {page.data?.entity?.createdAt
-        ? new Date(page.data.entity.createdAt).toLocaleString()
-        : ''}
-      &middot; Modified: {page.data?.entity?.modifiedAt
-        ? new Date(page.data.entity.modifiedAt).toLocaleString()
-        : ''}
-    </p>
-  </div>
+  {#if canEdit}
+    <div class="mt-6 flex items-center justify-between gap-4 border-t border-border pt-4">
+      <p class="text-xs text-muted-foreground">
+        Created: {page.data?.entity?.createdAt
+          ? new Date(page.data.entity.createdAt).toLocaleString()
+          : ''}
+        &middot; Modified: {page.data?.entity?.modifiedAt
+          ? new Date(page.data.entity.modifiedAt).toLocaleString()
+          : ''}
+      </p>
+      <form
+        method="POST"
+        action="?/delete"
+        use:enhance={() => {
+          return async ({ result }) => {
+            if (result.type === 'success') {
+              const type = page.data?.entityType;
+              if (type) {
+                synced = { ...values };
+                goto(`/projects/${page.params.id}/${entityTypeToRoute(type)}`);
+              }
+            }
+          };
+        }}
+      >
+        <Button type="submit" variant="ghost" size="sm" class="text-destructive">
+          <Trash2 class="h-4 w-4" />
+          Delete
+        </Button>
+      </form>
+    </div>
+  {:else}
+    <div class="mt-4 rounded-lg border border-border bg-card p-4">
+      <p class="text-xs text-muted-foreground">
+        Created: {page.data?.entity?.createdAt
+          ? new Date(page.data.entity.createdAt).toLocaleString()
+          : ''}
+        &middot; Modified: {page.data?.entity?.modifiedAt
+          ? new Date(page.data.entity.modifiedAt).toLocaleString()
+          : ''}
+      </p>
+    </div>
+  {/if}
 </div>
