@@ -529,7 +529,7 @@
           />
         {/key}
       {:else}
-        <div class="prose prose-sm mt-4 max-w-none">
+        <div class="prose prose-sm dark:prose-invert mt-4 max-w-none">
           <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized in renderBodyHtml -->
           {@html renderBodyHtml(values.body, page.params.id || '')}
         </div>
